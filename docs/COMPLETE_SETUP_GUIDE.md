@@ -212,6 +212,18 @@ dotnet test Tools/CoreTests
 3. Build Profiles ▸ **Scenes** list mein `Assets/Scenes/Main.unity` pehle number par ho.
 
 ### 9.3 Build aur install
+**Sab se aasaan – Kitefall menu se (ek click):**
+| Menu | Kya banta hai |
+|---|---|
+| Kitefall ▸ Build ▸ **Android APK (install on phone)** | `.apk` – seedha phone mein install hoti hai |
+| Kitefall ▸ Build ▸ **Android APK – Development** | `.apk` + errors dikhane wala mode (testing) |
+| Kitefall ▸ Build ▸ **Android APK – Build and Run on USB phone** | build karke USB wale phone par khud chala deta hai |
+| Kitefall ▸ Build ▸ **Android AAB (Google Play upload)** | `.aab` – sirf Play Store par upload ke liye (phone mein install nahi hoti) |
+| Kitefall ▸ Build ▸ **Open Builds Folder** | `Builds/Android` folder kholta hai |
+
+Yeh menu khud Android par switch karta hai, scene link check karta hai, package name / IL2CPP / ARM64 / API 24 set karta hai, aur build ke baad folder khol deta hai.
+
+**Haath se (Build Profiles):**
 - Phone jura ho ▸ Build Profiles ▸ **Build And Run** ▸ APK ka naam dein ▸ game phone par khul jayegi.
 - Ya sirf **Build** karke `.apk` file phone par copy karke install karein (phone par "Install unknown apps" allow karna hoga).
 

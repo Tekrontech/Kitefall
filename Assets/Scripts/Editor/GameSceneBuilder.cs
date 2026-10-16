@@ -32,12 +32,18 @@ namespace Kitefall.EditorTools
         public static void FixLinksMenu()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) { EditorUtility.DisplayDialog("Kitefall", "Stop Play mode first.", "OK"); return; }
-            if (!File.Exists(MainScenePath)) { Build(); return; }
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            if (LinkMainScene()) Selection.activeObject = Object.FindAnyObjectByType<GameApp>();
+        }
+
+        /// <summary>Opens Main.unity (building it if missing), links GameApp to the GameDatabase and camera, saves. Used before builds too.</summary>
+        public static bool LinkMainScene()
+        {
+            if (!File.Exists(MainScenePath)) Build();
             Scene scene = EditorSceneManager.OpenScene(MainScenePath);
             GameDatabase db = AssetDatabase.LoadAssetAtPath<GameDatabase>(DatabasePath);
             if (db == null) db = EnsureDatabase();
-            if (db == null) { Debug.LogError("[Kitefall] Could not create " + DatabasePath + ". Check the Console for earlier errors."); return; }
+            if (db == null) { Debug.LogError("[Kitefall] Could not create " + DatabasePath + ". Check the Console for earlier errors."); return false; }
 
             GameApp app = Object.FindAnyObjectByType<GameApp>();
             if (app == null) app = new GameObject("GameApp").AddComponent<GameApp>();
@@ -49,8 +55,8 @@ namespace Kitefall.EditorTools
             EditorUtility.SetDirty(app);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Selection.activeObject = app;
-            Debug.Log("[Kitefall] GameApp linked to " + DatabasePath + " and Main scene saved – press Play.");
+            Debug.Log("[Kitefall] GameApp linked to " + DatabasePath + " and Main scene saved.");
+            return true;
         }
 
         [MenuItem("Kitefall/Open Game Scene", priority = -99)]
