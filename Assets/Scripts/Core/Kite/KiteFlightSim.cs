@@ -31,7 +31,7 @@ namespace Kitefall.Core
     public sealed class KiteFlightSim
     {
         private readonly FlightSettings _s;
-        private readonly LoadoutStats _loadout;
+        private LoadoutStats _loadout;
         private readonly SmoothNoise _wobbleNoise;
 
         public float AzimuthDeg { get; private set; }
@@ -41,6 +41,10 @@ namespace Kitefall.Core
         public float Speed { get; private set; }
         public float AnchorHeight { get; }
         public bool IsCrashed { get; private set; }
+        public bool IsDiving => DiveTimeLeft > 0f;
+        public float DiveTimeLeft { get; private set; }
+        public float DiveCooldownLeft { get; private set; }
+        public bool CanDive => !IsCrashed && DiveCooldownLeft <= 0f && !IsDiving;
 
         /// <summary>Height above the ground, m.</summary>
         public float Height => AnchorHeight + Radius * KMath.Sin(ElevationDeg * KMath.Deg2Rad);
@@ -49,25 +53,23 @@ namespace Kitefall.Core
         public Vector3 LocalPosition => Direction * Radius;
 
         /// <summary>Unit vector from the anchor to the kite.</summary>
-        public Vector3 Direction
-        {
-            get
-            {
-                float az = AzimuthDeg * KMath.Deg2Rad, el = ElevationDeg * KMath.Deg2Rad;
-                return new Vector3(KMath.Cos(el) * KMath.Sin(az), KMath.Sin(el), KMath.Cos(el) * KMath.Cos(az));
-            }
-        }
+        public Vector3 Direction => DirectionOf(AzimuthDeg, ElevationDeg);
 
         /// <summary>Unit vector the kite's nose points to (tangent to the sphere).</summary>
-        public Vector3 NoseDirection
+        public Vector3 NoseDirection => NoseOf(AzimuthDeg, ElevationDeg, HeadingDeg);
+
+        public static Vector3 DirectionOf(float azimuthDeg, float elevationDeg)
         {
-            get
-            {
-                float az = AzimuthDeg * KMath.Deg2Rad, el = ElevationDeg * KMath.Deg2Rad, h = HeadingDeg * KMath.Deg2Rad;
-                var up = new Vector3(-KMath.Sin(el) * KMath.Sin(az), KMath.Cos(el), -KMath.Sin(el) * KMath.Cos(az));
-                var right = new Vector3(KMath.Cos(az), 0f, -KMath.Sin(az));
-                return Vector3.Normalize(up * KMath.Cos(h) + right * KMath.Sin(h));
-            }
+            float az = azimuthDeg * KMath.Deg2Rad, el = elevationDeg * KMath.Deg2Rad;
+            return new Vector3(KMath.Cos(el) * KMath.Sin(az), KMath.Sin(el), KMath.Cos(el) * KMath.Cos(az));
+        }
+
+        public static Vector3 NoseOf(float azimuthDeg, float elevationDeg, float headingDeg)
+        {
+            float az = azimuthDeg * KMath.Deg2Rad, el = elevationDeg * KMath.Deg2Rad, h = headingDeg * KMath.Deg2Rad;
+            var up = new Vector3(-KMath.Sin(el) * KMath.Sin(az), KMath.Cos(el), -KMath.Sin(el) * KMath.Cos(az));
+            var right = new Vector3(KMath.Cos(az), 0f, -KMath.Sin(az));
+            return Vector3.Normalize(up * KMath.Cos(h) + right * KMath.Sin(h));
         }
 
         public KiteFlightSim(FlightSettings settings, in LoadoutStats loadout, float anchorHeight, int seed = 0)
@@ -79,14 +81,43 @@ namespace Kitefall.Core
         }
 
         /// <summary>Places the kite straight downwind at the start elevation.</summary>
-        public void Reset(float windDirectionDeg, float lineOut)
+        /// <param name="bonusHeight">Extra start height, m (perfect launch = +10 m, spec 6).</param>
+        public void Reset(float windDirectionDeg, float lineOut, float bonusHeight = 0f, float azimuthOffsetDeg = 0f)
         {
-            AzimuthDeg = KMath.WrapAngle(windDirectionDeg);
-            ElevationDeg = _s.startElevationDeg;
+            AzimuthDeg = KMath.WrapAngle(windDirectionDeg + azimuthOffsetDeg);
             Radius = KMath.Max(1f, lineOut);
+            float bonusDeg = bonusHeight > 0f ? (float)System.Math.Asin(KMath.Clamp(bonusHeight / Radius, 0f, 0.9f)) * KMath.Rad2Deg : 0f;
+            ElevationDeg = KMath.Min(_s.maxElevationDeg - 5f, _s.startElevationDeg + bonusDeg);
             HeadingDeg = 0f;
             Speed = 0f;
             IsCrashed = false;
+            DiveTimeLeft = 0f;
+            DiveCooldownLeft = 0f;
+        }
+
+        /// <summary>Overwrites the state (network correction / replays).</summary>
+        public void SetState(float azimuthDeg, float elevationDeg, float radius, float headingDeg, float speed)
+        {
+            AzimuthDeg = azimuthDeg;
+            ElevationDeg = elevationDeg;
+            Radius = KMath.Max(1f, radius);
+            HeadingDeg = headingDeg;
+            Speed = speed;
+        }
+
+        /// <summary>Swaps the loadout mid-match (sky crate / loadout break).</summary>
+        public void SetLoadout(in LoadoutStats loadout) => _loadout = loadout;
+
+        /// <summary>Marks the kite as crashed (e.g. it hit a building).</summary>
+        public void ForceCrash() => IsCrashed = true;
+
+        /// <summary>Starts a Dive (Ghotta). Returns false while on cooldown.</summary>
+        public bool StartDive()
+        {
+            if (!CanDive) return false;
+            DiveTimeLeft = _s.diveDuration;
+            DiveCooldownLeft = _s.diveDuration + _s.diveCooldown;
+            return true;
         }
 
         public void Step(in FlightInput input, float dt)
@@ -95,10 +126,19 @@ namespace Kitefall.Core
 
             bool slack = input.Action == LineAction.Dheel;
             float windDir = input.Wind.DirectionDeg;
+            bool diving = DiveTimeLeft > 0f;
+            if (DiveTimeLeft > 0f) DiveTimeLeft = KMath.Max(0f, DiveTimeLeft - dt);
+            if (DiveCooldownLeft > 0f) DiveCooldownLeft = KMath.Max(0f, DiveCooldownLeft - dt);
 
             // ---- 1. Steering: rotate heading toward the joystick direction.
             float steerMag = KMath.Sqrt(input.SteerX * input.SteerX + input.SteerY * input.SteerY);
-            if (steerMag > _s.steerDeadzone)
+            if (diving)
+            {
+                // Dive: nose swings straight down fast, steering can still bias left/right a little.
+                float target = 180f - KMath.Clamp(input.SteerX, -1f, 1f) * 25f;
+                HeadingDeg = KMath.MoveTowardsAngle(HeadingDeg, target, _loadout.TurnRate * _s.diveTurnMult * dt);
+            }
+            else if (steerMag > _s.steerDeadzone)
             {
                 float target = KMath.Atan2(input.SteerX, input.SteerY) * KMath.Rad2Deg;
                 float turn = _loadout.TurnRate * KMath.Clamp01(steerMag) * dt;
@@ -126,7 +166,8 @@ namespace Kitefall.Core
 
             float baseSpeed = _s.speedBase + _s.speedPerStat * _loadout.SpeedStat + input.Wind.Speed * _s.windSpeedFactor;
             float targetSpeed = baseSpeed * ActionSpeedMult(input.Action) * power;
-            Speed = KMath.MoveTowards(Speed, targetSpeed, _s.acceleration * dt);
+            if (diving) targetSpeed = baseSpeed * _s.diveSpeedMult;
+            Speed = KMath.MoveTowards(Speed, targetSpeed, _s.acceleration * (diving ? 3f : 1f) * dt);
 
             // ---- 3. Move along the heading on the sphere surface.
             float h = HeadingDeg * KMath.Deg2Rad;

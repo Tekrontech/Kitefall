@@ -33,6 +33,8 @@ namespace Kitefall.Core
         public float Strength => _strength;
         public float SnapHoldTime => _settings.snapHoldTime;
         public bool IsAboveStrength => Tension > _strength;
+        /// <summary>Tension never drops below this (Brake charkhi during a Dheel Cut = 55). 0 = off.</summary>
+        public float Floor { get; set; }
 
         /// <param name="settings">Shared tension tunables.</param>
         /// <param name="strength">Dor Strength (snap limit).</param>
@@ -60,6 +62,7 @@ namespace Kitefall.Core
             Zone = ZoneFor(Tension);
             OverStrengthTime = 0f;
             IsSnapped = false;
+            Floor = 0f;
         }
 
         public TensionZone ZoneFor(float tension)
@@ -93,7 +96,7 @@ namespace Kitefall.Core
                     break;
             }
 
-            Tension = KMath.Clamp(Tension, 0f, 100f);
+            Tension = KMath.Clamp(Tension, Floor > 0f ? KMath.Min(Floor, 100f) : 0f, 100f);
 
             TensionZone previous = Zone;
             Zone = ZoneFor(Tension);

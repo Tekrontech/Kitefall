@@ -66,6 +66,16 @@ namespace Kitefall.Core
         /// <summary>Shortest line the charkhi can reel to, m.</summary>
         public float minLineOut = 10f;
 
+        // ---- Dive (Ghotta) – milestone 5 ----------------------------------
+        /// <summary>How long a dive lasts, s.</summary>
+        public float diveDuration = 1.0f;
+        /// <summary>Speed multiplier while diving.</summary>
+        public float diveSpeedMult = 1.9f;
+        /// <summary>Turn-rate multiplier used to swing the nose down at dive start.</summary>
+        public float diveTurnMult = 3f;
+        /// <summary>Seconds before the next dive is possible.</summary>
+        public float diveCooldown = 1.5f;
+
         // ---- Start / crash -------------------------------------------------
         public float startElevationDeg = 35f;
         public float startLineOut = 60f;
