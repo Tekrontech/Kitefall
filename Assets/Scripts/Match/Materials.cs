@@ -13,7 +13,7 @@ namespace Kitefall.Match
 
         public static Material Lit(Color color, float smoothness = 0.15f, Texture texture = null, string key = null)
         {
-            key = key ?? ("lit_" + ColorUtility.ToHtmlStringRGBA(color) + smoothness + (texture != null ? texture.GetInstanceID().ToString() : ""));
+            key = key ?? ("lit_" + ColorUtility.ToHtmlStringRGBA(color) + smoothness + (texture != null ? texture.GetHashCode().ToString() : ""));
             if (Cache.TryGetValue(key, out Material m) && m != null) return m;
             Material template = Kitefall.App.Game.Db != null ? Kitefall.App.Game.Db.litTemplate : null;
             if (template != null) m = new Material(template) { name = key, color = color };
