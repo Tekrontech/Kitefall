@@ -25,6 +25,15 @@ namespace Kitefall.App
 
             Game.App = this;
             DontDestroyOnLoad(gameObject);
+#if UNITY_SERVER
+            // Dedicated server: no UI, audio or camera – just data + the server match loop.
+            Game.Db = database;
+            database.ApplyToCore();
+            Application.targetFrameRate = 30;
+            if (ServerRegistry.Start != null) ServerRegistry.Start(database);
+            else Debug.LogError("[Kitefall] Server build without Kitefall.Online (Netcode) – nothing to run.");
+            return;
+#else
             Application.runInBackground = false;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
@@ -62,6 +71,7 @@ namespace Kitefall.App
             Game.Matches.Init(mainCamera);
 
             Game.Flow = new AppFlow();
+#endif
         }
 
         private async void Start()

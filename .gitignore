@@ -49,3 +49,7 @@ GoogleService-Info.plist
 # ---- OS ----
 .DS_Store
 Thumbs.db
+
+# Cloud Code module build output
+/Server/**/bin/
+/Server/**/obj/

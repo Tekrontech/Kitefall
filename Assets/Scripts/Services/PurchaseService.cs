@@ -15,6 +15,8 @@ namespace Kitefall.Services
         /// <summary>Buys; callback gets (success, receipt) – the receipt is validated by the server.</summary>
         void Buy(string productId, Action<bool, string> done);
         void RestorePurchases(Action<bool> done);
+        /// <summary>Called after the server answered: confirm (granted) or leave pending for a retry.</summary>
+        void Complete(string productId, bool granted);
     }
 
     /// <summary>Editor stand-in: purchases succeed instantly with a fake receipt. Never used in a store build with IAP.</summary>
@@ -25,11 +27,14 @@ namespace Kitefall.Services
         public string LocalizedPrice(string productId) => Catalog.Product(productId)?.displayPrice ?? "";
         public void Buy(string productId, Action<bool, string> done) => done?.Invoke(true, "debug-receipt-" + productId);
         public void RestorePurchases(Action<bool> done) => done?.Invoke(true);
+        public void Complete(string productId, bool granted) { }
     }
 
     public static class PurchaseRegistry
     {
         public static Func<IPurchaseProvider> Factory;
+        /// <summary>A store delivered a purchase nobody is waiting for (app restarted mid-purchase).</summary>
+        public static Action<string, string> Unclaimed;
     }
 
     public sealed class PurchaseService
@@ -41,6 +46,11 @@ namespace Kitefall.Services
 
         public void Initialize()
         {
+            PurchaseRegistry.Unclaimed = async (productId, receipt) =>
+            {
+                OpResult r = await _backend.RunAsync(EconomyCommands.GrantPurchase, productId, receipt ?? "");
+                Provider.Complete(productId, r.Ok);
+            };
             Provider = PurchaseRegistry.Factory?.Invoke() ?? new DebugPurchaseProvider();
             Provider.Initialize(Catalog.Products);
         }
@@ -59,6 +69,7 @@ namespace Kitefall.Services
                 if (!ok) { tcs.TrySetResult(OpResult.Fail("Purchase cancelled.")); return; }
                 // The online backend validates the receipt before granting (grant_purchase).
                 OpResult r = await _backend.RunAsync(EconomyCommands.GrantPurchase, productId, receipt ?? "");
+                Provider.Complete(productId, r.Ok);
                 tcs.TrySetResult(r);
             });
             return tcs.Task;

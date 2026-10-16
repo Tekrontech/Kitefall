@@ -111,6 +111,8 @@ namespace Kitefall.Services
             return Task.FromResult(list);
         }
 
+        public Task RefreshProfileAsync() => Task.CompletedTask;
+
         private void Save()
         {
             try

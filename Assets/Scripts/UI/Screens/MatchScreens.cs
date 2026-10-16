@@ -37,10 +37,30 @@ namespace Kitefall.UI.Screens
             UiKit.Button(col, "Cancel", () => UI.Pop(), Theme.PanelLight, 30).Size(-1, 90);
         }
 
+        private bool _online;
+
+        public override void OnShow()
+        {
+            _online = OnlineHooks.Available && _req.Mode != GameMode.PrivateRoom;
+            if (!_online) return;
+            OnlineHooks.Matchmaker.Find(_req, session => { _started = true; Game.Flow.BeginOnlineMatch(session); },
+                error => { UI.Toast(error, Theme.Bad, 3f); UI.Pop(); });
+        }
+
+        public override void OnHide()
+        {
+            if (_online && !_started) OnlineHooks.Matchmaker.Cancel();
+        }
+
         public override void Tick()
         {
             if (_started || _status == null) return;
             _time += Time.unscaledDeltaTime;
+            if (_online)
+            {
+                _status.text = $"Searching {(int)_time}s\n<size=26>{OnlineHooks.Matchmaker.Status}</size>";
+                return;
+            }
             var mm = Game.Balance != null ? Game.Balance.matchmaking : new MatchmakingSettings();
             int range = MatchmakingRules.TierRange(_time, mm);
             bool online = Game.Backend.IsOnline;
@@ -80,19 +100,41 @@ namespace Kitefall.UI.Screens
             UiKit.Choice(col, "Bots", new[] { "Easy", "Medium", "Hard" }, (int)(_req.Difficulty ?? BotDifficulty.Medium), i => _req.Difficulty = (BotDifficulty)i);
             UiKit.Label(col, Game.Backend.IsOnline ? "Online: share the room code with friends (Relay). Empty seats fill with bots." : "Offline: you vs bots. Online rooms need UGS – see docs/ONLINE_SETUP.md.", 24, Theme.TextDim).Size(-1, 70);
             UiKit.Button(col, "Start", () => { UI.Pop(); Game.Flow.StartMatch(_req); }, Theme.Accent, 34).Size(-1, 110);
-            if (Game.Backend.IsOnline && PrivateRoomOnline.Create != null)
+            if (OnlineHooks.Available)
             {
-                UiKit.Button(col, "Create online room", () => PrivateRoomOnline.Create(_req), Theme.Good, 30).Size(-1, 90);
-                UiKit.Button(col, "Join with code", () => PrivateRoomOnline.Join?.Invoke(), Theme.PanelLight, 30).Size(-1, 90);
+                UiKit.Button(col, "Create online room", CreateOnline, Theme.Good, 30).Size(-1, 90);
+                RectTransform join = UiKit.Row(col, 12);
+                join.Size(-1, 90);
+                UiKit.Input(join, "Room code", _code, 12, v => _code = v).Size(-1, 84, 1);
+                UiKit.Button(join, "Join", JoinOnline, Theme.PanelLight, 28).Size(200, 84);
             }
         }
-    }
 
-    /// <summary>Hooks filled by Kitefall.Online when Netcode + Relay are installed.</summary>
-    public static class PrivateRoomOnline
-    {
-        public static System.Action<MatchRequest> Create;
-        public static System.Action Join;
+        private string _code = "";
+
+        private void CreateOnline()
+        {
+            RectTransform body = UI.Popup("Online room", new Vector2(900, 520), false);
+            Text info = UiKit.Label(body, "Creating room…", 34, Color.white, TextAnchor.UpperCenter, FontStyle.Bold);
+            info.rectTransform.Stretch(0, 0, 0, 120);
+            RectTransform row = UiKit.Row(body, 20, 0, TextAnchor.MiddleCenter);
+            row.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), Vector2.zero, new Vector2(760, 96));
+            UiKit.Button(row, "Cancel", () => { OnlineHooks.Matchmaker.Cancel(); UI.ClosePopupOf(body); }, Theme.PanelLight).Size(340, 90);
+            UiKit.Button(row, "Start (bots fill)", () => OnlineHooks.Matchmaker.StartPrivateNow(), Theme.Good).Size(340, 90);
+            OnlineHooks.Matchmaker.CreatePrivate(_req,
+                code => { if (info != null) info.text = $"Room code\n<size=90>{code}</size>\n<size=26>Share it with friends</size>"; },
+                session => { UI.CloseAllPopups(); Game.Flow.BeginOnlineMatch(session); },
+                error => { UI.ClosePopupOf(body); UI.Toast(error, Theme.Bad, 3f); });
+        }
+
+        private void JoinOnline()
+        {
+            if (string.IsNullOrWhiteSpace(_code)) { UI.Toast("Enter a room code", Theme.Bad); return; }
+            UI.SetBusy(true, "Joining room…");
+            OnlineHooks.Matchmaker.JoinPrivate(_code.Trim().ToUpperInvariant(),
+                session => { UI.SetBusy(false); Game.Flow.BeginOnlineMatch(session); },
+                error => { UI.SetBusy(false); UI.Toast(error, Theme.Bad, 3f); });
+        }
     }
 
     /// <summary>Results (spec 6, 9.7): win/loss, WHY, rewards ledger, Double / Rematch / Next / Share.</summary>

@@ -52,6 +52,7 @@ namespace Kitefall.Core
     }
 
     /// <summary>Frozen copy of a finished contest for the results screen.</summary>
+    [System.Serializable]
     public sealed class ContestSummary
     {
         public int A, B;
@@ -97,6 +98,7 @@ namespace Kitefall.Core
         public AttackType AttackOf(int kite) => kite == A ? AttackA : AttackB;
     }
 
+    [System.Serializable]
     public sealed class RoundRecord
     {
         public int Number;

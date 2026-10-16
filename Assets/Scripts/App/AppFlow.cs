@@ -165,6 +165,19 @@ namespace Kitefall.App
             Game.Matches.Presenter.EventRaised += OnMatchEvent;
         }
 
+        /// <summary>Starts a match that runs online (host or client) – called by Kitefall.Online.</summary>
+        public void BeginOnlineMatch(IMatchSession session)
+        {
+            Game.UI.CloseAllPopups();
+            _coinsBefore = Game.Profile != null ? Game.Profile.coins : 0;
+            Game.Matches.StartSession(session, OnMatchFinished);
+            Hud = Game.UI.Show(new MatchHudScreen());
+            Game.Matches.Presenter.EventRaised -= OnMatchEvent;
+            Game.Matches.Presenter.EventRaised += OnMatchEvent;
+        }
+
+        private int _coinsBefore;
+
         public MatchSetup BuildSetup(MatchRequest req, out int localIndex)
         {
             PlayerProfile p = Game.Profile;
@@ -317,6 +330,14 @@ namespace Kitefall.App
                     VersusBotsOnly = true
                 });
                 result.Mode = mode;
+            }
+            if (session.IsOnline)
+            {
+                // The match host / server reported the result; the Cloud Code module applied the rewards.
+                await Game.Backend.RefreshProfileAsync();
+                reward = OpResult.Success();
+                int delta = (Game.Profile != null ? Game.Profile.coins : 0) - _coinsBefore;
+                reward.Log($"+{delta} coins (applied by the server)");
             }
             Hud = null;
             Game.UI.Show(new ResultsScreen(session, reward));

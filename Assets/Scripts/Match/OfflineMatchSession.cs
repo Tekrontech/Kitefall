@@ -15,12 +15,18 @@ namespace Kitefall.Match
         private float _accumulator;
         private KiteInput _localInput;
         private bool _diveLatch;
+        private readonly KiteInput[] _remote;
+        private readonly bool[] _hasRemote;
+        private readonly bool[] _remoteDive;
+
+        /// <summary>Raised after every simulation tick (the online host broadcasts the snapshot here).</summary>
+        public event System.Action<MatchSnapshot> Stepped;
 
         public MatchSimulation Simulation => _sim;
         public MatchSetup Setup => _sim.Setup;
         public ArenaLayout Arena => _sim.Arena;
         public int LocalIndex { get; }
-        public bool IsOnline => false;
+        public bool IsOnline { get; set; }
         public MatchSnapshot Previous => _prev;
         public MatchSnapshot Current => _curr;
         public float Alpha => _accumulator / MatchSimulation.Dt;
@@ -33,6 +39,9 @@ namespace Kitefall.Match
             _sim = new MatchSimulation(setup);
             _brains = MatchFactory.CreateBrains(setup);
             _inputs = new KiteInput[setup.Participants.Count];
+            _remote = new KiteInput[setup.Participants.Count];
+            _hasRemote = new bool[setup.Participants.Count];
+            _remoteDive = new bool[setup.Participants.Count];
             LocalIndex = localIndex;
             _sim.Capture(_curr);
             _sim.Capture(_prev);
@@ -43,6 +52,15 @@ namespace Kitefall.Match
             // A dive tap between two ticks must not be lost.
             if (input.DiveHeld) _diveLatch = true;
             _localInput = input;
+        }
+
+        /// <summary>Online host: latest input received from a remote player.</summary>
+        public void SetRemoteInput(int index, KiteInput input)
+        {
+            if (index < 0 || index >= _remote.Length) return;
+            _remote[index] = input;
+            _hasRemote[index] = true;
+            if (input.DiveHeld) _remoteDive[index] = true;
         }
 
         public void Update(float deltaTime)
@@ -67,6 +85,14 @@ namespace Kitefall.Match
                 _diveLatch = false;
                 _inputs[LocalIndex] = li;
             }
+            for (int i = 0; i < _inputs.Length; i++)
+            {
+                if (!_hasRemote[i] || i == LocalIndex) continue;
+                KiteInput ri = _remote[i];
+                ri.DiveHeld |= _remoteDive[i];
+                _remoteDive[i] = false;
+                _inputs[i] = ri;
+            }
             _sim.Step(_inputs);
 
             MatchSnapshot swap = _prev;
@@ -74,6 +100,7 @@ namespace Kitefall.Match
             _curr = swap;
             _sim.Capture(_curr);
             _pending.AddRange(_sim.Events);
+            Stepped?.Invoke(_curr);
         }
 
         public List<MatchEvent> DrainEvents()

@@ -45,6 +45,9 @@ namespace Kitefall.Services
 
         Task<List<LeaderboardEntry>> GetLeaderboardAsync(LeaderboardScope scope, int count);
 
+        /// <summary>Re-reads the profile from the server (after a match the server rewarded).</summary>
+        Task RefreshProfileAsync();
+
         /// <summary>Server time (anti-cheat for daily resets). Offline: device time.</summary>
         long NowUtc { get; }
     }
@@ -53,5 +56,14 @@ namespace Kitefall.Services
     public static class BackendRegistry
     {
         public static Func<IBackendService> OnlineFactory;
+    }
+}
+
+namespace Kitefall.Services
+{
+    /// <summary>Dedicated server builds (UNITY_SERVER): Kitefall.Online registers the server entry point here.</summary>
+    public static class ServerRegistry
+    {
+        public static System.Action<Kitefall.App.GameDatabase> Start;
     }
 }

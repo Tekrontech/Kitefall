@@ -1,0 +1,5 @@
+!*.sln
+!*.csproj
+!**/Properties/PublishProfiles/*.pubxml
+bin/
+obj/

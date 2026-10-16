@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Unity Cloud Code C# module "KitefallEconomy" – the server-authoritative economy (spec rule 2).
+    It compiles the SAME Core rules as the game (Assets/Scripts/Core), so client and server never disagree.
+    Deploy with Services ▸ Deployment (Assets/CloudCode/KitefallEconomy.ccmr). See docs/ONLINE_SETUP.md.
+  -->
+  <PropertyGroup>
+    <!-- Cloud Code runs .NET 9. Local check with an older SDK: dotnet build -p:KitefallTfm=net8.0 -->
+    <KitefallTfm Condition="'$(KitefallTfm)' == ''">net9.0</KitefallTfm>
+    <TargetFramework>$(KitefallTfm)</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Configurations>Debug;Release</Configurations>
+    <RootNamespace>Kitefall.Server</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../Assets/Scripts/Core/**/*.cs" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Com.Unity.Services.CloudCode.Core" Version="0.0.7" />
+    <PackageReference Include="Com.Unity.Services.CloudCode.Apis" Version="0.0.27" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>
