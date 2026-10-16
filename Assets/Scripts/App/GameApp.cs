@@ -21,6 +21,14 @@ namespace Kitefall.App
         private void Awake()
         {
             if (Game.App != null && Game.App != this) { Destroy(gameObject); return; }
+#if UNITY_EDITOR
+            if (database == null)
+            {
+                // Scene lost its link (e.g. built while scripts were recompiling): use the asset Build Game Scene creates.
+                database = UnityEditor.AssetDatabase.LoadAssetAtPath<GameDatabase>("Assets/ScriptableObjects/GameDatabase.asset");
+                if (database != null) Debug.LogWarning("[Kitefall] GameApp had no GameDatabase – loaded Assets/ScriptableObjects/GameDatabase.asset. Select GameApp, drag it into 'Database' and save the scene so builds work too.");
+            }
+#endif
             if (database == null) { Debug.LogError("[Kitefall] GameApp has no GameDatabase. Run Kitefall ▸ Build Game Scene."); enabled = false; return; }
 
             Game.App = this;
