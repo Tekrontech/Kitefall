@@ -26,6 +26,8 @@ Art and audio are original placeholders generated in code (kite shapes per class
 
 Full step-by-step guide with screenshots-in-words: **[`docs/SETUP.md`](docs/SETUP.md)**. Short version:
 
+Poori guide Roman Urdu mein (har cheez, shuru se Play Store tak): **[`docs/COMPLETE_SETUP_GUIDE.md`](docs/COMPLETE_SETUP_GUIDE.md)**
+
 1. Install **Unity 6 LTS** with **Android Build Support** (Unity Hub ▸ Installs).
 2. Get the code (git clone, or download the zip and extract).
 3. Create a throw-away project from the **Universal 3D** template, close Unity, copy its `Packages/`, `ProjectSettings/` and `Assets/Settings/` (+ `Settings.meta`) into the Kitefall folder.
