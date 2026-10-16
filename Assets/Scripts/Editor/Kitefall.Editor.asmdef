@@ -1,0 +1,21 @@
+{
+    "name": "Kitefall.Editor",
+    "rootNamespace": "Kitefall.EditorTools",
+    "references": [
+        "Kitefall.Core",
+        "Kitefall.Runtime",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
