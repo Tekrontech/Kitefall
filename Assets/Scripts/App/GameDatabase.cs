@@ -26,6 +26,16 @@ namespace Kitefall.App
         public BalanceConfig balance;
         public WindConfig defaultWind;
 
+        [Header("Material templates (keep the shaders in builds)")]
+        [Tooltip("Lit material (URP/Lit or Standard). Runtime materials are copies of it.")]
+        public Material litTemplate;
+        [Tooltip("Vertex-colour transparent material (Sprites/Default) for lines and zones.")]
+        public Material unlitTemplate;
+        [Tooltip("Particle material (URP Particles/Unlit).")]
+        public Material particleTemplate;
+        [Tooltip("Procedural skybox material.")]
+        public Material skyboxTemplate;
+
         public KiteClassData Kite(string id) => kites.Find(k => k != null && k.id == id);
         public TailData Tail(string id) => tails.Find(k => k != null && k.id == id);
         public DorData Dor(string id) => dors.Find(k => k != null && k.id == id);

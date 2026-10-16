@@ -1,133 +1,80 @@
 # Kitefall
 
-Online competitive 3D kite-fighting for mobile — *"Read the wind, win the cross, cut the line."*
+Online competitive 3D kite-fighting for mobile – *"Read the wind, win the cross, cut the line."*
 
-Unity 6 LTS · C# · URP (mobile) · New Input System · Android first (iOS-ready)
+Unity 6 LTS · C# · URP (mobile) · New Input System · Android first (iOS-ready) · Unity Gaming Services
 
-The full game design lives in [`docs/KITEFALL_GAME_SPEC.md`](docs/KITEFALL_GAME_SPEC.md). That file is the single source of truth.
-
----
-
-## Current status: Milestone 1 of 14 ✅
-
-| # | Milestone | Status |
-|---|-----------|--------|
-| 1 | KiteController + WindField + TensionModel (single kite) | **Done – ready for testing** |
-| 2 | Tail rope physics | Next |
-| 3–14 | Lines & contact, contests, attacks, dor/charkhi feel, rounds, bots, HUD, online, accounts, menus, ranked, ads | Planned |
-
-What milestone 1 gives you:
-
-- A kite you can steer in every direction inside the "wind window".
-- PULL / release (dheel) / REEL with the exact tension rules from spec 9.1 and 9.2 (green / yellow / red zones, self-snap after 0.6 s above dor Strength).
-- Line out on the charkhi (release speed, reel speed, capacity, dor stock).
-- Deterministic wind (same seed = same wind on every phone and, later, on the server).
-- Every number in ScriptableObject data assets (kites, dum, dor, charkhi, configs) – nothing hard-coded.
-- A one-click test scene with a placeholder rooftop city, follow camera, debug HUD, tension bar, wind compass and touch controls.
-- 63 unit tests for the game rules.
+The game design is in [`docs/KITEFALL_GAME_SPEC.md`](docs/KITEFALL_GAME_SPEC.md) (single source of truth).
 
 ---
 
-## Setup (step by step)
+## What is in this repository
 
-### 1. Install Unity
-1. Install **Unity Hub** from unity.com.
-2. Unity Hub ▸ **Installs ▸ Install Editor** ▸ choose the newest **Unity 6 LTS** (6000.x LTS).
-3. Tick these modules: **Android Build Support** (with *OpenJDK* and *Android SDK & NDK Tools*) and, on Windows, **Visual Studio** (or use JetBrains Rider / VS Code).
+| Area | Status |
+|---|---|
+| **All 14 milestones** of spec section 16 | Code complete – see [`docs/MILESTONES.md`](docs/MILESTONES.md) for what each one contains and how it was verified |
+| **Offline game** (tutorial, duels and FFA vs labelled bots, every menu, local economy, test ads/store) | Playable in the editor and on a phone right after setup |
+| **Online** (accounts, server economy, leaderboards, online matches, ads, IAP) | Code complete; needs **your** Unity Cloud project, ad and store accounts → [`docs/ONLINE_SETUP.md`](docs/ONLINE_SETUP.md) |
+| **Tests** | 159 unit tests for the game rules (run in Unity or with `dotnet test Tools/CoreTests`) |
+| **Server** | Cloud Code C# module `Server/KitefallEconomy` – the same rules run on the server |
 
-### 2. Get the code
-Either
-- **Git:** `git clone https://github.com/tekrontech/kitefall.git` then `git checkout claude/amazing-bardeen-xi1xqo`
-- **Zip:** download the zip and extract it, e.g. to `D:\Kitefall`.
-
-You now have a folder with `Assets/`, `docs/`, `Tools/` and this README.
-
-### 3. Add Unity's URP mobile settings (one time only)
-This repo contains only *our* code. Unity's own project settings come from the official template, so they always match your exact Unity version:
-
-1. Unity Hub ▸ **New project** ▸ Unity 6 ▸ template **Universal 3D** ▸ name it `KitefallTemplate` ▸ **Create project**.
-2. When the editor has opened, **close Unity**.
-3. From the `KitefallTemplate` folder, **copy** these into your `Kitefall` folder:
-   - the `Packages` folder
-   - the `ProjectSettings` folder
-   - `Assets/Settings` **and** the file `Assets/Settings.meta` (into `Kitefall/Assets/`)
-   - if the template has `Assets/UniversalRenderPipelineGlobalSettings.asset`, copy it and its `.meta` too
-   - do **not** copy `SampleScene`, `TutorialInfo` or `Readme.asset`
-4. You can delete `KitefallTemplate` afterwards.
-
-### 4. Open the project
-1. Unity Hub ▸ **Add ▸ Add project from disk** ▸ select the `Kitefall` folder ▸ open it with Unity 6.
-2. **Window ▸ Package Manager ▸ Unity Registry** ▸ make sure **Input System** is installed (the Unity 6 template normally already has it). If Unity asks *"enable the new input backends?"* click **Yes** – Unity restarts.
-3. **Edit ▸ Project Settings ▸ Player ▸ Other Settings ▸ Active Input Handling** must be **Input System Package (New)** or **Both**.
-4. The Console should show no red errors.
-
-### 5. Build the test scene and play
-1. Menu bar ▸ **Kitefall ▸ Milestone 1 ▸ Build Flight Test Scene**. This creates the data assets (`Assets/ScriptableObjects`), materials, kite mesh and the scene `Assets/Scenes/M1_FlightTest.unity`.
-2. Menu ▸ **Kitefall ▸ Setup ▸ Apply Mobile Player Settings** (landscape, product name).
-3. Press **Play ▶**. Set the Game view to a landscape phone size, e.g. 1920×1080.
-
-| Action | Keyboard | Gamepad | Touch (on screen) |
-|---|---|---|---|
-| Steer | WASD or arrow keys | Left stick | Joystick (bottom left) |
-| PULL (kheench) | Space (hold) | Right trigger | PULL (bottom right) |
-| Release (dheel) | Let go of Space | Let go of trigger | Let go of PULL |
-| REEL in | Left Shift (hold) | Left trigger | REEL (above PULL) |
-| Reset kite (debug) | Backspace | Select | RESET (top right) |
-
-Then go through the checklist in [`docs/MILESTONE_1.md`](docs/MILESTONE_1.md).
-
-### 6. Run the unit tests
-- In Unity: **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All** → all green.
-- Without Unity (needs the .NET 8 SDK): `dotnet test Tools/CoreTests`
-
-### 7. Play on an Android phone
-1. Phone: enable **Developer options** and **USB debugging**, connect with USB.
-2. **File ▸ Build Profiles ▸ Android ▸ Switch Platform**.
-3. Make sure `Assets/Scenes/M1_FlightTest.unity` is in the scene list (the builder adds it).
-4. **Build And Run**.
-
-### 8. Commit to Git
-After the first open Unity creates `.meta` files next to every asset. **Commit them** (they hold the links between assets):
-
-```bash
-git add .
-git commit -m "Add Unity project settings and meta files"
-git push
-```
+Art and audio are original placeholders generated in code (kite shapes per class, skin patterns, rooftop cities, procedural sounds and music). Replace them with real assets whenever you like – nothing depends on files.
 
 ---
 
-## Project layout
+## Quick start (offline game, ~15 minutes)
+
+Full step-by-step guide with screenshots-in-words: **[`docs/SETUP.md`](docs/SETUP.md)**. Short version:
+
+1. Install **Unity 6 LTS** with **Android Build Support** (Unity Hub ▸ Installs).
+2. Get the code (git clone, or download the zip and extract).
+3. Create a throw-away project from the **Universal 3D** template, close Unity, copy its `Packages/`, `ProjectSettings/` and `Assets/Settings/` (+ `Settings.meta`) into the Kitefall folder.
+4. Unity Hub ▸ **Add project from disk** ▸ Kitefall. Make sure the **Input System** package is installed (answer **Yes** to the restart question).
+5. Menu **Kitefall ▸ Build Game Scene (complete game)**.
+6. Open `Assets/Scenes/Main.unity` and press **Play** ▶.
+
+You go through: splash → login (Guest) → terms/age → name & country → 2-minute tutorial → first duel vs a practice opponent → Home.
+
+| Action | Keyboard | Touch |
+|---|---|---|
+| Steer | WASD / arrows | Joystick (bottom left) |
+| PULL (kheench) | hold Space | PULL |
+| Release (dheel) | let go of Space | let go of PULL |
+| REEL in | hold Left Shift | REEL |
+| DIVE (ghotta) | Q / Left Ctrl | DIVE, or swipe down on the right |
+| Menu / back | Esc | II button / Android back |
+
+Run the tests: **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All** (or `dotnet test Tools/CoreTests`).
+
+---
+
+## How it is built
 
 ```text
-Assets/
-  Scripts/
-    Core/        Pure C# game rules – no UnityEngine (runs on the server later)
-      Kite/        KiteFlightSim, KiteSimulation, FlightSettings
-      Tension/     TensionModel, LineSpool, LineActionResolver
-      Wind/        WindModel, WindSettings
-      Data/        Plain stat structs + LoadoutStats (modifier stacking)
-      Util/        KMath, SmoothNoise
-    Data/        ScriptableObjects: KiteClassData, TailData, DorData, CharkhiData, configs
-    Kite/        KiteController (MonoBehaviour), KiteMeshFactory
-    Wind/        WindField (MonoBehaviour)
-    Input/       KiteInputReader (new Input System)
-    Camera/      KiteCameraController
-    UI/          TensionBarView, WindCompassView, FlightDebugHud
-    DebugTools/  DebugTetherLine (temporary), PerformanceBootstrap
-    Editor/      Scene builder, default data, project setup menus
-  Tests/EditMode/  Unit tests for Core
-  ScriptableObjects/, Scenes/, Materials/, Art/   ← generated by the Kitefall menu
-docs/          Spec, milestone checklist, design decisions
-Tools/CoreTests/  Runs the Core tests with plain .NET (used by CI)
+Assets/Scripts/
+  Core/        Pure C# rules – no UnityEngine. Flight, tension, wind, tail rope, lines & contact,
+               contest formula, attacks, rounds, all modes, bots, results "why", economy, ranks,
+               ads policy, season pass, catalog, network codec. Runs unchanged on the server.
+  Data/        ScriptableObjects (kites, dum, dor, charkhi, tunings, arenas, configs)
+  App/         GameApp bootstrap, GameDatabase, AppFlow (player journey), tutorial
+  Match/       Match sessions (offline / online), presenter, arena builder, kite/line/tail views,
+               camera, effects, replay, showroom
+  UI/          UI kit (built from code), HUD, every screen
+  Services/    Backend interface + local backend, settings, audio, haptics, ads, IAP, analytics…
+  Online/      Unity Gaming Services, Netcode/Relay sessions, LevelPlay, IAP, dedicated server
+               (each part compiles only when its package is installed)
+  Editor/      Kitefall menus: build scenes, create/reset data
+Server/KitefallEconomy/   Cloud Code module (server economy, match reports, leaderboards)
+Tools/CoreTests/          Runs the Core tests with plain .NET (also in GitHub Actions)
+docs/                     Spec, setup, online setup, milestones, decisions, architecture, testing
 ```
 
-**Rule:** gameplay maths stays in `Core` (plain C#, unit tested). Unity components only read input, call Core and draw the result. This is what lets the server run the exact same rules later (spec 14.5, rule 2: server authority).
+Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Assumptions and open questions: [`docs/DECISIONS.md`](docs/DECISIONS.md) · Play-test checklist: [`docs/TESTING.md`](docs/TESTING.md)
 
-More detail: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · Open questions and assumptions: [`docs/DECISIONS.md`](docs/DECISIONS.md)
-
-## Tuning
-Select any asset in `Assets/ScriptableObjects` and change values in the Inspector – even during Play mode for configs. After changing a kite / dum / dor / charkhi during Play, right-click the **KiteController** component ▸ **Rebuild Simulation**. Use **Kitefall ▸ Data ▸ Reset All Data Assets To Spec Values** to go back to the spec numbers.
-
-## Safety & fairness (from the spec)
-String cutting is a fictional game mechanic. Dor names are gameplay stats only. No pay-to-win, ever.
+## Non-negotiable rules (spec section 0) – how the code keeps them
+- **No pay-to-win:** the shop and pass only contain cosmetics; rarity never changes stats (`Core/Meta/Catalog.cs`).
+- **Server authority:** every profile change goes through `EconomyCommands`; online it runs only in the Cloud Code module on protected Cloud Save data. Matches are simulated by the host / server; clients only send inputs.
+- **Explainable combat:** every contest keeps its factors; the results screen explains wins and losses. Contest noise is < 5 %.
+- **Safety:** string cutting is fictional; the terms screen says so. Dor names are gameplay stats only.
+- **Original assets:** everything visual and audio is generated in code.
+- **No ads during gameplay:** `Core/Meta/AdsPolicy.cs` blocks ads in match, launch, loadout break, contest, matchmaking, loading and app open.

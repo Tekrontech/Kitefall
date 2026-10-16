@@ -85,9 +85,34 @@ namespace Kitefall.EditorTools
             db.camera = d.Camera;
             db.balance = d.Balance;
             db.defaultWind = d.Wind;
+            bool urp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null;
+            db.litTemplate = Template("Lit", (urp ? Shader.Find("Universal Render Pipeline/Lit") : null) ?? Shader.Find("Standard"), m =>
+            {
+                if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f);
+            });
+            db.unlitTemplate = Template("Unlit", Shader.Find("Sprites/Default"), null);
+            db.particleTemplate = Template("Particle", (urp ? Shader.Find("Universal Render Pipeline/Particles/Unlit") : null) ?? Shader.Find("Particles/Standard Unlit") ?? Shader.Find("Sprites/Default"), m =>
+            {
+                if (m.HasProperty("_Surface")) { m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 2f); m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); m.renderQueue = 3000; }
+            });
+            db.skyboxTemplate = Template("Sky", Shader.Find("Skybox/Procedural"), null);
             EditorUtility.SetDirty(db);
             AssetDatabase.SaveAssets();
             return db;
+        }
+
+        private static Material Template(string name, Shader shader, System.Action<Material> setup)
+        {
+            if (shader == null) return null;
+            KitefallDefaultData.EnsureFolder("Assets/Materials/Runtime");
+            string path = $"Assets/Materials/Runtime/{name}.mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m != null && m.shader == shader) return m;
+            if (m != null) AssetDatabase.DeleteAsset(path);
+            m = new Material(shader) { name = name };
+            setup?.Invoke(m);
+            AssetDatabase.CreateAsset(m, path);
+            return m;
         }
 
         private static List<T> Load<T>(string folder) where T : ScriptableObject

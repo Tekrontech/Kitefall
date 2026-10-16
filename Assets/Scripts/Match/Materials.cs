@@ -15,8 +15,13 @@ namespace Kitefall.Match
         {
             key = key ?? ("lit_" + ColorUtility.ToHtmlStringRGBA(color) + smoothness + (texture != null ? texture.GetInstanceID().ToString() : ""));
             if (Cache.TryGetValue(key, out Material m) && m != null) return m;
-            Shader shader = (Urp ? Shader.Find("Universal Render Pipeline/Lit") : null) ?? Shader.Find("Standard") ?? Shader.Find("Sprites/Default");
-            m = new Material(shader) { name = key, color = color };
+            Material template = Kitefall.App.Game.Db != null ? Kitefall.App.Game.Db.litTemplate : null;
+            if (template != null) m = new Material(template) { name = key, color = color };
+            else
+            {
+                Shader shader = (Urp ? Shader.Find("Universal Render Pipeline/Lit") : null) ?? Shader.Find("Standard") ?? Shader.Find("Sprites/Default");
+                m = new Material(shader) { name = key, color = color };
+            }
             if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
             if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", smoothness);
             if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", smoothness);
@@ -34,6 +39,14 @@ namespace Kitefall.Match
         public static Material Unlit(string key = "unlit")
         {
             if (Cache.TryGetValue(key, out Material m) && m != null) return m;
+            var db = Kitefall.App.Game.Db;
+            Material template = db == null ? null : key.StartsWith("particle") ? db.particleTemplate : db.unlitTemplate;
+            if (template != null)
+            {
+                m = new Material(template) { name = key };
+                Cache[key] = m;
+                return m;
+            }
             Shader shader = Shader.Find("Sprites/Default");
             if (key.StartsWith("particle"))
                 shader = (Urp ? Shader.Find("Universal Render Pipeline/Particles/Unlit") : null) ?? Shader.Find("Particles/Standard Unlit") ?? shader;
@@ -52,9 +65,10 @@ namespace Kitefall.Match
 
         public static Material Skybox(float timeOfDay01)
         {
-            Shader sky = Shader.Find("Skybox/Procedural");
+            Material template = Kitefall.App.Game.Db != null ? Kitefall.App.Game.Db.skyboxTemplate : null;
+            Shader sky = template != null ? template.shader : Shader.Find("Skybox/Procedural");
             if (sky == null) return null;
-            var m = new Material(sky) { name = "Sky" };
+            var m = template != null ? new Material(template) { name = "Sky" } : new Material(sky) { name = "Sky" };
             float golden = Mathf.Abs(timeOfDay01 - 0.5f) * 2f; // 0 noon, 1 morning/evening
             m.SetFloat("_SunSize", Mathf.Lerp(0.04f, 0.07f, golden));
             m.SetFloat("_AtmosphereThickness", Mathf.Lerp(0.9f, 1.6f, golden));

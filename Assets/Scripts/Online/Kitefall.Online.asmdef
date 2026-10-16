@@ -17,7 +17,11 @@
         "Unity.Collections",
         "Unity.LevelPlay",
         "UnityEngine.Purchasing",
-        "Unity.Purchasing"
+        "Unity.Purchasing",
+        "Unity.Services.Core.Environments",
+        "Unity.Services.LevelPlay",
+        "Unity.Purchasing.Stores",
+        "UnityEngine.Purchasing.Stores"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -27,15 +31,51 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [
-        { "name": "com.unity.services.authentication", "expression": "3.0.0", "define": "KITEFALL_UGS_AUTH" },
-        { "name": "com.unity.services.cloudcode", "expression": "2.0.0", "define": "KITEFALL_UGS_CLOUDCODE" },
-        { "name": "com.unity.services.leaderboards", "expression": "2.0.0", "define": "KITEFALL_UGS_LEADERBOARDS" },
-        { "name": "com.unity.services.multiplayer", "expression": "1.0.0", "define": "KITEFALL_UGS_MULTIPLAYER" },
-        { "name": "com.unity.services.analytics", "expression": "6.0.0", "define": "KITEFALL_UGS_ANALYTICS" },
-        { "name": "com.unity.remote-config", "expression": "4.0.0", "define": "KITEFALL_UGS_REMOTECONFIG" },
-        { "name": "com.unity.netcode.gameobjects", "expression": "2.0.0", "define": "KITEFALL_NGO" },
-        { "name": "com.unity.services.levelplay", "expression": "8.0.0", "define": "KITEFALL_LEVELPLAY" },
-        { "name": "com.unity.purchasing", "expression": "5.0.0", "define": "KITEFALL_IAP" }
+        {
+            "name": "com.unity.services.authentication",
+            "expression": "3.0.0",
+            "define": "KITEFALL_UGS_AUTH"
+        },
+        {
+            "name": "com.unity.services.cloudcode",
+            "expression": "2.0.0",
+            "define": "KITEFALL_UGS_CLOUDCODE"
+        },
+        {
+            "name": "com.unity.services.leaderboards",
+            "expression": "2.0.0",
+            "define": "KITEFALL_UGS_LEADERBOARDS"
+        },
+        {
+            "name": "com.unity.services.multiplayer",
+            "expression": "1.0.0",
+            "define": "KITEFALL_UGS_MULTIPLAYER"
+        },
+        {
+            "name": "com.unity.services.analytics",
+            "expression": "6.0.0",
+            "define": "KITEFALL_UGS_ANALYTICS"
+        },
+        {
+            "name": "com.unity.remote-config",
+            "expression": "4.0.0",
+            "define": "KITEFALL_UGS_REMOTECONFIG"
+        },
+        {
+            "name": "com.unity.netcode.gameobjects",
+            "expression": "2.0.0",
+            "define": "KITEFALL_NGO"
+        },
+        {
+            "name": "com.unity.services.levelplay",
+            "expression": "8.0.0",
+            "define": "KITEFALL_LEVELPLAY"
+        },
+        {
+            "name": "com.unity.purchasing",
+            "expression": "5.0.0",
+            "define": "KITEFALL_IAP"
+        }
     ],
     "noEngineReferences": false
 }

@@ -32,6 +32,11 @@ namespace Kitefall.UI.Hud
 
         protected override void Build()
         {
+            // Build() also runs on Refresh (e.g. back from Settings): forget widgets of the old build.
+            _tagPool.Clear();
+            _feedItems.Clear();
+            _breakPanel = null;
+            _editing = false;
             if (S == null) return;
             _teams = new int[S.Setup.Participants.Count];
             for (int i = 0; i < _teams.Length; i++) _teams[i] = S.Setup.Participants[i].team;

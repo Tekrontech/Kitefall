@@ -1,44 +1,51 @@
-# Architecture (milestone 1)
+# Architecture
 
 ```text
-           ┌──────────────── Unity (Kitefall.Runtime) ────────────────┐
- Touch /   │ KiteInputReader ──► KiteController ──► Transform (kite)  │
- keys /    │                        │   ▲                               │
- gamepad   │ WindField ─────────────┘   │ events: ZoneChanged,          │
-           │                            │ SelfSnapped, Crashed …        │
-           │ HUD: TensionBarView, WindCompassView, FlightDebugHud      │
-           └────────────────────────────┼──────────────────────────────┘
-                                        │ plain data only
-           ┌────────── Pure C# (Kitefall.Core, no UnityEngine) ────────┐
-           │ KiteSimulation                                            │
-           │   ├─ LineActionResolver  (buttons → Idle/Pull/Dheel/Reel) │
-           │   ├─ TensionModel        (spec 9.1 / 9.2, self-snap)      │
-           │   ├─ LineSpool           (line out, capacity, stock)      │
-           │   └─ KiteFlightSim       (wind-window flight)             │
-           │ WindModel (deterministic, seeded)                         │
-           │ LoadoutStats (kite + dum + dor + charkhi → final numbers) │
-           └───────────────────────────────────────────────────────────┘
+ Touch / keys ─► KiteInputReader ─┐
+                                  ▼
+            ┌──────────── IMatchSession ────────────┐
+            │ OfflineMatchSession  (offline, host)   │  20 Hz fixed ticks
+            │ HostSession          (online host)     │──► MatchSnapshot ──► MatchPresenter (3D) + MatchHudScreen (UI)
+            │ ClientSession        (online client)   │
+            └───────────────┬────────────────────────┘
+                            ▼
+      ┌──────────────── Kitefall.Core (pure C#, no UnityEngine) ────────────────┐
+      │ MatchSimulation: phases, rounds, modes, crates, storm, disconnects       │
+      │   ├─ KiteSimulation ×N  (LineActionResolver, TensionModel, LineSpool,    │
+      │   │                       KiteFlightSim, line points, dive)              │
+      │   ├─ ContactDetector  ─► Contest ─► ContestResolver (spec 9.5)           │
+      │   ├─ WindModel + RoundPhaseController                                    │
+      │   └─ ArenaLayout (deterministic city / coast / …)                        │
+      │ BotBrain · ResultsExplainer · NetCodec · MatchResultDto                   │
+      │ EconomyService / EconomyCommands · RankRules · AdsPolicy · Catalog       │
+      └──────────────────────────────────────────────────────────────────────────┘
+                            ▲ same source files
+      Server/KitefallEconomy (Cloud Code module) — GetProfile · Run · ReportMatch
 ```
 
 ## Assemblies
-| Assembly | Folder | References | Why |
+| Assembly | Folder | Depends on | Purpose |
 |---|---|---|---|
-| `Kitefall.Core` | `Assets/Scripts/Core` | none (`noEngineReferences`) | Game rules. Same code will run on the server (milestone 10). |
-| `Kitefall.Runtime` | `Assets/Scripts` | Core, Input System, uGUI | MonoBehaviours, ScriptableObjects, HUD. |
-| `Kitefall.Editor` | `Assets/Scripts/Editor` | Core, Runtime | Menus: scene builder, default data. |
-| `Kitefall.Tests.EditMode` | `Assets/Tests/EditMode` | Core, NUnit | Unit tests. Also run by `Tools/CoreTests` with plain .NET. |
+| `Kitefall.Core` | `Assets/Scripts/Core` | nothing | All game rules; deterministic; server-ready |
+| `Kitefall.Runtime` | `Assets/Scripts` | Core, Input System, uGUI | Game app, views, UI, services, offline backend |
+| `Kitefall.Online` | `Assets/Scripts/Online` | Core, Runtime, UGS/NGO/LevelPlay/IAP (optional) | Online implementations, registered at start-up |
+| `Kitefall.Editor` | `Assets/Scripts/Editor` | Core, Runtime | Menus and scene/data builders |
+| `Kitefall.Tests.EditMode` | `Assets/Tests/EditMode` | Core | Unit tests |
 
-## Simulation loop
-- `KiteController.FixedUpdate` (50 Hz) → `KiteSimulation.Step(input, wind, time, dt)`.
-- Order inside a step: resolve line action → tension → line out → flight → snap/crash check.
-- `Update` interpolates the kite between the last two ticks so it is smooth at 30, 60 or 120 FPS.
-- Wind is sampled from `Time.fixedTime` and the kite height; with the same seed every machine gets the same wind.
+The Runtime only knows interfaces (`IBackendService`, `IAdsProvider`, `IPurchaseProvider`, `IAnalyticsProvider`, `IRemoteConfigProvider`, `IOnlineMatchmaker`). `Kitefall.Online` fills the registries when its packages exist, otherwise the local / debug versions are used.
+
+## Determinism and authority
+- One seed per match drives wind, arena, sweet-zone phases, contest noise, crates and bots (`DeterministicRandom`, never `UnityEngine.Random` in rules).
+- Same seed + same inputs = same match (tested).
+- Only the simulation owner (offline device, online host, dedicated server) steps `MatchSimulation`; everyone else draws `MatchSnapshot`s.
+- Player data changes only through `EconomyCommands.Execute` / `EconomyService.ApplyMatchResult` – locally in offline mode, in the Cloud Code module online.
 
 ## Data flow
-ScriptableObject (`DorData` …) → `ToStats()` → plain struct (`DorStats`) → `LoadoutStats` → Core models.
-Core never sees a ScriptableObject, so Remote Config (later) can build the same structs from JSON.
+ScriptableObjects → `GameDatabase.ApplyToCore()` registers stats in `SpecDefaults` → `MatchSetup` (built by `AppFlow` or the host) → `MatchSimulation`.
+`BalanceConfig` (+ Remote Config JSON) feeds contest, phases, crates, economy, ads, ranks, matchmaking.
+
+## UI
+All UI is created from code (`UI/UiKit`), so there are no prefabs to wire. Screens derive from `UIScreen` / `MenuScreen` and are pushed on `UIManager`. The HUD reads the session's snapshot each frame.
 
 ## Coordinates
-- World +Y up, ground at y = 0.
-- Wind direction = where the wind blows **to**, degrees clockwise from +Z.
-- Kite position = spherical (azimuth, elevation, radius) around the line anchor. Heading 0 = up, +90 = right (as seen by the flyer).
+World +Y up, ground y = 0, downwind ≈ +Z. Wind direction = where the wind blows **to**, degrees clockwise from +Z. Kites live at (azimuth, elevation, radius) around their flyer's hands; heading 0 = up, +90 = right.
