@@ -53,7 +53,7 @@ namespace Kitefall.Match
             Mesh mesh = MeshFor(kiteId, out float tailY);
             sail.AddComponent<MeshFilter>().sharedMesh = mesh;
             var mr = sail.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = Materials.Lit(Color.white, 0.25f, PatternTexture(look), "sail_" + kiteId + "_" + skinId);
+            mr.sharedMaterial = Materials.KitePaper(PatternTexture(look), "sail_" + kiteId + "_" + skinId);
 
             // Bamboo frame: spine + bow.
             Material stick = Materials.Lit(new Color(0.74f, 0.6f, 0.36f), 0.1f);

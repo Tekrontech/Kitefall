@@ -15,7 +15,8 @@ The game design is in [`docs/KITEFALL_GAME_SPEC.md`](docs/KITEFALL_GAME_SPEC.md)
 | **All 14 milestones** of spec section 16 | Code complete – see [`docs/MILESTONES.md`](docs/MILESTONES.md) for what each one contains and how it was verified |
 | **Offline game** (tutorial, duels and FFA vs labelled bots, every menu, local economy, test ads/store) | Playable in the editor and on a phone right after setup |
 | **Online** (accounts, server economy, leaderboards, online matches, ads, IAP) | Code complete; needs **your** Unity Cloud project, ad and store accounts → [`docs/ONLINE_SETUP.md`](docs/ONLINE_SETUP.md) |
-| **Tests** | 159 unit tests for the game rules (run in Unity or with `dotnet test Tools/CoreTests`) |
+| **Upgrade v1.4** | Animated characters, shoulder camera, wardrobe, squad lobby, warmup plaza, rooftop choice + roof hopping, launch ritual, emotes, quick chat + voice, training ground, new sky/kite shaders → [`docs/UPGRADE_TEST_GUIDE.md`](docs/UPGRADE_TEST_GUIDE.md) |
+| **Tests** | 202 unit tests for the game rules (run in Unity or with `dotnet test Tools/CoreTests`) |
 | **Server** | Cloud Code C# module `Server/KitefallEconomy` – the same rules run on the server |
 
 Art and audio are original placeholders generated in code (kite shapes per class, skin patterns, rooftop cities, procedural sounds and music). Replace them with real assets whenever you like – nothing depends on files.

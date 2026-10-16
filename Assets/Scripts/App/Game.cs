@@ -23,6 +23,8 @@ namespace Kitefall.App
         public static UIManager UI;
         public static AppFlow Flow;
         public static MatchDirector Matches;
+        /// <summary>Squad / party (upgrade F2). Local (offline) by default; Kitefall.Online replaces it.</summary>
+        public static IPartyService Party;
 
         public static PlayerProfile Profile => Backend?.Profile;
         public static BalanceConfig Balance => Db != null ? Db.balance : null;

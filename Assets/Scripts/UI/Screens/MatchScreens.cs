@@ -98,6 +98,7 @@ namespace Kitefall.UI.Screens
                 UiKit.Stepper(col, "Minutes", _req.MatchMinutes.ToString("0"), () => { _req.MatchMinutes = Mathf.Max(5, _req.MatchMinutes - 1); Refresh(); }, () => { _req.MatchMinutes = Mathf.Min(20, _req.MatchMinutes + 1); Refresh(); });
             }
             UiKit.Choice(col, "Bots", new[] { "Easy", "Medium", "Hard" }, (int)(_req.Difficulty ?? BotDifficulty.Medium), i => _req.Difficulty = (BotDifficulty)i);
+            UiKit.Choice(col, "Rooftops", new[] { "Free choice + hopping", "Fixed" }, _req.FixedRoofs ? 1 : 0, i => _req.FixedRoofs = i == 1);
             UiKit.Label(col, Game.Backend.IsOnline ? "Online: share the room code with friends (Relay). Empty seats fill with bots." : "Offline: you vs bots. Online rooms need UGS – see docs/ONLINE_SETUP.md.", 24, Theme.TextDim).Size(-1, 70);
             UiKit.Button(col, "Start", () => { UI.Pop(); Game.Flow.StartMatch(_req); }, Theme.Accent, 34).Size(-1, 110);
             if (OnlineHooks.Available)

@@ -63,13 +63,40 @@ namespace Kitefall.Match
             return m;
         }
 
+        /// <summary>Kite sail material: the paper/fabric shader when available, else the lit fallback.</summary>
+        public static Material KitePaper(Texture texture, string key)
+        {
+            if (Cache.TryGetValue(key, out Material m) && m != null) return m;
+            Material template = Kitefall.App.Game.Db != null ? Kitefall.App.Game.Db.kitePaperTemplate : null;
+            Shader paper = template != null ? template.shader : Shader.Find("Kitefall/KitePaper");
+            if (paper == null || !paper.isSupported) return Lit(Color.white, 0.25f, texture, key);
+            m = template != null ? new Material(template) { name = key } : new Material(paper) { name = key };
+            m.mainTexture = texture;
+            Cache[key] = m;
+            return m;
+        }
+
         public static Material Skybox(float timeOfDay01)
         {
             Material template = Kitefall.App.Game.Db != null ? Kitefall.App.Game.Db.skyboxTemplate : null;
             Shader sky = template != null ? template.shader : Shader.Find("Skybox/Procedural");
             if (sky == null) return null;
+            Shader gradient = Shader.Find("Kitefall/GradientSky");
+            if ((template == null || template.shader.name != "Kitefall/GradientSky") && gradient != null && gradient.isSupported) { sky = gradient; template = null; }
             var m = template != null ? new Material(template) { name = "Sky" } : new Material(sky) { name = "Sky" };
             float golden = Mathf.Abs(timeOfDay01 - 0.5f) * 2f; // 0 noon, 1 morning/evening
+            if (m.shader.name == "Kitefall/GradientSky")
+            {
+                // Premium stylised sky: the sky is the hero (upgrade 12). Golden hour in the morning/evening.
+                m.SetColor("_ZenithColor", Color.Lerp(new Color(0.2f, 0.45f, 0.86f), new Color(0.25f, 0.33f, 0.62f), golden));
+                m.SetColor("_HorizonColor", Color.Lerp(new Color(0.8f, 0.9f, 0.98f), new Color(1f, 0.82f, 0.66f), golden));
+                m.SetColor("_GoldenColor", new Color(1f, 0.62f, 0.32f));
+                m.SetFloat("_Golden", Mathf.SmoothStep(0.1f, 0.95f, golden));
+                m.SetColor("_SunColor", Color.Lerp(new Color(1f, 0.97f, 0.9f), new Color(1f, 0.75f, 0.45f), golden));
+                m.SetFloat("_SunSize", Mathf.Lerp(0.003f, 0.006f, golden));
+                m.SetFloat("_CloudCover", 0.38f + Mathf.PerlinNoise(timeOfDay01 * 7f, 0.3f) * 0.25f);
+                return m;
+            }
             m.SetFloat("_SunSize", Mathf.Lerp(0.04f, 0.07f, golden));
             m.SetFloat("_AtmosphereThickness", Mathf.Lerp(0.9f, 1.6f, golden));
             m.SetColor("_SkyTint", Color.Lerp(new Color(0.45f, 0.6f, 0.85f), new Color(0.7f, 0.55f, 0.55f), golden * 0.6f));

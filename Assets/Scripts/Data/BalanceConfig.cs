@@ -21,6 +21,14 @@ namespace Kitefall.Data
         public AdsConfig ads = new AdsConfig();
         public RankSettings ranks = new RankSettings();
         public MatchmakingSettings matchmaking = new MatchmakingSettings();
+        [Header("Upgrade v1.4: rooftops, launch ritual, warmup")]
+        public RoofSettings roofs = new RoofSettings();
+        public PrepSettings prep = new PrepSettings();
+        [Tooltip("Warmup rooftop: until the room is full or this many seconds (online).")]
+        public float warmupMax = 45f;
+        public float warmupMin = 10f;
+        [Tooltip("Offline matches vs bots: short warmup so players can walk and emote (0 = skip).")]
+        public float warmupOffline = 10f;
 
         [Header("App")]
         [Tooltip("Builds older than this must update (force-update screen, spec 3.1).")]

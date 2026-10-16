@@ -113,7 +113,7 @@ namespace Kitefall.App
             PlayerProfile p = Game.Profile;
             if (p == null) return;
             KiteOwned k = p.Kite(p.loadout.kite);
-            Game.Matches.ShowShowroom(p.loadout.kite, k != null ? k.skin : "", p.loadout.tail, p.loadout.dor);
+            Game.Matches.ShowShowroom(p.loadout.kite, k != null ? k.skin : "", p.loadout.tail, p.loadout.dor, p.characterId, p.outfitId, p.accessories.ToArray(), p.loadout.charkhi);
         }
 
         private async Task DailyLoginAsync()
@@ -211,6 +211,13 @@ namespace Kitefall.App
                 team = 0,
                 captain = setup.Rules.teamCount > 1
             };
+            ApplyCosmetics(me, p);
+            // Upgrade v1.4: rooftop network, launch ritual, short warmup offline (skipped in duels vs a bot and the tutorial).
+            setup.UseRoofGraph = req.Mode != GameMode.Tutorial;
+            setup.UseLaunchRitual = req.Mode != GameMode.Tutorial;
+            setup.FixedRoofs = req.Mode == GameMode.PrivateRoom && req.FixedRoofs;
+            float warm = Game.Balance != null ? Game.Balance.warmupOffline : 10f;
+            setup.WarmupTime = setup.Rules.IsDuel || req.FirstDuel ? 0f : warm;
             if (setup.Rules.IsDuel)
             {
                 string kite = p.loadout.kite;
@@ -237,6 +244,63 @@ namespace Kitefall.App
             return setup;
         }
 
+        /// <summary>Character, outfit, accessories (visual only) and auto-prep from the profile + settings.</summary>
+        public static void ApplyCosmetics(ParticipantSetup me, PlayerProfile p)
+        {
+            me.characterId = string.IsNullOrEmpty(p.characterId) ? CharacterCatalog.DefaultCharacter : p.characterId;
+            me.outfitId = p.outfitId ?? "";
+            me.accessories = p.accessories != null ? p.accessories.ToArray() : new string[4];
+            // Auto-prep: setting, or new players during their first 5 matches (upgrade 11.2).
+            me.autoPrep = (Game.Settings != null && Game.Settings.Data.autoPrep) || p.autoPrep || p.matches < 5;
+            me.partyId = Game.Party != null ? Game.Party.PartyId : "";
+        }
+
+        // =====================================================================
+        // Training ground (upgrade F8)
+        // =====================================================================
+
+        /// <summary>Offline training: every kite, dum, dor, charkhi and tuning unlocked; no rewards, no inventory changes.</summary>
+        public void StartTraining(TrainingRequest req)
+        {
+            PlayerProfile p = Game.Profile;
+            var me = new ParticipantSetup { playerId = p.playerId, displayName = p.displayName, country = p.country };
+            ApplyCosmetics(me, p);
+            me.autoPrep = Game.Settings != null && Game.Settings.Data.autoPrep;
+            ParticipantLoadout l = SpecDefaults.Loadout(req.Kite, req.Tail, req.Dor, req.Charkhi);
+            l.tunings = req.Tunings != null ? req.Tunings.ConvertAll(SpecDefaults.Tuning).ToArray() : null;
+            l.durability = 100f;
+            l.dorStockMeters = 1000f;
+            me.stack.Add(l);
+            var opts = new TrainingOptions { sparringBots = req.Bots, sparringDifficulty = req.Difficulty, dummies = req.Dummies };
+            MatchSetup setup = MatchFactory.TrainingSetup(me, opts, UnityEngine.Random.Range(1, int.MaxValue));
+            Game.Db.Configure(setup);
+            setup.Training = opts;
+            Game.UI.CloseAllPopups();
+            Game.Matches.StartOffline(setup, 0, OnTrainingFinished);
+            Hud = Game.UI.Show(new MatchHudScreen());
+            Game.Matches.Presenter.EventRaised -= OnMatchEvent;
+            Game.Matches.Presenter.EventRaised += OnMatchEvent;
+            Game.Analytics?.Track("training_start", ("kite", req.Kite), ("dor", req.Dor), ("charkhi", req.Charkhi));
+        }
+
+        private async void OnTrainingFinished(IMatchSession session)
+        {
+            Game.Matches.Presenter.EventRaised -= OnMatchEvent;
+            Hud = null;
+            Game.Matches.EndSession();
+            await GoHomeAsync();
+        }
+
+        /// <summary>Spectate ▸ "Leave match (keep rewards)" after elimination in Last Kite Flying (upgrade F5).</summary>
+        public void LeaveAfterElimination()
+        {
+            IMatchSession s = Game.Matches.Session;
+            if (s == null) return;
+            if (s is OfflineMatchSession off) { off.End(); return; } // the result keeps the elimination placement
+            // Online: just leave; the server keeps the placement (an eliminated player who leaves is not a quitter).
+            Game.Matches.QuitMatch();
+        }
+
         private static BotDifficulty PickDifficulty(PlayerProfile p)
         {
             if (p.matches < 5) return BotDifficulty.Easy;
@@ -250,32 +314,29 @@ namespace Kitefall.App
             if (s == null || Hud == null) return;
             int me = s.LocalIndex;
             string Name(int i) => i < 0 ? "?" : i == me ? "You" : s.Setup.Participants[i].displayName;
+            Hud.FeedEvent(e);      // kill feed rows with icons (upgrade F4)
+            Hud.UpgradeEvent(e);   // emotes, quick chat, ritual grades…
             switch (e.Type)
             {
                 case MatchEventType.KiteCut:
-                    Hud.Feed($"{Name(e.B)} cut {Name(e.A)}", e.B == me ? Theme.Good : e.A == me ? Theme.Bad : Color.white);
                     if (e.B == me) Hud.Announce("YOU CUT THEIR LINE!", $"−{e.Value:0} m of their dor cut away");
                     else if (e.A == me) Hud.Announce("YOUR LINE WAS CUT", "Read the results to see why");
                     break;
                 case MatchEventType.SelfSnap:
-                    Hud.Feed($"{Name(e.A)}: self-snap", e.A == me ? Theme.Bad : Theme.TextDim);
                     if (e.A == me) Hud.Announce("SELF-SNAP!", $"Tension stayed above Strength {e.Value:0} too long");
                     break;
                 case MatchEventType.Crash:
-                    Hud.Feed($"{Name(e.A)} crashed", Theme.TextDim);
                     if (e.A == me) Hud.Announce("CRASH!", "−15 % durability");
                     break;
                 case MatchEventType.PerfectLaunch:
                     if (e.A == me) Hud.Announce("PERFECT LAUNCH", "+10 m height");
                     break;
                 case MatchEventType.Assist:
-                    if (e.A == me) Hud.Feed("Assist +40", Theme.Good);
                     break;
                 case MatchEventType.CrateSpawned:
                     Hud.Feed("Sky crate: " + SkyCrate.DisplayName((CrateContent)e.Code), Theme.Warn);
                     break;
                 case MatchEventType.CrateCollected:
-                    Hud.Feed($"{Name(e.A)} took {SkyCrate.DisplayName((CrateContent)e.Code)}", e.A == me ? Theme.Good : Theme.TextDim);
                     break;
                 case MatchEventType.GustWarning:
                     Hud.Feed("Gust incoming!", new Color(1f, 0.7f, 0.3f));

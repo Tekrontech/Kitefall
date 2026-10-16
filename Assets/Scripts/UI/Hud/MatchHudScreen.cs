@@ -11,7 +11,7 @@ using UnityEngine.UI;
 namespace Kitefall.UI.Hud
 {
     /// <summary>The in-match HUD (spec 10) + touch controls + pause menu + loadout break.</summary>
-    public sealed class MatchHudScreen : UIScreen
+    public sealed partial class MatchHudScreen : UIScreen
     {
         public override bool Opaque => false;
 
@@ -24,7 +24,7 @@ namespace Kitefall.UI.Hud
         private RectTransform _feed, _tags, _launch, _launchFill, _ring;
         private GameObject _breakPanel;
         private readonly List<Text> _tagPool = new List<Text>();
-        private readonly List<(Text text, float until)> _feedItems = new List<(Text, float)>();
+        private readonly List<(GameObject go, float until)> _feedItems = new List<(GameObject, float)>();
         private readonly List<DragHandle> _handles = new List<DragHandle>();
         private float _centerUntil;
         private bool _editing;
@@ -35,6 +35,7 @@ namespace Kitefall.UI.Hud
             // Build() also runs on Refresh (e.g. back from Settings): forget widgets of the old build.
             _tagPool.Clear();
             _feedItems.Clear();
+            ClearUpgrade();
             _breakPanel = null;
             _editing = false;
             if (S == null) return;
@@ -74,6 +75,7 @@ namespace Kitefall.UI.Hud
 
             Button menu = UiKit.Button(Root, "II", OpenMenu, new Color(0, 0, 0, 0.5f), 34);
             menu.GetComponent<RectTransform>().Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -24), new Vector2(96, 76));
+            BuildUpgrade();
         }
 
         private void BuildTop()
@@ -185,6 +187,7 @@ namespace Kitefall.UI.Hud
             UpdateTags(snap, me);
             UpdateFeed();
             UpdateBreak(snap);
+            TickUpgrade(snap, k, me);
         }
 
         private void UpdateScore(MatchSnapshot snap, int me)
@@ -237,7 +240,7 @@ namespace Kitefall.UI.Hud
 
         private void UpdateLaunch(MatchSnapshot snap, in KiteSnap k)
         {
-            bool show = snap.Phase == MatchPhase.Launch;
+            bool show = snap.Phase == MatchPhase.Launch && !S.Setup.UseLaunchRitual;
             _launch.gameObject.SetActive(show);
             if (!show) return;
             float over = S.Setup.Phases.launchOverfill;
@@ -315,7 +318,7 @@ namespace Kitefall.UI.Hud
             {
                 if (Time.unscaledTime > _feedItems[i].until)
                 {
-                    if (_feedItems[i].text != null) Object.Destroy(_feedItems[i].text.gameObject);
+                    if (_feedItems[i].go != null) Object.Destroy(_feedItems[i].go);
                     _feedItems.RemoveAt(i);
                 }
             }
@@ -326,10 +329,10 @@ namespace Kitefall.UI.Hud
             if (_feed == null) return;
             Text t = UiKit.Label(_feed, text, 24, color, TextAnchor.MiddleRight, FontStyle.Bold).Shadowed();
             t.Size(-1, 32);
-            _feedItems.Add((t, Time.unscaledTime + 5f));
+            _feedItems.Add((t.gameObject, Time.unscaledTime + 5f));
             if (_feedItems.Count > 6)
             {
-                Object.Destroy(_feedItems[0].text.gameObject);
+                if (_feedItems[0].go != null) Object.Destroy(_feedItems[0].go);
                 _feedItems.RemoveAt(0);
             }
         }

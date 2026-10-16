@@ -40,7 +40,7 @@ namespace Kitefall.Services
             ShareText(text);
         }
 
-        private static void ShareText(string text)
+        public static void ShareText(string text)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             try

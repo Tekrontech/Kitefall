@@ -34,6 +34,8 @@ namespace Kitefall.Online
         private bool _startNow;
 
         public string Status { get; private set; } = "";
+        /// <summary>Party match (upgrade F2): the host starts once this many players are connected (0 = off).</summary>
+        public int AutoStartAt;
 
         public SessionMatchmaker(OnlineConfig config) => _config = config;
 
@@ -196,6 +198,7 @@ namespace Kitefall.Online
                 Status = $"{hellos.Count}/{max} players · {(int)waited}s" + (rules.ranked ? "" : $" · bots join after {mm.botFillAfter:0}s");
                 if (hellos.Count >= max) break;
                 if (_startNow) break;
+                if (AutoStartAt > 0 && hellos.Count >= AutoStartAt) { AutoStartAt = 0; break; }
                 if (!_private && MatchmakingRules.ShouldFillWithBots(rules, waited, mm)) break;
                 waited += Time.unscaledDeltaTime;
                 yield return null;
@@ -214,6 +217,8 @@ namespace Kitefall.Online
                 setup.Rules.durabilityLoss = false;
             }
             if (req.MatchMinutes > 0 && !setup.Rules.IsDuel) setup.Rules.matchTime = req.MatchMinutes * 60f;
+            NetMsg.ApplyUpgrade(setup);
+            setup.FixedRoofs = req.Mode == GameMode.PrivateRoom && req.FixedRoofs;
             int index = 0;
             foreach (HelloDto h in hellos)
             {
@@ -223,6 +228,7 @@ namespace Kitefall.Online
                     team = setup.Rules.teamCount > 1 ? index % setup.Rules.teamCount : 0,
                     captain = setup.Rules.teamCount > 1 && index < setup.Rules.teamCount
                 };
+                NetMsg.ApplyCosmetics(ps, h);
                 // Stats are rebuilt from item ids on the host – a client cannot send boosted numbers.
                 foreach (ParticipantLoadout l in h.stack)
                 {
@@ -237,6 +243,7 @@ namespace Kitefall.Online
                 setup.Participants.Add(ps);
                 index++;
             }
+            MatchFactory.AssignPartyTeams(setup);
             int target = req.Players > 0 ? req.Players : setup.Rules.mode == GameMode.LastKiteFlying ? 12 : setup.Rules.maxPlayers;
             if (setup.Rules.IsDuel) target = 2;
             MatchFactory.FillWithBots(setup, target, BotDifficulty.Medium, hellos[0].stack.Count > 0 ? hellos[0].stack[0].dorId : "sooti");
@@ -252,7 +259,7 @@ namespace Kitefall.Online
 
         private static void SendStart(ulong client, MatchSetup setup)
         {
-            var dto = new StartDto { rules = setup.Rules, arena = (int)setup.Arena, seed = setup.Seed, timeOfDay = setup.TimeOfDay01, participants = setup.Participants };
+            StartDto dto = StartDto.From(setup);
             NetMsg.Send(NetMsg.Start, client, NetCodec.Utf8(JsonUtility.ToJson(dto)), NetworkDelivery.ReliableFragmentedSequenced);
         }
 

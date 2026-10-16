@@ -1,7 +1,7 @@
 # Milestones (spec section 16)
 
 Verification levels used below:
-- **Tested** – covered by unit tests in `Assets/Tests/EditMode` (159 tests, all passing with `dotnet test Tools/CoreTests`), plus bot-vs-bot match simulations.
+- **Tested** – covered by unit tests in `Assets/Tests/EditMode` (202 tests, all passing with `dotnet test Tools/CoreTests`), plus bot-vs-bot match simulations.
 - **Compiled** – Unity code compile-checked against Unity reference assemblies and stubs of uGUI / Input System; not yet run inside the Unity editor.
 - **Stub-compiled** – written from the package docs and compile-checked against hand-written API stubs only.
 - **Package-compiled** – compiled against the real NuGet packages.
@@ -24,6 +24,32 @@ Verification levels used below:
 | 12 | Home, Hangar, Workshop, tuning, Settings | Every screen of spec 4, onboarding flow 3.1, tutorial, daily login, missions, inbox, friends, profile | `UI/Screens/*`, `App/AppFlow`, `App/TutorialDirector` | Compiled (rules Tested) |
 | 13 | Matchmaking, Ranked, quit penalty | Region + tier rules, widening, bot fill, ranked unlock, rank points, streaks, quit penalty & bans, ranked queue | `Core/Meta/RankRules`, `MatchmakingRules`, `Online/SessionMatchmaker` | Tested / Stub-compiled |
 | 14 | Ads, Shop, Season Pass, clip share | Ads policy 13.x, LevelPlay provider, IAP v5 provider, cosmetic shop, 50-level pass, rewarded placements, share (screenshot + text) | `Core/Meta/AdsPolicy`, `Catalog`, `Online/LevelPlayAdsProvider`, `Online/UnityIapProvider`, `Services/ShareService` | Tested (policy) / Stub-compiled (SDKs) |
+
+## Upgrade v1.4 – milestones 15–28 (`docs/KITEFALL_UPGRADE_SPEC.md`)
+
+> The upgrade spec asks for one milestone at a time with a test in Unity after each. You asked for the whole upgrade, so all of it is in the code now – **test it in the order below** (docs/UPGRADE_TEST_GUIDE.md) and commit after each step that works.
+
+| # | Milestone | What was built | Main files | Verified |
+|---|---|---|---|---|
+| 15 | Real online smoke test | Checklist for 2 Android phones + fixes that are possible without devices (commands in inputs, setup flags in the start message, snapshot v2) | `docs/ONLINE_SMOKE_TEST.md`, `Online/NetworkMatch` | **Needs your 2 phones** (codec Tested) |
+| 16 | W1 characters | Code-generated humanoids (body, face, hair, garments, shoes, accessories, charkhi), procedural animation with two-bone IK, line starts at the left hand (≤ 1.5 m visual offset), name tags, fallback flyer, GPU-skinned bake | `Match/Characters/*`, `Match/KiteView`, `Match/MatchPresenter` | Compiled |
+| 17 | W2 shoulder camera | `CameraMode.Shoulder` (behind-right, kite upper-right), FOV widening to 70°, auto KiteCam on approach/contest and back 1.5 s later, settings Auto / Shoulder only / Kite only, HUD camera button (10 s) | `Match/MatchCamera`, `Match/MatchPresenter`, `Services/SettingsService` | Compiled |
+| 18 | F1 characters & outfits | 10 characters, 12 outfits, 12 accessories (4 slots), 12 emotes as data; server-checked equip/buy; Wardrobe with 3D turntable + try-on; Home shows your character flying the kite; Shop ▸ Outfits | `Core/Meta/CharacterCatalog`, `Core/Economy/*`, `UI/Screens/UpgradeScreens`, `Match/Showroom` | Tested (rules) / Compiled (UI) |
+| 19 | F4 kill feed + F5 spectate | Feed rows with avatars, attack + dor icons, own/team/enemy colours, 5 rows × 5 s, Double/Triple cut banners; spectate the player who cut you, ◀ ▶, teammates first, reactions, LKF "Leave (keep rewards)" | `Core/Match/FeedEntry`, `Core/Match/SpectateRules`, `UI/Hud/MatchHudScreen.Upgrade` | Tested (rules) / Compiled (UI) |
+| 20 | F6 emotes | Emote wheel (hold-drag-release or tap), 8 slots set in the Wardrobe, 3 s cooldown + 10/min, never during an active contest, upper body only while flying, auto win/lose emotes; network via the input command channel | `Core/Meta/SocialRules`, `Core/Match/MatchSimulation.Upgrade`, `Match/Characters/CharacterView` | Tested (rules) / Compiled |
+| 21 | F8 training ground | `GameMode.Training`: every item unlocked, target dummies (static/slow/fast at 3 heights), sparring bots, wind/gust/phase controls, practice overlay (sweet zone %, last contest factors), no rewards | `Core/Match/MatchFactory.TrainingSetup`, `UI/Screens/UpgradeScreens`, HUD training panel | Tested (rules) / Compiled |
+| 22 | F2 squad lobby | Party of 4 (leader, ready ticks, mode, PLAY), code / share link, party = same team in Team Battle, duels need party of 1; offline local party, online Multiplayer Services session | `Services/PartyService`, `Core/Meta/PartyRules`, `Online/OnlinePartyService`, `UI/Screens/UpgradeScreens` | Tested (rules) / Stub-compiled (online) |
+| 23 | Movement + roof graph | Roof network per arena (connected, ≤ 18 m links, 2.5 roofs/player, mirror for duels), planks / rope bridges / ladders / stairs / jumps, server-timed traversal, walking with guard rails | `Core/Arena/RoofGraph`, `Core/Arena/WaitingArea`, `Match/PropFactory`, `Match/ArenaBuilder` | Tested |
+| 24 | F3 warmup rooftop | Waiting plaza (3–5 roofs + bridges, dummy kites, flags, lights), walking + emotes + quick chat, "Match starts in 0:12 · 7/8", no dor/kite used | `Core/Match/MatchSimulation.Upgrade`, `ArenaBuilder.BuildWaitingArea` | Tested (sim) / Compiled |
+| 25 | F9 roof choice + hopping | RoofSelect phase (15 s / 8 s duels) with map, traits on tap, first claim wins, auto-assign; mirrored pairs for duels; pack up → move → short prep; 25 s grounded rule; traits High/Sheltered/Upwind/Crate spot/Edge/Cables; bot roof decisions | `Core/Arena/RoofClaims`, `MatchSimulation.Upgrade`, HUD roof map + hop panel | Tested (sim); trait balance see D51 |
+| 26 | F10 launch ritual | Pick kite → kanni (timing ring) → tie line → toss (hold/release, NPC or teammate helper) → tunke (rhythm) → climb; short prep 8–12 s; cable snag + untangle; auto-prep; results drive start height (cap +20 m) and kanni drift | `Core/Match/LaunchPrepController`, `Match/Characters/HelperNpc`, HUD prep widgets | Tested (rules, ≤ 25 s / ≤ 12 s) / Compiled |
+| 27 | F7 quick chat + voice | 8 presets with icons (team only in Team Battle, 1 per 2 s, setting to hide), bubbles over characters; Vivox party + team channels, push-to-talk, under-13 off | `Core/Meta/SocialRules`, `Online/VivoxVoiceService`, HUD | Tested (rules) / Stub-compiled (Vivox) |
+| 28 | Graphics pass | Gradient sky + clouds, kite paper shader, procedural textures, modelled houses / roofs / props, static batching, skinned characters, URP post-processing by tier, character detail LOD | `Shaders/*`, `Match/PropFactory`, `Match/ProceduralTextures`, `Graphics/UrpGraphics` | Compiled – **must be profiled on a low-end phone** |
+
+### Still open after the upgrade
+- Milestone 15 needs two real phones; 22, 24 (online), 27 must be tested with 2–4 devices.
+- Upwind roof balance (D51), online warmup during room fill (D48), practice kite in warmup (D49), teamwork XP (D54).
+- Performance targets (≤ 150 draw calls, 60 FPS mid-range, 30 FPS on 3 GB) need the Unity Profiler on a device.
 
 ## What still needs you (cannot be done from code alone)
 1. Open the project in Unity 6 and fix anything the real editor reports (see SETUP.md).

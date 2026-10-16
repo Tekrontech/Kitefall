@@ -106,10 +106,53 @@ namespace Kitefall.Core
             for (int i = start; i < targetCount; i++)
             {
                 BuildIds build = BotBuilds.ForBot(difficulty, playerDorId, rng);
-                int team = setup.Rules.teamCount > 1 ? i % setup.Rules.teamCount : 0;
+                int team = setup.Rules.teamCount > 1 ? SmallestTeam(setup, i % setup.Rules.teamCount) : 0;
                 ParticipantSetup bot = Bot(i, difficulty, build, team, setup.Seed);
                 if (setup.Rules.teamCount > 1 && i < setup.Rules.teamCount) bot.captain = true;
                 setup.Participants.Add(bot);
+            }
+        }
+
+        private static int SmallestTeam(MatchSetup setup, int preferred)
+        {
+            var counts = new int[setup.Rules.teamCount];
+            foreach (ParticipantSetup p in setup.Participants) if (p.team >= 0 && p.team < counts.Length) counts[p.team]++;
+            int best = preferred;
+            for (int t = 0; t < counts.Length; t++) if (counts[t] < counts[best]) best = t;
+            return best;
+        }
+
+        /// <summary>
+        /// Team Battle with parties (upgrade F2): every party plays on one team (largest parties placed first on the
+        /// smaller team), solo players fill the rest. Other modes: nothing changes.
+        /// </summary>
+        public static void AssignPartyTeams(MatchSetup setup)
+        {
+            int teams = setup.Rules.teamCount;
+            if (teams <= 1) return;
+            var groups = new List<List<ParticipantSetup>>();
+            var byParty = new Dictionary<string, List<ParticipantSetup>>();
+            foreach (ParticipantSetup p in setup.Participants)
+            {
+                if (p.isBot) continue;
+                if (string.IsNullOrEmpty(p.partyId)) { groups.Add(new List<ParticipantSetup> { p }); continue; }
+                if (!byParty.TryGetValue(p.partyId, out List<ParticipantSetup> g)) { g = new List<ParticipantSetup>(); byParty[p.partyId] = g; groups.Add(g); }
+                g.Add(p);
+            }
+            groups.Sort((a, b) => b.Count.CompareTo(a.Count));
+            var size = new int[teams];
+            foreach (List<ParticipantSetup> g in groups)
+            {
+                int t = 0;
+                for (int k = 1; k < teams; k++) if (size[k] < size[t]) t = k;
+                foreach (ParticipantSetup p in g) p.team = t;
+                size[t] += g.Count;
+            }
+            var captains = new bool[teams];
+            foreach (ParticipantSetup p in setup.Participants)
+            {
+                p.captain = !captains[p.team];
+                captains[p.team] = true;
             }
         }
 

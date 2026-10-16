@@ -42,7 +42,7 @@ Open `Assets/Scenes/Main.unity` ▸ **Play**. Set the Game view to a landscape s
 Offline mode saves your profile to a file on this computer (Settings ▸ Account ▸ Delete local save to start over).
 
 ## 7. Tests
-**Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All** → 159 green tests.
+**Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All** → 202 green tests.
 Without Unity (needs the .NET 8 SDK): `dotnet test Tools/CoreTests`.
 
 ## 8. Android phone

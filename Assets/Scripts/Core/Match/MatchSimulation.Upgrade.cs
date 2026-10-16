@@ -11,6 +11,8 @@ namespace Kitefall.Core
     public sealed partial class MatchSimulation
     {
         public RoofClaims Claims { get; private set; }
+        /// <summary>Finished contests so far (training practice overlay, analytics).</summary>
+        public IReadOnlyList<ContestSummary> ContestHistory => _contestHistory;
         public WaitingArea WaitingArea => Arena.Waiting;
         public bool UsesRoofs => Arena.Roofs != null;
         /// <summary>Roof hopping allowed in this match.</summary>

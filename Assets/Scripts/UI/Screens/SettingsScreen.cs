@@ -38,6 +38,8 @@ namespace Kitefall.UI.Screens
                     Step(col, "Camera distance", d.cameraDistance, 8f, 30f, 1f, v => d.cameraDistance = v, "0 m");
                     Step(col, "Camera follow", d.cameraFollow, 0f, 1f, 0.1f, v => d.cameraFollow = v, "0.0");
                     UiKit.Toggle(col, "Camera shake", d.cameraShake, v => { d.cameraShake = v; Save(); });
+                    UiKit.Choice(col, "Camera style", new[] { "Auto", "Shoulder only", "Kite only" }, (int)d.cameraStyle, i => { d.cameraStyle = (CameraStyle)i; Save(); });
+                    UiKit.Label(col, "Auto: behind your character while flying, kite camera during a cross. HUD camera button = 10 s manual look.", 22, Theme.TextDim).Size(-1, 60);
                     break;
                 case 2:
                     UiKit.Choice(col, "Quality", new[] { "Auto", "Low", "Medium", "High" }, (int)d.quality, i => { d.quality = (GraphicsQuality)i; Save(); });
@@ -55,6 +57,16 @@ namespace Kitefall.UI.Screens
                     UiKit.Choice(col, "Contest meter", new[] { "Bar", "Bar + numbers" }, d.contestMeterStyle, i => { d.contestMeterStyle = i; Save(); });
                     UiKit.Toggle(col, "Sweet-zone highlight", d.sweetZoneHighlight, v => { d.sweetZoneHighlight = v; Save(); });
                     UiKit.Toggle(col, "Colour-blind mode", d.colorBlind, v => { d.colorBlind = v; Save(); });
+                    UiKit.Toggle(col, "Auto-prep (launch ritual plays itself, 'Good' results)", d.autoPrep, v => { d.autoPrep = v; Save(); _ = Game.Backend.RunAsync(EconomyCommands.SetAutoPrep, v ? "1" : "0"); });
+                    UiKit.Toggle(col, "Auto win / lose emotes", d.autoEmotes, v => { d.autoEmotes = v; Save(); });
+                    UiKit.Toggle(col, "Show quick chat from others", d.quickChat, v => { d.quickChat = v; Save(); });
+                    if (Game.Profile == null || !Game.Profile.under13)
+                    {
+                        UiKit.Toggle(col, "Voice: push-to-talk (off = open mic)", d.voicePushToTalk, v => { d.voicePushToTalk = v; Save(); });
+                        UiKit.Toggle(col, "Voice: speaker on", d.voiceSpeaker, v => { d.voiceSpeaker = v; Save(); VoiceRegistry.SetSpeaker?.Invoke(v); });
+                        UiKit.Toggle(col, "Voice: mute all strangers", d.muteStrangers, v => { d.muteStrangers = v; Save(); });
+                    }
+                    else UiKit.Label(col, "Voice chat is off for players under 13.", 22, Theme.TextDim).Size(-1, 40);
                     UiKit.Button(col, "Replay tutorial", () => { UI.ClearStack(); Game.Flow.StartTutorial(); }, Theme.PanelLight, 24).Size(-1, 70);
                     break;
                 default:

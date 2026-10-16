@@ -54,6 +54,22 @@ namespace Kitefall.Match
             _localInput = input;
         }
 
+        private PlayerCommand _command;
+        private int _commandArg;
+        private byte _commandSeq;
+        private bool _commandPending;
+
+        public void SendCommand(PlayerCommand command, int arg)
+        {
+            _command = command;
+            _commandArg = arg;
+            _commandSeq++;
+            _commandPending = true;
+        }
+
+        /// <summary>Training panel: change wind / bots live (offline only).</summary>
+        public TrainingOptions Training => _sim.Setup.Training;
+
         /// <summary>Online host: latest input received from a remote player.</summary>
         public void SetRemoteInput(int index, KiteInput input)
         {
@@ -83,6 +99,7 @@ namespace Kitefall.Match
                 KiteInput li = _localInput;
                 li.DiveHeld = li.DiveHeld || _diveLatch;
                 _diveLatch = false;
+                if (_commandPending) { li.Command = _command; li.CommandArg = (short)_commandArg; li.CommandSeq = _commandSeq; _commandPending = false; }
                 _inputs[LocalIndex] = li;
             }
             for (int i = 0; i < _inputs.Length; i++)

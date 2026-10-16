@@ -92,6 +92,17 @@ Dashboard ▸ Leaderboards ▸ create **`ranked`** (sort: descending, update: ke
 ```
 (The module uses the code defaults; load the same JSON there if you want the server economy to follow it.)
 
+## 11. Squad / party (upgrade F2)
+- Uses the same Multiplayer Services package – nothing extra to install. Home ▸ Squad ▸ Create party gives a 6-letter code.
+- PLAY (leader) opens a private match for the chosen mode; members join it automatically; empty seats get labelled bots (D50).
+- Verify with 2–4 phones (docs/ONLINE_SMOKE_TEST.md). If joining fails, send me the exact error.
+
+## 12. Voice chat (Unity Vivox, upgrade F7)
+1. Dashboard ▸ Vivox ▸ enable it for the project (check the current pricing / free tier first).
+2. Package Manager ▸ add `com.unity.services.vivox` (≥ 16). The define `KITEFALL_VIVOX` switches the voice code on.
+3. Android: Player Settings ▸ the microphone permission is requested the first time the player taps the mic button.
+4. Channels: party (lobby + match) and team (Team Battle only). Strangers are never heard. Players under 13: no voice.
+
 ## Troubleshooting
 | Problem | What to do |
 |---|---|

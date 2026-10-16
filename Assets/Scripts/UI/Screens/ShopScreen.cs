@@ -13,7 +13,7 @@ namespace Kitefall.UI.Screens
     {
         public override string Title => "Shop";
         private static int _tab;
-        private static readonly string[] Tabs = { "Featured", "Kite skins", "Dum effects", "Cut effects", "Dor skins", "Charkhi skins", "Gems & No-ads" };
+        private static readonly string[] Tabs = { "Featured", "Outfits", "Kite skins", "Dum effects", "Cut effects", "Dor skins", "Charkhi skins", "Gems & No-ads" };
 
         protected override void BuildContent(RectTransform content)
         {
@@ -25,15 +25,21 @@ namespace Kitefall.UI.Screens
             host.Band(Vector2.zero, Vector2.one, Vector2.zero, new Vector2(0, -90));
             UiKit.Scroll(host, out RectTransform list).GetComponent<RectTransform>().Stretch();
 
-            if (_tab == 6) { Gems(list, p); return; }
+            if (_tab == 7) { Gems(list, p); return; }
             List<CosmeticItem> items;
             switch (_tab)
             {
                 case 0: items = Catalog.FeaturedFor(EconomyService.Day(Game.Now)); break;
-                case 1: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.KiteSkin && !c.passOnly); break;
-                case 2: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.DumEffect); break;
-                case 3: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.CutEffect); break;
-                case 4: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.DorSkin); break;
+                case 1:
+                    // Characters, outfits, accessories and emotes (upgrade F1) – try them on in the Wardrobe.
+                    items = Catalog.Cosmetics.FindAll(c => (c.type == CosmeticType.Character || c.type == CosmeticType.Outfit || c.type == CosmeticType.Accessory || c.type == CosmeticType.Emote)
+                                                           && !c.passOnly && (c.gemPrice > 0 || c.coinPrice > 0));
+                    UiKit.Button(list, "Open the Wardrobe to try outfits on your character", () => UI.Push(new WardrobeScreen()), Theme.Accent2, 24).Size(-1, 70);
+                    break;
+                case 2: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.KiteSkin && !c.passOnly); break;
+                case 3: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.DumEffect); break;
+                case 4: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.CutEffect); break;
+                case 5: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.DorSkin); break;
                 default: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.CharkhiSkin); break;
             }
             RectTransform grid = UiKit.Grid(list, new Vector2(400, 300), new Vector2(16, 16), 4);

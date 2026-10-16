@@ -23,6 +23,9 @@ namespace Kitefall.Match
         IReadOnlyList<RoundRecord> Rounds { get; }
 
         void SetLocalInput(KiteInput input);
+        /// <summary>One-shot command (roof claim, pack up, traverse, launch here, emote, quick chat, help launch).
+        /// Sent inside the next inputs with a sequence number; the server checks and runs it once.</summary>
+        void SendCommand(PlayerCommand command, int arg);
         void Update(float deltaTime);
         /// <summary>Events since the last call.</summary>
         List<MatchEvent> DrainEvents();

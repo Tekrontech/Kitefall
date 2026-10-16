@@ -223,6 +223,12 @@ namespace Kitefall.Core
         {
             if (IsOver) return;
             MatchParticipant p = _participants[index];
+            if (p.Eliminated && !Rules.IsDuel && !Rules.respawn)
+            {
+                // Already out of Last Kite Flying: leaving keeps the placement and rewards (upgrade F5).
+                p.Connected = false;
+                return;
+            }
             p.Quit = true;
             p.Result.Quit = true;
             p.Eliminated = true;

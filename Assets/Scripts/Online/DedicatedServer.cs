@@ -88,9 +88,11 @@ namespace Kitefall.Online
 
             MatchSetup setup = MatchFactory.NewSetup(_mode, _arena, _seed);
             Game.Db.Configure(setup);
+            NetMsg.ApplyUpgrade(setup);
             foreach (var (client, h) in _hellos)
             {
                 var ps = new ParticipantSetup { playerId = h.playerId, displayName = h.displayName, country = h.country, rankPoints = h.rankPoints };
+                NetMsg.ApplyCosmetics(ps, h);
                 // TODO(hosting): load the real profile from Cloud Save with the service account instead of trusting the hello.
                 foreach (ParticipantLoadout l in h.stack)
                 {
@@ -117,7 +119,7 @@ namespace Kitefall.Online
         private void SendStart(ulong client)
         {
             MatchSetup s = _session.Setup;
-            var dto = new StartDto { rules = s.Rules, arena = (int)s.Arena, seed = s.Seed, timeOfDay = s.TimeOfDay01, participants = s.Participants };
+            StartDto dto = StartDto.From(s);
             NetMsg.Send(NetMsg.Start, client, NetCodec.Utf8(JsonUtility.ToJson(dto)), NetworkDelivery.ReliableFragmentedSequenced);
         }
 

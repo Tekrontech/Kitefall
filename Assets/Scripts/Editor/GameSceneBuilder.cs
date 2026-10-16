@@ -128,7 +128,8 @@ namespace Kitefall.EditorTools
             {
                 if (m.HasProperty("_Surface")) { m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 2f); m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); m.renderQueue = 3000; }
             });
-            db.skyboxTemplate = Template("Sky", Shader.Find("Skybox/Procedural"), null);
+            db.skyboxTemplate = Template("Sky", Shader.Find("Kitefall/GradientSky") ?? Shader.Find("Skybox/Procedural"), null);
+            db.kitePaperTemplate = Template("KitePaper", Shader.Find("Kitefall/KitePaper"), null);
             EditorUtility.SetDirty(db);
             AssetDatabase.SaveAssets();
             return db;

@@ -49,3 +49,15 @@ All UI is created from code (`UI/UiKit`), so there are no prefabs to wire. Scree
 
 ## Coordinates
 World +Y up, ground y = 0, downwind ≈ +Z. Wind direction = where the wind blows **to**, degrees clockwise from +Z. Kites live at (azimuth, elevation, radius) around their flyer's hands; heading 0 = up, +90 = right.
+
+## Upgrade v1.4 additions
+- **Core (pure C#, tested):** `Arena/RoofGraph` (roof network + traits), `Arena/RoofClaims` (selection rules), `Arena/WaitingArea` (+ `CharacterMotion`),
+  `Match/LaunchPrepController` (ritual state machine), `Match/MatchSimulation.Upgrade` (Warmup / RoofSelect / Prep phases, pack-up, traversal,
+  commands, trait effects, training wind), `Match/FeedEntry`, `Match/SpectateRules`, `Meta/CharacterCatalog`, `Meta/SocialRules`, `Meta/PartyRules`.
+- **Player commands** ride inside `KiteInput` (`Command`, `CommandArg`, `CommandSeq`) so no new network message is needed; the host runs each sequence number once.
+- **Snapshot v2** carries the character state (position, yaw, speed, flyer state, prep step + timestamps, traversal progress) – clients animate from it.
+- **Views:** `Match/Characters/*` (generated humanoid, procedural IK animation, GPU-skinned bake, NPC helper), `Match/PropFactory`, `Match/ProceduralTextures`,
+  `Shaders/*`, `Graphics/UrpGraphics` (optional assembly, URP only).
+- **UI:** `UI/Hud/MatchHudScreen.Upgrade` (feed rows, prep widgets, roof map, hop panel, spectate, emote wheel, quick chat, training panel), `UI/Screens/UpgradeScreens`
+  (Wardrobe, Squad lobby, Training), `UI/Icons` (vector icons drawn in code).
+- **Services:** `PartyService` (local + `Online/OnlinePartyService`), `VoiceRegistry` (+ `Online/VivoxVoiceService`), `KitefallGraphics`.

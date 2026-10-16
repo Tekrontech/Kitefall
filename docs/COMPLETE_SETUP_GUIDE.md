@@ -178,7 +178,7 @@ Offline mein saare modes **bots** ke saath chalte hain – koi internet nahi cha
 ---
 
 ## 8. Tests chalana
-**Unity ke andar:** Window ▸ General ▸ **Test Runner** ▸ **EditMode** tab ▸ **Run All** → 159 tests hare (green) hone chahiyein.
+**Unity ke andar:** Window ▸ General ▸ **Test Runner** ▸ **EditMode** tab ▸ **Run All** → 202 tests hare (green) hone chahiyein.
 
 **Unity ke baghair** (developer ke liye, .NET 8 SDK chahiye – dotnet.microsoft.com):
 ```bash
@@ -448,7 +448,7 @@ Badal kar Services ▸ Deployment se deploy karein, ya cloud.unity.com ▸ Remot
 ## 19. Kya test hua hai aur kya nahi
 | Hissa | Status |
 |---|---|
-| Core game rules (udaan, tension, pench, economy, bots, modes) | ✅ 159 automated tests pass |
+| Core game rules (udaan, tension, pench, economy, bots, modes) | ✅ 202 automated tests pass |
 | Saara Unity code | ✅ Unity ki DLLs ke against compile hua – ❗ lekin asli Unity Editor mein abhi chala kar nahi dekha |
 | Cloud Code server module | ✅ asli Cloud Code packages ke saath build hua – deploy nahi hua (aap ka account chahiye) |
 | Online code (login, multiplayer, ads, IAP) | ⚠️ sirf nakli (stub) libraries ke saath compile – asli packages lagne par chhote fixes ho sakte hain |
@@ -456,3 +456,27 @@ Badal kar Services ▸ Deployment se deploy karein, ya cloud.unity.com ▸ Remot
 Pehli dafa kholne par koi error aaye to ghabrayein nahi – error ka text bhejein, main theek kar doonga.
 
 Mazeed English docs: [`SETUP.md`](SETUP.md), [`ONLINE_SETUP.md`](ONLINE_SETUP.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), [`TESTING.md`](TESTING.md), [`MILESTONES.md`](MILESTONES.md), [`DECISIONS.md`](DECISIONS.md).
+
+---
+
+## 20. Upgrade v1.4 – naye features (characters, rooftops, launch ritual, squad)
+Naya code lene ke baad Unity mein **Kitefall ▸ Build Game Scene (complete game)** dobara chalayein (naya sky aur kite-paper material GameDatabase mein judta hai). Phir ▶ Play.
+
+| Feature | Kahan / kaise test karein |
+|---|---|
+| Insani characters (W1) | Home par aap ka character rooftop par patang uda raha hai; dor **baayen haath** se nikalti hai |
+| Shoulder camera (W2) | Flight mein camera character ke peeche-daayen; cross par kite camera; upar-baayen camera button = 10 s |
+| Wardrobe (F1) | Home ▸ **Wardrobe** – character, outfit, accessories, emotes; swatch tap = try-on |
+| Kill feed + spectate (F4, F5) | FFA mein cut ki rows icons ke saath; cut hone par cutter ko spectate, ◀ ▶ |
+| Emotes (F6) | Daayen kinare emote button: daba kar ghumayein aur chhor dein |
+| Training (F8) | Home ▸ **Training** – sab items unlocked, dummies, hawa ke controls |
+| Squad (F2) | Home ▸ **Squad** ▸ Create party – code share karein (online 2–4 phones) |
+| Warmup plaza (F3) | FFA ke shuru mein 10 s plaza par chalein, emote/chat karein |
+| Roof choice + hopping (F9) | Map par roof tap karein; round mein **ROOF** button → pack up → plank/ladder se doosri roof → LAUNCH HERE |
+| Launch ritual (F10) | TAP! (kanni) → HOLD · LET GO (toss) → TUG! → DHEEL; Settings ▸ Auto-prep |
+| Quick chat + voice (F7) | Chat button (8 messages); voice ke liye Vivox package (ONLINE_SETUP ▸ 12) |
+| Graphics (28) | Naya aasman, badal, kite paper roshni, ghar/chhaton par saaman; Settings ▸ Quality |
+
+Har step ki tafseel: **[`UPGRADE_TEST_GUIDE.md`](UPGRADE_TEST_GUIDE.md)**. Online test (2 phones): **[`ONLINE_SMOKE_TEST.md`](ONLINE_SMOKE_TEST.md)**.
+
+> Sach: yeh sab code abhi asli Unity Editor / phone par chala kar nahi dekha gaya (compile + 202 tests pass). Pehli dafa koi error aaye to Console ka pehla laal error bhejein.

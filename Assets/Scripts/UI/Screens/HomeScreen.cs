@@ -64,8 +64,11 @@ namespace Kitefall.UI.Screens
 
         private void BuildLeftMenu()
         {
-            RectTransform col = UiKit.Column(Root, 14, 0);
-            col.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(24, -30), new Vector2(380, 640));
+            RectTransform col = UiKit.Column(Root, 10, 0);
+            col.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(24, -40), new Vector2(380, 760));
+            Item(col, "Wardrobe", () => UI.Push(new WardrobeScreen()));
+            Item(col, "Squad", () => UI.Push(new SquadLobbyScreen()));
+            Item(col, "Training", () => UI.Push(new TrainingScreen()));
             Item(col, "Hangar", () => UI.Push(new HangarScreen()));
             Item(col, "Workshop", () => UI.Push(new WorkshopScreen()));
             Item(col, "Shop", () => UI.Push(new ShopScreen()));
@@ -74,7 +77,7 @@ namespace Kitefall.UI.Screens
             Item(col, "Friends", () => UI.Push(new FriendsScreen()));
         }
 
-        private static void Item(Transform parent, string text, Action click) => UiKit.Button(parent, text, click, new Color(0.12f, 0.17f, 0.28f, 0.92f), 32).Size(-1, 92);
+        private static void Item(Transform parent, string text, Action click) => UiKit.Button(parent, text, click, new Color(0.12f, 0.17f, 0.28f, 0.92f), 30).Size(-1, 74);
 
         private void BuildMissions(PlayerProfile p)
         {

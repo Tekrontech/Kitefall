@@ -33,6 +33,9 @@ namespace Kitefall.Online
 #if KITEFALL_NGO && KITEFALL_UGS_MULTIPLAYER
             Kitefall.Match.OnlineHooks.Matchmaker = new SessionMatchmaker(config);
 #endif
+#if KITEFALL_NGO && KITEFALL_UGS_MULTIPLAYER && KITEFALL_UGS_AUTH
+            PartyRegistry.OnlineFactory = () => new OnlinePartyService();
+#endif
         }
     }
 }

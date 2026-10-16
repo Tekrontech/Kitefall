@@ -1,5 +1,6 @@
 using Kitefall.Core;
 using Kitefall.Data;
+using Kitefall.Services;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -78,6 +79,20 @@ namespace Kitefall.Match
                         hasPole = true;
                         break;
                     }
+                    case BlockKind.House:
+                    {
+                        // Modelled houses near the flyers, cheaper boxes far away (upgrade 12: draw-call budget).
+                        Color c = houses[Mathf.Abs(b.Variant) % houses.Length];
+                        bool roof = layout.Roofs != null && layout.Roofs.RoofAt(b.Center, 0.5f) >= 0;
+                        float dist = new Vector2(b.Center.X, b.Center.Z).magnitude;
+                        PropFactory.House(root.transform, b, c, b.Variant + (int)(b.Center.X * 0.37f), dist < 200f);
+                        if (!roof)
+                        {
+                            Rooftop(root.transform, b);
+                            if (dist < 140f) PropFactory.RoofClutter(root.transform, ToUnity(b.Center), b.Size.X, b.Size.Z, b.Max.Y, (int)(b.Center.X * 13f + b.Center.Z * 7f), false);
+                        }
+                        break;
+                    }
                     default:
                     {
                         GameObject box = Prim(PrimitiveType.Cube, root.transform, b.Kind.ToString());
@@ -86,8 +101,16 @@ namespace Kitefall.Match
                         Color c = b.Kind == BlockKind.Cliff ? new Color(0.55f, 0.5f, 0.44f)
                             : b.Kind == BlockKind.Stall ? Color.HSVToRGB((b.Variant * 0.23f) % 1f, 0.55f, 0.9f)
                             : houses[Mathf.Abs(b.Variant) % houses.Length];
-                        box.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(c, 0.05f);
-                        if (b.Kind == BlockKind.House) Rooftop(box.transform, b);
+                        Texture2D tex = b.Kind == BlockKind.Cliff ? ProceduralTextures.Concrete(c) : null;
+                        box.GetComponent<MeshRenderer>().sharedMaterial = tex != null ? Materials.Lit(Color.white, 0.05f, tex, "cliff" + tex.name) : Materials.Lit(c, 0.05f);
+                        if (layout.Roofs != null && b.Kind == BlockKind.Cliff && layout.Roofs.RoofAt(b.Center, 0.5f) >= 0)
+                        {
+                            // Cliff ledges used as roofs get a flat stone cap.
+                            GameObject cap = Prim(PrimitiveType.Cube, root.transform, "LedgeCap");
+                            cap.transform.position = new Vector3(b.Center.X, b.Max.Y + 0.1f, b.Center.Z);
+                            cap.transform.localScale = new Vector3(b.Size.X + 0.4f, 0.2f, b.Size.Z + 0.4f);
+                            cap.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(new Color(0.68f, 0.64f, 0.58f), 0.1f);
+                        }
                         break;
                     }
                 }
@@ -110,21 +133,90 @@ namespace Kitefall.Match
                 mr.shadowCastingMode = ShadowCastingMode.Off;
             }
 
+            if (layout.Roofs != null) BuildRoofs(layout, root.transform);
+
             SetupSky(timeOfDay01, far);
+            // Everything here is static: combine for static batching (upgrade 12: ≤ 150 draw calls on Medium).
+            StaticBatchingUtility.Combine(root);
             return root;
         }
 
-        private static void Rooftop(Transform house, ArenaBlock b)
+        /// <summary>The rooftop network (upgrade 10.1): parapets with gaps at links, lived-in clutter, trait hints and the links.</summary>
+        private static void BuildRoofs(ArenaLayout layout, Transform parent)
         {
-            // Parapet wall: four thin boxes on the roof edge (child of world, not of the scaled box).
+            RoofGraph g = layout.Roofs;
+            var root = new GameObject("Rooftops").transform;
+            root.SetParent(parent, false);
+            Material parapet = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Plaster(new Color(0.86f, 0.82f, 0.74f)), "parapet");
+            Material floor = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Tiles(new Color(0.78f, 0.72f, 0.64f)), "rooftiles");
+            foreach (RoofNode r in g.Roofs)
+            {
+                var gaps = new System.Collections.Generic.List<Vector3>();
+                foreach (int l in r.Links)
+                {
+                    RoofLink link = g.Link(l);
+                    gaps.Add(ToUnity(link.A == r.Id ? link.PointA : link.PointB));
+                }
+                Vector3 c = ToUnity(r.Center);
+                MeshKit.Part(root, "RoofFloor", MeshKit.Box(new Vector3(r.SizeX - 0.3f, 0.06f, r.SizeZ - 0.3f)), floor, c + Vector3.up * 0.23f);
+                PropFactory.Parapets(root, r, gaps, parapet);
+                PropFactory.RoofClutter(root, c, r.SizeX, r.SizeZ, r.Height + 0.25f, r.Id * 31 + layout.Seed, true);
+                if (r.Has(RoofTrait.High)) PropFactory.Flag(root, c + new Vector3(r.SizeX * 0.5f - 0.6f, 0.25f, r.SizeZ * 0.5f - 0.6f), new Color(0.95f, 0.75f, 0.2f));
+                if (r.Has(RoofTrait.CrateSpot))
+                    MeshKit.Part(root, "CrateMark", MeshKit.Cached("cratemark", () => MeshKit.Torus(1.6f, 0.08f, 28, 4)), Materials.Lit(new Color(1f, 0.6f, 0.15f), 0.3f), c + new Vector3(0f, 0.28f, 2.2f));
+                if (r.Has(RoofTrait.Cables))
+                {
+                    Vector3 a = c + new Vector3(-r.SizeX * 0.6f, 4.2f, -r.SizeZ * 0.3f), b = c + new Vector3(r.SizeX * 0.6f, 4.6f, r.SizeZ * 0.4f);
+                    Cable(root, a, b);
+                    Cable(root, a + Vector3.up * 0.4f, b + Vector3.up * 0.3f);
+                    MeshKit.Part(root, "CablePole", MeshKit.Cached("cablepole", () => MeshKit.Cylinder(0.12f, 5f, 8)), Materials.Lit(new Color(0.3f, 0.3f, 0.32f), 0.4f), a - Vector3.up * 2.2f);
+                }
+            }
+            foreach (RoofLink link in g.Links) PropFactory.Link(root, link, g);
+        }
+
+        /// <summary>The waiting plaza (upgrade F3): decks joined by bridges, dummy kites on poles, flags and festival lights.</summary>
+        public static GameObject BuildWaitingArea(WaitingArea area, ArenaType type, Transform parent)
+        {
+            var root = new GameObject("WaitingPlaza");
+            root.transform.SetParent(parent, false);
+            var rng = new DeterministicRandom(17);
+            Material deck = Materials.Lit(Color.white, 0.15f, ProceduralTextures.Wood(new Color(0.62f, 0.44f, 0.28f)), "deck");
+            Material walls = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Plaster(new Color(0.92f, 0.86f, 0.74f)), "plazawall");
+            foreach (WalkRect r in area.Surfaces)
+            {
+                Vector3 c = ToUnity(r.Center);
+                if (r.IsBridge)
+                {
+                    MeshKit.Part(root.transform, "Bridge", MeshKit.Box(new Vector3(r.SizeX, 0.15f, r.SizeZ)), deck, c - Vector3.up * 0.07f);
+                    continue;
+                }
+                MeshKit.Part(root.transform, "PlazaBuilding", MeshKit.Box(new Vector3(r.SizeX, c.y, r.SizeZ)), walls, new Vector3(c.x, c.y * 0.5f - 0.15f, c.z));
+                MeshKit.Part(root.transform, "Deck", MeshKit.Box(new Vector3(r.SizeX, 0.15f, r.SizeZ)), deck, c - Vector3.up * 0.07f);
+            }
+            for (int i = 0; i < area.DummyPoles.Count; i++) PropFactory.DummyPole(root.transform, ToUnity(area.DummyPoles[i]), Color.HSVToRGB(i * 0.2f % 1f, 0.7f, 0.95f));
+            for (int i = 0; i < area.Flags.Count; i++)
+            {
+                PropFactory.Flag(root.transform, ToUnity(area.Flags[i]), Color.HSVToRGB(rng.NextFloat(), 0.75f, 0.95f));
+                if (i + 1 < area.Flags.Count) PropFactory.FairyLights(root.transform, ToUnity(area.Flags[i]) + Vector3.up * 3.7f, ToUnity(area.Flags[i + 1]) + Vector3.up * 3.7f, rng);
+            }
+            foreach (WalkRect r in area.Surfaces)
+                if (!r.IsBridge && rng.Chance(0.6f)) PropFactory.Charpai(root.transform, ToUnity(r.Center) + new Vector3(r.SizeX * 0.3f, 0f, r.SizeZ * 0.3f), rng.Range(0f, 90f));
+            StaticBatchingUtility.Combine(root);
+            return root;
+        }
+
+        private static void Rooftop(Transform parent, ArenaBlock b)
+        {
+            // Parapet wall: four thin boxes on the roof edge.
             Material m = Materials.Lit(new Color(0.8f, 0.76f, 0.68f));
             float y = b.Max.Y + 0.4f;
             Vector3 c = ToUnity(b.Center);
             float sx = b.Size.X, sz = b.Size.Z;
-            Wall(house.parent, new Vector3(c.x, y, b.Max.Z), new Vector3(sx, 0.8f, 0.25f), m);
-            Wall(house.parent, new Vector3(c.x, y, b.Min.Z), new Vector3(sx, 0.8f, 0.25f), m);
-            Wall(house.parent, new Vector3(b.Max.X, y, c.z), new Vector3(0.25f, 0.8f, sz), m);
-            Wall(house.parent, new Vector3(b.Min.X, y, c.z), new Vector3(0.25f, 0.8f, sz), m);
+            Wall(parent, new Vector3(c.x, y, b.Max.Z), new Vector3(sx, 0.8f, 0.25f), m);
+            Wall(parent, new Vector3(c.x, y, b.Min.Z), new Vector3(sx, 0.8f, 0.25f), m);
+            Wall(parent, new Vector3(b.Max.X, y, c.z), new Vector3(0.25f, 0.8f, sz), m);
+            Wall(parent, new Vector3(b.Min.X, y, c.z), new Vector3(0.25f, 0.8f, sz), m);
         }
 
         private static void Wall(Transform parent, Vector3 pos, Vector3 scale, Material m)
@@ -183,6 +275,13 @@ namespace Kitefall.Match
             sun.intensity = Mathf.Lerp(1.25f, 0.95f, golden);
             sun.shadows = LightShadows.Soft;
             RenderSettings.sun = sun;
+            // Globals for the kite paper shader (no pipeline dependency).
+            Shader.SetGlobalVector("_KF_SunDir", -sun.transform.forward);
+            Color sc = sun.color * sun.intensity;
+            Shader.SetGlobalVector("_KF_SunColor", new Vector4(sc.r, sc.g, sc.b, 1f));
+            Color amb = Color.Lerp(new Color(0.5f, 0.58f, 0.72f), new Color(0.62f, 0.52f, 0.5f), golden);
+            Shader.SetGlobalVector("_KF_Ambient", new Vector4(amb.r, amb.g, amb.b, 1f));
+            KitefallGraphics.ApplySunHint(sun, golden);
             DynamicGI.UpdateEnvironment();
         }
 

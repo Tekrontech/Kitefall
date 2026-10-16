@@ -21,7 +21,8 @@
         "Unity.Services.Core.Environments",
         "Unity.Services.LevelPlay",
         "Unity.Purchasing.Stores",
-        "UnityEngine.Purchasing.Stores"
+        "UnityEngine.Purchasing.Stores",
+        "Unity.Services.Vivox"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -75,6 +76,11 @@
             "name": "com.unity.purchasing",
             "expression": "5.0.0",
             "define": "KITEFALL_IAP"
+        },
+        {
+            "name": "com.unity.services.vivox",
+            "expression": "16.0.0",
+            "define": "KITEFALL_VIVOX"
         }
     ],
     "noEngineReferences": false

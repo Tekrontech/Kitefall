@@ -628,3 +628,33 @@ namespace Kitefall.Tests
         }
     }
 }
+
+namespace Kitefall.Tests
+{
+    public class PartyTeamTests
+    {
+        [Test]
+        public void TeamBattle_PartyMembersShareATeam()
+        {
+            MatchSetup setup = MatchFactory.NewSetup(GameMode.TeamBattle, ArenaType.OldCityRooftops, 1);
+            for (int i = 0; i < 5; i++)
+                setup.Participants.Add(new ParticipantSetup { playerId = "p" + i, partyId = i < 3 ? "party_A" : "", team = i % 2 });
+            MatchFactory.AssignPartyTeams(setup);
+            Assert.AreEqual(setup.Participants[0].team, setup.Participants[1].team);
+            Assert.AreEqual(setup.Participants[0].team, setup.Participants[2].team);
+            Assert.AreNotEqual(setup.Participants[0].team, setup.Participants[3].team, "solo players balance the other team");
+            setup.Rules.allowBots = true;
+            MatchFactory.FillWithBots(setup, 8, BotDifficulty.Easy, "sooti");
+            int t0 = setup.Participants.FindAll(p => p.team == 0).Count;
+            Assert.AreEqual(4, t0, "bots fill the smaller team");
+        }
+
+        [Test]
+        public void Party_DuelsNeedAPartyOfOne_CodesParse()
+        {
+            Assert.IsNotNull(PartyRules.CanQueue(GameMode.QuickDuel, 2));
+            Assert.IsNull(PartyRules.CanQueue(GameMode.TeamBattle, 4));
+            Assert.AreEqual("ABC234", PartyRules.CodeFromLink("kitefall://party/abc234"));
+        }
+    }
+}

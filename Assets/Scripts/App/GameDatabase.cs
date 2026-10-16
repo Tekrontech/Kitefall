@@ -35,6 +35,8 @@ namespace Kitefall.App
         public Material particleTemplate;
         [Tooltip("Procedural skybox material.")]
         public Material skyboxTemplate;
+        /// <summary>Kite paper/fabric material (translucency + flutter, upgrade 0.1). Optional.</summary>
+        public Material kitePaperTemplate;
 
         public KiteClassData Kite(string id) => kites.Find(k => k != null && k.id == id);
         public TailData Tail(string id) => tails.Find(k => k != null && k.id == id);
@@ -70,6 +72,9 @@ namespace Kitefall.App
                 setup.Phases = b.phases;
                 setup.Crates = b.crates;
                 setup.Line = b.line;
+                setup.Roofs = b.roofs;
+                setup.Prep = b.prep;
+                setup.WarmupMin = b.warmupMin;
             }
             ArenaData arena = Arena(setup.Arena);
             WindConfig wind = arena != null && arena.wind != null ? arena.wind : defaultWind;

@@ -20,6 +20,12 @@ namespace Kitefall.Online
         public string country;
         public int rankPoints;
         public List<ParticipantLoadout> stack = new List<ParticipantLoadout>();
+        // Upgrade v1.4 – visual only (the Cloud Code module only lets players equip what they own).
+        public string characterId;
+        public string outfitId;
+        public string[] accessories;
+        public bool autoPrep;
+        public string partyId;
     }
 
     /// <summary>Everything a client needs to build the same arena and roster as the host.</summary>
@@ -31,6 +37,35 @@ namespace Kitefall.Online
         public int seed;
         public float timeOfDay;
         public List<ParticipantSetup> participants = new List<ParticipantSetup>();
+        // Upgrade v1.4
+        public bool useRoofs;
+        public bool useRitual;
+        public bool fixedRoofs;
+        public float warmupTime;
+        public float warmupMin = 10f;
+        public RoofSettings roofs = new RoofSettings();
+        public PrepSettings prep = new PrepSettings();
+
+        public static StartDto From(MatchSetup s) => new StartDto
+        {
+            rules = s.Rules, arena = (int)s.Arena, seed = s.Seed, timeOfDay = s.TimeOfDay01, participants = s.Participants,
+            useRoofs = s.UseRoofGraph, useRitual = s.UseLaunchRitual, fixedRoofs = s.FixedRoofs, warmupTime = s.WarmupTime, warmupMin = s.WarmupMin,
+            roofs = s.Roofs, prep = s.Prep
+        };
+
+        public void ApplyTo(MatchSetup s)
+        {
+            s.Rules = rules;
+            s.TimeOfDay01 = timeOfDay;
+            s.Participants = participants;
+            s.UseRoofGraph = useRoofs;
+            s.UseLaunchRitual = useRitual;
+            s.FixedRoofs = fixedRoofs;
+            s.WarmupTime = warmupTime;
+            s.WarmupMin = warmupMin;
+            if (roofs != null) s.Roofs = roofs;
+            if (prep != null) s.Prep = prep;
+        }
     }
 
     [Serializable] public sealed class LoadoutChangeDto { public string tail; public string charkhi; }
@@ -96,10 +131,39 @@ namespace Kitefall.Online
         public static NetworkDelivery SnapshotDelivery(int bytes) =>
             bytes > 1100 ? NetworkDelivery.ReliableFragmentedSequenced : NetworkDelivery.UnreliableSequenced;
 
+        /// <summary>Host side: a clean participant from a client's hello – stats rebuilt from item ids, cosmetics checked against the catalogue.</summary>
+        public static void ApplyCosmetics(ParticipantSetup ps, HelloDto h)
+        {
+            ps.characterId = Catalog.Cosmetic(h.characterId)?.type == CosmeticType.Character ? h.characterId : CharacterCatalog.DefaultCharacter;
+            ps.outfitId = string.IsNullOrEmpty(h.outfitId) || Catalog.Cosmetic(h.outfitId)?.type == CosmeticType.Outfit ? h.outfitId ?? "" : "";
+            ps.accessories = new string[4];
+            if (h.accessories != null)
+                for (int i = 0; i < 4 && i < h.accessories.Length; i++)
+                {
+                    CosmeticItem a = Catalog.Cosmetic(h.accessories[i]);
+                    if (a != null && a.type == CosmeticType.Accessory && a.slot == i) ps.accessories[i] = a.id;
+                }
+            ps.autoPrep = h.autoPrep;
+            ps.partyId = h.partyId ?? "";
+        }
+
+        /// <summary>Upgrade v1.4 flags for an online match (rooftops, ritual, a short warmup once the room is full).</summary>
+        public static void ApplyUpgrade(MatchSetup setup)
+        {
+            setup.UseRoofGraph = true;
+            setup.UseLaunchRitual = true;
+            setup.WarmupTime = setup.Rules.warmup && !setup.Rules.ranked ? (Game.Balance != null ? Game.Balance.warmupMin : 10f) : 0f;
+        }
+
         public static HelloDto LocalHello()
         {
             PlayerProfile p = Game.Profile;
             var hello = new HelloDto { playerId = p.playerId, displayName = p.displayName, country = p.country, rankPoints = p.rankPoints };
+            hello.characterId = p.characterId;
+            hello.outfitId = p.outfitId;
+            hello.accessories = p.accessories.ToArray();
+            hello.autoPrep = (Game.Settings != null && Game.Settings.Data.autoPrep) || p.autoPrep || p.matches < 5;
+            hello.partyId = Game.Party != null ? Game.Party.PartyId : "";
             foreach (string kite in p.loadout.stack.Count > 0 ? p.loadout.stack : new List<string> { p.loadout.kite })
                 hello.stack.Add(EconomyService.BuildMatchLoadout(p, p.loadout, kite));
             return hello;
@@ -184,6 +248,7 @@ namespace Kitefall.Online
         public MatchResult Result => _inner.Result;
         public IReadOnlyList<RoundRecord> Rounds => _inner.Rounds;
         public void SetLocalInput(KiteInput input) => _inner.SetLocalInput(input);
+        public void SendCommand(PlayerCommand command, int arg) => _inner.SendCommand(command, arg);
         public void Update(float deltaTime) => _inner.Update(deltaTime);
         public List<MatchEvent> DrainEvents() => _inner.DrainEvents();
         public bool RequestLoadoutChange(string tailId, string charkhiId) => _inner.RequestLoadoutChange(tailId, charkhiId);
@@ -225,11 +290,11 @@ namespace Kitefall.Online
         {
             MatchSetup setup = MatchFactory.NewSetup(start.rules.mode, (ArenaType)start.arena, start.seed);
             Game.Db.Configure(setup);
-            setup.Rules = start.rules;
-            setup.TimeOfDay01 = start.timeOfDay;
-            setup.Participants = start.participants;
+            start.ApplyTo(setup);
             Setup = setup;
-            Arena = ArenaLayout.Generate(setup.Arena, setup.Seed, setup.Participants.Count);
+            // Same deterministic world as the host (rooftop network + waiting plaza included).
+            Arena = ArenaLayout.Generate(setup.Arena, setup.Seed, setup.Participants.Count, setup.UseRoofGraph, setup.Rules.IsDuel, setup.Roofs);
+            if (setup.UseRoofGraph && setup.WarmupTime > 0f) Arena.BuildWaitingRoof(setup.Participants.Count);
             LocalIndex = localIndex;
             _curr.Kites = new KiteSnap[setup.Participants.Count];
             _prev.Kites = new KiteSnap[setup.Participants.Count];
@@ -262,6 +327,20 @@ namespace Kitefall.Online
             _input = input;
         }
 
+        private PlayerCommand _command;
+        private int _commandArg;
+        private byte _commandSeq;
+        private int _commandRepeats;
+
+        /// <summary>Commands ride in the next 10 input packets (unreliable channel); the host runs each sequence number once.</summary>
+        public void SendCommand(PlayerCommand command, int arg)
+        {
+            _command = command;
+            _commandArg = arg;
+            _commandSeq++;
+            _commandRepeats = 10;
+        }
+
         public void Update(float deltaTime)
         {
             _sinceSnapshot += deltaTime;
@@ -271,6 +350,13 @@ namespace Kitefall.Online
             KiteInput i = _input;
             i.DiveHeld |= _diveLatch;
             _diveLatch = false;
+            if (_commandRepeats > 0)
+            {
+                _commandRepeats--;
+                i.Command = _command;
+                i.CommandArg = (short)_commandArg;
+                i.CommandSeq = _commandSeq;
+            }
             NetMsg.Send(NetMsg.Input, NetworkManager.ServerClientId, NetCodec.EncodeInput(++_tick, i), NetworkDelivery.UnreliableSequenced);
         }
 

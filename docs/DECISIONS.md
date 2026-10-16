@@ -62,8 +62,27 @@ Spec rule 17.7: *"If something is unclear, contradictory or risky, say so and as
 | D43 | Clip share | Screenshot + share sheet text. A 10-second video needs a native recorder plugin. |
 | D44 | Receipt validation | Placeholder in the module; production purchases are refused until implemented. |
 
+## Upgrade v1.4 (milestones 15–28)
+| # | Topic | Decision |
+|---|---|---|
+| D45 | Humanoid art (0.1, W1) | The spec suggests Unity's *Starter Assets* humanoid + Animation Rigging. Asset Store downloads cannot be done from code, so every character is **generated in code** (`Match/Characters/CharacterBuilder`): body, face, 8 hair styles, 6 garment styles, shoes, 12 accessories, a charkhi per type. Animation is **procedural with analytic two-bone IK** (`CharacterView`) – hands stay on the string and the charkhi, the head aims at the kite – instead of an Animator controller + clips (`Editor/CharacterAnimatorBuilder` was not needed). Parts are baked into one GPU-skinned mesh per character (~10 draw calls). If you later import Starter Assets, `CharacterView` is the only class to change. |
+| D46 | Shaders (0.1, 12) | Two original shaders: `Kitefall/GradientSky` (gradient, sun disc, animated clouds, golden hour) and `Kitefall/KitePaper` (translucency against the sun, vertex flutter). Written as plain CG so they work in URP and Built-in; light comes from globals the game sets. Shader Graph files need the editor, so textures (brick, plaster, concrete, wood, tiles) are generated in C# instead. |
+| D47 | Post-processing (12) | `Kitefall.Graphics` (only compiles when URP is installed) builds a Volume at runtime: Bloom, warm Color Adjustments, ACES, light Vignette by tier; Depth of Field on High in the wardrobe. Shadow distance / MSAA / render scale per tier. Addressables were not added – all art is procedural, so the install stays small without them. |
+| D48 | Online warmup (F3) | The match roster is fixed when the match starts, so the online warmup runs for 10 s **after** the room is full (players wait in the matchmaking screen before that). Offline: 10 s warmup vs bots, skipped in duels and the tutorial. Spec wanted "while the room fills (max 45 s)" – needs late-join support. |
+| D49 | Practice kite in warmup (F3) | Warmup = walking, emotes and quick chat on the plaza (no kite flying there yet). No dor/kite is ever used in warmup. |
+| D50 | Party matchmaking (F2) | PLAY opens a **private** match sized for the mode; party members auto-join by code; the host starts when the whole party is connected and fills the rest with labelled bots. Strangers do not join party matches yet. Team Battle: whole party on one team (`MatchFactory.AssignPartyTeams`). |
+| D51 | Roof trait balance (10.2, 10.5) | Measured with `Tools/RoofBalance` (120 equal-skill bot FFA matches): High 48–51 %, Sheltered 49–57 %, Edge 44–49 %, Crate spot 47–58 %, Cables 32–64 % (tiny sample), **Upwind 34–39 % (too low)**. Defaults tuned: Upwind wind bonus 8 % for 120 s + 6 m start help, rows 16.5 m apart and staggered. Upwind still needs work – the numbers are in `BalanceConfig ▸ Roofs` / Remote Config. Spec target 45–55 % is **not met for Upwind yet**. |
+| D52 | Upwind approach ring (10.2) | The "approach range 20 m instead of 15 m" cost is a HUD/camera effect only; not implemented yet (the wind bonus and start help are). |
+| D53 | Cosmetic ownership online (F1) | Equip commands are validated by the Cloud Code module (same `EconomyCommands`). In a player-hosted match the host only checks that ids exist in the catalogue; a dedicated server should read the profile from Cloud Save. Cosmetics never change stats either way. |
+| D54 | Teamwork XP (11.3) | "Help launch" works (+2 m on a teammate's Perfect toss); the small XP bonus is not added to the reward yet. |
+| D55 | Voice (F7) | Vivox code is behind the `com.unity.services.vivox` package (party channel + Team Battle team channel, push-to-talk, mic permission on first tap, under-13 off). Stub-compiled only. Check Vivox pricing/free tier before launch. |
+| D56 | Kill feed avatars (F4) | Round avatar = outfit colour + initial (no portrait renders). |
+
 ## Questions for you
 1. **D3 / D15** – Should letting go of PULL keep feeding line (current), and should Dheel need line already releasing at contact?
 2. **D26** – Last Kite Flying with 12 or 20 players?
 3. **D33** – Is the streak bonus +5 per win (current) or a growing bonus up to +5?
 4. **D29–D31** – Are the crafting prices and XP curve OK for the ≈ PKR 15,000 budget plan (ads-first economy)?
+5. **D45** – Are code-generated characters OK for now, or do you want me to switch to the Starter Assets humanoid once you import it?
+6. **D48 / D50** – Should party matches also accept strangers (public quick-join), and should the online warmup start while the room fills (needs late join)?
+7. **D51** – Upwind roofs are still weak (≈ 38 %). Prefer a bigger wind bonus, or a different benefit?

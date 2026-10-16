@@ -6,6 +6,9 @@ namespace Kitefall.Services
 {
     public enum GraphicsQuality { Auto, Low, Medium, High }
 
+    /// <summary>Upgrade W2: Auto (shoulder, kite cam in contests), shoulder only, kite only.</summary>
+    public enum CameraStyle { Auto, ShoulderOnly, KiteOnly }
+
     [Serializable]
     public class ControlPosition
     {
@@ -30,6 +33,7 @@ namespace Kitefall.Services
         public float cameraDistance = 16f;
         public float cameraFollow = 0.5f;
         public bool cameraShake = true;
+        public CameraStyle cameraStyle = CameraStyle.Auto;
 
         // Graphics
         public GraphicsQuality quality = GraphicsQuality.Auto;
@@ -49,6 +53,16 @@ namespace Kitefall.Services
         public int contestMeterStyle;
         public bool sweetZoneHighlight = true;
         public bool colorBlind;
+        /// <summary>Plays the launch ritual automatically with "Good" results (upgrade 11.2).</summary>
+        public bool autoPrep;
+        /// <summary>Win/lose animation on round end (upgrade F6).</summary>
+        public bool autoEmotes = true;
+        public bool quickChat = true;
+
+        // Voice (upgrade F7)
+        public bool voicePushToTalk = true;
+        public bool voiceSpeaker = true;
+        public bool muteStrangers = true;
 
         // Developer
         public bool devBotRanked;
@@ -108,6 +122,7 @@ namespace Kitefall.Services
             AudioListener.volume = Mathf.Clamp01(Data.masterVolume);
             QualitySettings.shadows = EffectiveQuality == GraphicsQuality.Low ? ShadowQuality.Disable
                 : EffectiveQuality == GraphicsQuality.Medium ? ShadowQuality.HardOnly : ShadowQuality.All;
+            KitefallGraphics.Apply(EffectiveQuality);
         }
     }
 }

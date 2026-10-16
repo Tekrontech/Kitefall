@@ -79,6 +79,15 @@ namespace Kitefall.App
             Game.Matches.Init(mainCamera);
 
             Game.Flow = new AppFlow();
+            // Squad / party (upgrade F2): online lobby when Multiplayer Services is installed, else a local party.
+            Game.Party = !forceOffline && PartyRegistry.OnlineFactory != null ? PartyRegistry.OnlineFactory() : new LocalPartyService();
+            if (Game.Party is LocalPartyService localParty)
+                localParty.Play = mode =>
+                {
+                    Game.UI.ClearStack();
+                    Game.Flow.StartMatch(new MatchRequest { Mode = mode });
+                    return System.Threading.Tasks.Task.FromResult(OpResult.Success());
+                };
 #endif
         }
 

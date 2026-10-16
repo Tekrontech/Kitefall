@@ -97,6 +97,21 @@ namespace Kitefall.Match
             return p + _kite.transform.right * ((rope - (_ropes.Length - 1) * 0.5f) * 0.25f);
         }
 
+        /// <summary>The character's left hand (upgrade W1): the drawn line starts here. Visual offset only, max 1.5 m.</summary>
+        public Transform LineStart;
+        /// <summary>The character holds the kite while waiting – don't draw the old "kite on the roof" pose.</summary>
+        public bool HideWhenWaiting;
+
+        private System.Numerics.Vector3 LineOrigin(in KiteSnap s)
+        {
+            if (LineStart == null) return s.Anchor;
+            Vector3 a = ArenaBuilder.ToUnity(s.Anchor);
+            Vector3 h = LineStart.position;
+            Vector3 d = h - a;
+            if (d.magnitude > 1.5f) h = a + d.normalized * 1.5f;
+            return new System.Numerics.Vector3(h.x, h.y, h.z);
+        }
+
         /// <summary>Called by the presenter when this kite's line is cut at <paramref name="point"/>.</summary>
         public void OnCut(Vector3 point) => _cutPoint = point;
 
@@ -113,6 +128,7 @@ namespace Kitefall.Match
                     DrawLine(s, inContest, highlighted, time);
                     break;
                 case KiteStatus.Waiting:
+                    if (HideWhenWaiting) { _kite.SetActive(false); _line.enabled = false; if (_dangle != null) _dangle.enabled = false; break; }
                     _kite.SetActive(true);
                     _kite.transform.SetPositionAndRotation(_anchor + new Vector3(0.6f, 0.2f, 0.6f), Quaternion.Euler(-60f, 0f, 0f));
                     _line.enabled = false;
@@ -181,7 +197,7 @@ namespace Kitefall.Match
         {
             _line.enabled = true;
             _dangle.enabled = false;
-            LineGeometry.BuildLine(s.Anchor, ToN(_kite.transform.position), s.Tension / 100f, 0.06f, _linePts);
+            LineGeometry.BuildLine(LineOrigin(s), ToN(_kite.transform.position), s.Tension / 100f, 0.06f, _linePts);
             _line.positionCount = _linePts.Length;
             Vector3 side = Vector3.Cross(ArenaBuilder.ToUnity(s.Direction), Vector3.up).normalized;
             for (int i = 0; i < _linePts.Length; i++)
