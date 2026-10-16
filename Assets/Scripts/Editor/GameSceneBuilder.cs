@@ -28,6 +28,31 @@ namespace Kitefall.EditorTools
             Build();
         }
 
+        [MenuItem("Kitefall/Fix Game Scene Links", priority = -98)]
+        public static void FixLinksMenu()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) { EditorUtility.DisplayDialog("Kitefall", "Stop Play mode first.", "OK"); return; }
+            if (!File.Exists(MainScenePath)) { Build(); return; }
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            Scene scene = EditorSceneManager.OpenScene(MainScenePath);
+            GameDatabase db = AssetDatabase.LoadAssetAtPath<GameDatabase>(DatabasePath);
+            if (db == null) db = EnsureDatabase();
+            if (db == null) { Debug.LogError("[Kitefall] Could not create " + DatabasePath + ". Check the Console for earlier errors."); return; }
+
+            GameApp app = Object.FindAnyObjectByType<GameApp>();
+            if (app == null) app = new GameObject("GameApp").AddComponent<GameApp>();
+            Camera cam = Camera.main != null ? Camera.main : Object.FindAnyObjectByType<Camera>();
+            var so = new SerializedObject(app);
+            so.FindProperty("database").objectReferenceValue = db;
+            if (cam != null) so.FindProperty("mainCamera").objectReferenceValue = cam;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(app);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Selection.activeObject = app;
+            Debug.Log("[Kitefall] GameApp linked to " + DatabasePath + " and Main scene saved – press Play.");
+        }
+
         [MenuItem("Kitefall/Open Game Scene", priority = -99)]
         public static void OpenMenu()
         {
@@ -52,8 +77,10 @@ namespace Kitefall.EditorTools
             so.FindProperty("mainCamera").objectReferenceValue = cam;
             so.ApplyModifiedPropertiesWithoutUndo();
 
+            EditorUtility.SetDirty(app);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, MainScenePath);
+            if (db == null) Debug.LogError("[Kitefall] GameDatabase could not be created – check earlier Console errors, then run Kitefall ▸ Fix Game Scene Links.");
 
             var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
             scenes.RemoveAll(s => s.path == MainScenePath);
