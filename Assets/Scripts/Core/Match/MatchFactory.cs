@@ -48,7 +48,53 @@ namespace Kitefall.Core
             };
             ParticipantLoadout l = SpecDefaults.Loadout(build.Kite, build.Tail, build.Dor, build.Charkhi);
             for (int i = 0; i < 3; i++) p.stack.Add(l);
+            DressBot(p, rng);
             return p;
+        }
+
+        /// <summary>Gives a bot a character, outfit and maybe an accessory (visual only).</summary>
+        public static void DressBot(ParticipantSetup p, DeterministicRandom rng)
+        {
+            var chars = CharacterCatalog.Characters;
+            p.characterId = chars[rng.Range(0, chars.Count)].id;
+            p.outfitId = rng.Chance(0.5f) ? "" : CharacterCatalog.Outfits[rng.Range(0, CharacterCatalog.Outfits.Count - 1)].id;
+            p.accessories = new string[4];
+            if (rng.Chance(0.5f))
+            {
+                CosmeticItem acc = CharacterCatalog.Accessories[rng.Range(0, CharacterCatalog.Accessories.Count)];
+                p.accessories[acc.slot] = acc.id;
+            }
+        }
+
+        /// <summary>
+        /// Training ground (upgrade F8): target dummies at 3 heights (static, slow, fast) and optional sparring bots.
+        /// Uses the roof network so the player can practise roof hopping too.
+        /// </summary>
+        public static MatchSetup TrainingSetup(ParticipantSetup player, TrainingOptions options, int seed)
+        {
+            MatchSetup setup = NewSetup(GameMode.Training, ArenaType.OldCityRooftops, seed);
+            setup.Training = options ?? new TrainingOptions();
+            setup.UseRoofGraph = true;
+            setup.UseLaunchRitual = true;
+            setup.Participants.Add(player);
+            var rng = new DeterministicRandom(seed + 5);
+            if (setup.Training.dummies)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    ParticipantSetup d = Bot(setup.Participants.Count, BotDifficulty.Dummy, new BuildIds { Kite = "guddi", Tail = "short_ribbon", Dor = "sooti", Charkhi = "lakri" }, 0, seed);
+                    d.displayName = i == 0 ? "Dummy (static, low)" : i == 1 ? "Dummy (slow, mid)" : "Dummy (fast, high)";
+                    d.dummyPattern = i;
+                    d.dummyHeight = i;
+                    setup.Participants.Add(d);
+                }
+            }
+            for (int i = 0; i < setup.Training.sparringBots; i++)
+            {
+                BuildIds build = BotBuilds.ForBot(setup.Training.sparringDifficulty, player.stack.Count > 0 ? player.stack[0].dorId : "sooti", rng);
+                setup.Participants.Add(Bot(setup.Participants.Count, setup.Training.sparringDifficulty, build, 0, seed));
+            }
+            return setup;
         }
 
         /// <summary>Fills empty seats with labelled bots (spec 5: never in Ranked).</summary>

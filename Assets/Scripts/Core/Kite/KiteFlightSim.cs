@@ -86,8 +86,12 @@ namespace Kitefall.Core
         {
             AzimuthDeg = KMath.WrapAngle(windDirectionDeg + azimuthOffsetDeg);
             Radius = KMath.Max(1f, lineOut);
-            float bonusDeg = bonusHeight > 0f ? (float)System.Math.Asin(KMath.Clamp(bonusHeight / Radius, 0f, 0.9f)) * KMath.Rad2Deg : 0f;
+            float bonusDeg = bonusHeight > 0f ? (float)System.Math.Asin(KMath.Clamp(bonusHeight / Radius, 0f, 0.9f)) * KMath.Rad2Deg
+                : bonusHeight < 0f ? (float)System.Math.Asin(KMath.Clamp(bonusHeight / Radius, -0.5f, 0f)) * KMath.Rad2Deg : 0f;
             ElevationDeg = KMath.Min(_s.maxElevationDeg - 5f, _s.startElevationDeg + bonusDeg);
+            if (bonusHeight < 0f) ElevationDeg = KMath.Max(12f, ElevationDeg);
+            DriftDegPerSec = 0f;
+            DriftTimeLeft = 0f;
             HeadingDeg = 0f;
             Speed = 0f;
             IsCrashed = false;
@@ -103,6 +107,19 @@ namespace Kitefall.Core
             Radius = KMath.Max(1f, radius);
             HeadingDeg = headingDeg;
             Speed = speed;
+        }
+
+        /// <summary>Sideways drift from an unbalanced kanni (upgrade 11.2), deg/s.</summary>
+        public float DriftDegPerSec { get; private set; }
+        public float DriftTimeLeft { get; private set; }
+        public bool DriftUntilSteer { get; private set; }
+
+        /// <summary>Kanni balance after the launch ritual: Good = slight drift until the first steer, Off = stronger drift for 20 s.</summary>
+        public void SetDrift(float degPerSec, float duration, bool untilSteer)
+        {
+            DriftDegPerSec = degPerSec;
+            DriftTimeLeft = degPerSec > 0f ? duration : 0f;
+            DriftUntilSteer = untilSteer;
         }
 
         /// <summary>Swaps the loadout mid-match (sky crate / loadout break).</summary>
@@ -198,6 +215,12 @@ namespace Kitefall.Core
             else if (azRel < -half) azRel = KMath.MoveTowards(azRel, -half, _s.edgeReturnDegPerSec * dt);
             // Hard limit so a big wind shift can never put the kite behind the flyer.
             azRel = KMath.Clamp(azRel, -half - 30f, half + 30f);
+
+            if (DriftTimeLeft > 0f)
+            {
+                if (DriftUntilSteer && KMath.Abs(input.SteerX) > 0.35f) DriftTimeLeft = 0f;
+                else { azRel += DriftDegPerSec * dt; DriftTimeLeft -= dt; }
+            }
 
             AzimuthDeg = KMath.WrapAngle(windDir + azRel);
             ElevationDeg = KMath.Clamp(ElevationDeg, -60f, _s.maxElevationDeg);

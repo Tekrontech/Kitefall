@@ -175,6 +175,7 @@ namespace Kitefall.Core
         public static OpResult ApplyMatchResult(PlayerProfile p, MatchResult m, MatchRewardContext ctx, EconomyConfig c, RankSettings ranks)
         {
             if (m == null || ctx.MyIndex < 0 || ctx.MyIndex >= m.Participants.Count) return OpResult.Fail("Bad match result.");
+            if (m.Mode == GameMode.Training) return OpResult.Fail("Training gives no rewards.");
             if (!string.IsNullOrEmpty(ctx.MatchId))
             {
                 if (p.rewardedMatches.Contains(ctx.MatchId)) return OpResult.Fail("This match was already rewarded.");
@@ -525,6 +526,8 @@ namespace Kitefall.Core
             CosmeticItem item = Catalog.Cosmetic(cosmeticId);
             if (item == null) return OpResult.Fail("Unknown item.");
             if (item.passOnly) return OpResult.Fail("Season Pass reward only.");
+            if (OwnsCosmetic(p, cosmeticId) && IsUnique(item)) return OpResult.Fail("Already owned.");
+            if (p.level < item.unlockLevel) return OpResult.Fail($"Unlocks at level {item.unlockLevel}.");
             if (payWithCoins)
             {
                 if (item.coinPrice <= 0) return OpResult.Fail("Gems only.");
@@ -541,9 +544,71 @@ namespace Kitefall.Core
             return r;
         }
 
+        /// <summary>Characters, outfits, accessories and emotes are owned once.</summary>
+        public static bool IsUnique(CosmeticItem item) =>
+            item.type == CosmeticType.Character || item.type == CosmeticType.Outfit || item.type == CosmeticType.Accessory || item.type == CosmeticType.Emote;
+
+        /// <summary>Owned = bought / granted, or free at the player's level (rookies, starter emotes, level unlocks).</summary>
+        public static bool OwnsCosmetic(PlayerProfile p, string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            if (p.Cosmetic(id) > 0) return true;
+            return CharacterCatalog.IsFree(Catalog.Cosmetic(id), p.level);
+        }
+
+        public static OpResult EquipCharacter(PlayerProfile p, string id)
+        {
+            CosmeticItem item = Catalog.Cosmetic(id);
+            if (item == null || item.type != CosmeticType.Character) return OpResult.Fail("Unknown character.");
+            if (!OwnsCosmetic(p, id)) return OpResult.Fail(p.level < item.unlockLevel ? $"Unlocks at level {item.unlockLevel}." : "Not owned.");
+            p.characterId = id;
+            return OpResult.Success();
+        }
+
+        public static OpResult EquipOutfit(PlayerProfile p, string id)
+        {
+            if (string.IsNullOrEmpty(id)) { p.outfitId = ""; return OpResult.Success(); }
+            CosmeticItem item = Catalog.Cosmetic(id);
+            if (item == null || item.type != CosmeticType.Outfit) return OpResult.Fail("Unknown outfit.");
+            if (!OwnsCosmetic(p, id) && CharacterCatalog.DefaultOutfitOf(p.characterId) != id) return OpResult.Fail("Not owned.");
+            p.outfitId = id;
+            return OpResult.Success();
+        }
+
+        public static OpResult EquipAccessory(PlayerProfile p, int slot, string id)
+        {
+            if (slot < 0 || slot > 3) return OpResult.Fail("Bad slot.");
+            while (p.accessories.Count < 4) p.accessories.Add("");
+            if (string.IsNullOrEmpty(id)) { p.accessories[slot] = ""; return OpResult.Success(); }
+            CosmeticItem item = Catalog.Cosmetic(id);
+            if (item == null || item.type != CosmeticType.Accessory || item.slot != slot) return OpResult.Fail("Doesn't fit that slot.");
+            if (!OwnsCosmetic(p, id)) return OpResult.Fail("Not owned.");
+            p.accessories[slot] = id;
+            return OpResult.Success();
+        }
+
+        public static OpResult SetEmoteSlot(PlayerProfile p, int slot, string id)
+        {
+            if (slot < 0 || slot > 7) return OpResult.Fail("Bad slot.");
+            while (p.emoteSlots.Count < 8) p.emoteSlots.Add("");
+            if (!string.IsNullOrEmpty(id))
+            {
+                CosmeticItem item = Catalog.Cosmetic(id);
+                if (item == null || item.type != CosmeticType.Emote) return OpResult.Fail("Unknown emote.");
+                if (!OwnsCosmetic(p, id)) return OpResult.Fail("Not owned.");
+                int existing = p.emoteSlots.IndexOf(id);
+                if (existing >= 0) p.emoteSlots[existing] = p.emoteSlots[slot];
+            }
+            p.emoteSlots[slot] = id ?? "";
+            return OpResult.Success();
+        }
+
         public static OpResult Equip(PlayerProfile p, string cosmeticId)
         {
             CosmeticItem item = Catalog.Cosmetic(cosmeticId);
+            if (item != null && item.type == CosmeticType.Character) return EquipCharacter(p, cosmeticId);
+            if (item != null && item.type == CosmeticType.Outfit) return EquipOutfit(p, cosmeticId);
+            if (item != null && item.type == CosmeticType.Accessory) return EquipAccessory(p, item.slot, cosmeticId);
             if (item == null || p.Cosmetic(cosmeticId) <= 0) return OpResult.Fail("Not owned.");
             p.equippedCosmetics.RemoveAll(id =>
             {

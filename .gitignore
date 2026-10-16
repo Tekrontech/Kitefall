@@ -30,8 +30,11 @@ ExportedObj/
 
 # Keep the .NET test runner project (outside Assets)
 !/Tools/CoreTests/*.csproj
+!/Tools/RoofBalance/*.csproj
 /Tools/CoreTests/bin/
 /Tools/CoreTests/obj/
+/Tools/RoofBalance/bin/
+/Tools/RoofBalance/obj/
 
 # ---- Builds ----
 *.apk

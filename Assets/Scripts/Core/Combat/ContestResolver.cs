@@ -33,7 +33,7 @@ namespace Kitefall.Core
                 Input = InputFactor(me),
                 Position = KMath.Clamp(1f + _s.positionPerMeter * (me.Height - them.Height), _s.positionMin, _s.positionMax),
                 Angle = AngleFactor(angleDeg, me),
-                Wind = WindFactor(me, them, ctx),
+                Wind = WindFactor(me, them, ctx) * (me.WindBonus > 0f ? me.WindBonus : 1f),
                 Counter = AttackRules.CounterMultiplier(mine, theirs, _s.counterWin, _s.counterLose, me.DheelCounterBonus),
                 Charkhi = mine == AttackType.Kheench ? me.KheenchPowerMult : 1f,
                 Condition = me.Durability < _s.lowDurability ? _s.lowDurabilityMult : 1f,

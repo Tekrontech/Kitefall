@@ -121,6 +121,16 @@ namespace Kitefall.Core
         public List<ItemCount> cosmetics = new List<ItemCount>();
         public List<string> equippedCosmetics = new List<string>();
         public SavedLoadout loadout = new SavedLoadout();
+        // Character & social cosmetics (upgrade v1.4 – visual only)
+        public string characterId = CharacterCatalog.DefaultCharacter;
+        /// <summary>"" = the character's default outfit.</summary>
+        public string outfitId = "";
+        /// <summary>Accessory ids by <see cref="AccessorySlot"/> ("" = none).</summary>
+        public List<string> accessories = new List<string> { "", "", "", "" };
+        /// <summary>8 emote wheel slots.</summary>
+        public List<string> emoteSlots = new List<string> { "bo_kata", "thumbs_up", "taunt_wave", "victory_dance", "", "", "", "" };
+        /// <summary>Settings ▸ Gameplay ▸ Auto-prep; on for the first 5 matches of new players.</summary>
+        public bool autoPrep;
         public string lastMode = "QuickDuel";
 
         // Ranked

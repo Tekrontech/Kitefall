@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Kitefall.Core
 {
-    public enum CosmeticType { KiteSkin, DumEffect, CutEffect, DorSkin, CharkhiSkin, Avatar }
+    public enum CosmeticType { KiteSkin, DumEffect, CutEffect, DorSkin, CharkhiSkin, Avatar, Character, Outfit, Accessory, Emote }
     public enum Rarity { Common, Rare, Epic, Legendary }
 
     /// <summary>A cosmetic item. Rarity changes visuals only – never stats (rule 1).</summary>
@@ -24,6 +24,20 @@ namespace Kitefall.Core
         public int coinPrice;
         /// <summary>Only from the season pass / events.</summary>
         public bool passOnly;
+
+        // ---- Characters / outfits / accessories / emotes (upgrade v1.4, visual only)
+        public string region = "";
+        public string skinHex = "";
+        public string hairHex = "";
+        /// <summary>Hair style (characters), garment style (outfits), model variant (accessories).</summary>
+        public int style;
+        public float height = 1f;
+        public float build = 1f;
+        /// <summary>Accessory slot (<see cref="AccessorySlot"/>).</summary>
+        public int slot;
+        public int unlockLevel = 1;
+        public bool loop;
+        public float duration;
     }
 
     [Serializable]
@@ -131,7 +145,7 @@ namespace Kitefall.Core
         public static List<CosmeticItem> FeaturedFor(long day, int count = 4)
         {
             var rng = new DeterministicRandom((int)(day * 2654435761L % int.MaxValue));
-            var pool = Cosmetics.FindAll(c => !c.passOnly);
+            var pool = Cosmetics.FindAll(c => !c.passOnly && (c.gemPrice > 0 || c.coinPrice > 0));
             var list = new List<CosmeticItem>();
             for (int i = 0; i < count && pool.Count > 0; i++)
             {
@@ -188,13 +202,15 @@ namespace Kitefall.Core
             string[] charkhiSkins = { "Painted wood", "Brass rim", "Truck art", "Mirror work" };
             for (int i = 0; i < charkhiSkins.Length; i++)
                 list.Add(new CosmeticItem { id = "charkhiskin_" + i, name = charkhiSkins[i], type = CosmeticType.CharkhiSkin, rarity = (Rarity)Math.Min(3, i), primaryHex = palettes[(i + 3) % 8][1], secondaryHex = palettes[(i + 3) % 8][2], gemPrice = 90 + i * 70 });
+            list.AddRange(CharacterCatalog.All());
             return list;
         }
 
         private static List<PassReward> BuildPass(int levels)
         {
             var list = new List<PassReward>();
-            var passSkins = Cosmetics.FindAll(c => c.passOnly);
+            var passSkins = Cosmetics.FindAll(c => c.passOnly && c.type == CosmeticType.KiteSkin);
+            passSkins.AddRange(Cosmetics.FindAll(c => c.passOnly && c.type != CosmeticType.KiteSkin));
             int skin = 0;
             for (int lvl = 1; lvl <= levels; lvl++)
             {

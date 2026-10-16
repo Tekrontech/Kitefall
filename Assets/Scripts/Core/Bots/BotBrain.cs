@@ -76,7 +76,7 @@ namespace Kitefall.Core
                 return new KiteInput { PullHeld = me.LaunchHold < _launchTarget && !me.LaunchDone };
             if (sim.Phase != MatchPhase.Round || !k.IsFlying) return default;
 
-            if (Difficulty == BotDifficulty.Dummy) return Hover(k);
+            if (Difficulty == BotDifficulty.Dummy) return DummyFlight(sim, me, k);
 
             Contest contest = sim.ContestOf(Self);
             if (contest != null)
@@ -112,6 +112,22 @@ namespace Kitefall.Core
         }
 
         // ---- States ---------------------------------------------------------
+
+        /// <summary>Training target dummies (upgrade F8): 3 heights, static / slow / fast side-to-side.</summary>
+        private KiteInput DummyFlight(MatchSimulation sim, MatchParticipant me, KiteSimulation k)
+        {
+            int pattern = me.Setup.dummyPattern, height = me.Setup.dummyHeight;
+            if (pattern <= 0 && height == 1) return Hover(k);
+            float targetEl = height <= 0 ? 28f : height == 1 ? 45f : 62f;
+            float swing = pattern <= 0 ? 0f : pattern == 1 ? 18f : 32f;
+            float speed = pattern == 1 ? 0.35f : 1.1f;
+            float targetAz = sim.CurrentWind.DirectionDeg + KMath.Sin(sim.MatchTime * speed + _patrolPhase) * swing;
+            KiteInput input = SteerToAngles(k, targetAz, targetEl);
+            TensionTo(k, 44f, ref input, false);
+            ManageLine(k, 70f + height * 30f, ref input);
+            Safety(k, ref input);
+            return input;
+        }
 
         private KiteInput Hover(KiteSimulation k)
         {

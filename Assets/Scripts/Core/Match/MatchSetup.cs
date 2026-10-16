@@ -36,6 +36,19 @@ namespace Kitefall.Core
         public int team;
         public bool captain;
         public int rankPoints;
+        // ---- Upgrade v1.4 (cosmetics are visual only – never stats)
+        public string characterId = "rookie_m";
+        public string outfitId = "";
+        /// <summary>Accessory ids by slot: Head, Eyes, Back, Waist ("" = none).</summary>
+        public string[] accessories = new string[4];
+        /// <summary>Plays the launch ritual automatically with "Good" results (setting / new players).</summary>
+        public bool autoPrep;
+        /// <summary>Training dummies: 0 static, 1 slow, 2 fast.</summary>
+        public int dummyPattern;
+        /// <summary>Training dummies: 0 low, 1 mid, 2 high.</summary>
+        public int dummyHeight = 1;
+        /// <summary>Party (squad) id – party members are teammates in Team Battle.</summary>
+        public string partyId = "";
         /// <summary>Kites in order (FFA stack of 3; duels repeat the first).</summary>
         public List<ParticipantLoadout> stack = new List<ParticipantLoadout>();
     }
@@ -70,5 +83,20 @@ namespace Kitefall.Core
 
         /// <summary>0–1 time of day for visuals (randomised per match, spec 11).</summary>
         public float TimeOfDay01 = 0.75f;
+
+        // ---- Upgrade v1.4 ------------------------------------------------------
+        /// <summary>Rooftop network: roof choice before the match and roof hopping (spec F9).</summary>
+        public bool UseRoofGraph;
+        /// <summary>Launch ritual instead of "HOLD to launch" (spec F10).</summary>
+        public bool UseLaunchRitual;
+        /// <summary>Waiting rooftop before the match, seconds (0 = skip; spec F3).</summary>
+        public float WarmupTime;
+        public float WarmupMin = 10f;
+        /// <summary>Private room: host chose fixed roofs (no selection, no hopping).</summary>
+        public bool FixedRoofs;
+        public RoofSettings Roofs = new RoofSettings();
+        public PrepSettings Prep = new PrepSettings();
+        /// <summary>Training ground options (GameMode.Training only).</summary>
+        public TrainingOptions Training;
     }
 }

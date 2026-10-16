@@ -38,6 +38,28 @@ namespace Kitefall.Core
         public float SweetCenter;
         public float SweetWidth;
 
+        // ---- Upgrade v1.4: the character (flyer) – replicated as state + timestamps, not frame by frame
+        public FlyerState Flyer;
+        public int RoofId;
+        public Vector3 CharacterPosition;
+        public float CharacterYaw;
+        public float CharacterSpeed;
+        public PrepStep PrepStep;
+        public bool PrepFull;
+        public float PrepStart;
+        public float PrepStepStart;
+        public float PrepBlockedUntil;
+        public float PrepTossHold;
+        public int PrepTaps;
+        public int PrepTugs;
+        public int PrepSwipes;
+        public PrepGrade Kanni;
+        public bool PrepHelped;
+        public int TraverseLink;
+        public float TraverseProgress;
+        public float GroundedTime;
+        public float PackUp01;
+
         public Vector3 Direction => KiteFlightSim.DirectionOf(Azimuth, Elevation);
         public Vector3 Nose => KiteFlightSim.NoseOf(Azimuth, Elevation, Heading);
         public Vector3 WorldPosition => Anchor + Direction * Radius;
@@ -166,7 +188,27 @@ namespace Kitefall.Core
                     StackIndex = p.StackIndex,
                     InContest = band.HasValue,
                     SweetCenter = band?.Center ?? -1f,
-                    SweetWidth = band?.Width ?? k.Loadout.SweetZone
+                    SweetWidth = band?.Width ?? k.Loadout.SweetZone,
+                    Flyer = p.Flyer,
+                    RoofId = p.RoofId,
+                    CharacterPosition = p.CharacterPosition,
+                    CharacterYaw = p.CharacterYaw,
+                    CharacterSpeed = p.CharacterSpeed,
+                    PrepStep = p.Prep?.Step ?? PrepStep.Flying,
+                    PrepFull = p.Prep?.Full ?? false,
+                    PrepStart = p.Prep?.StartTime ?? 0f,
+                    PrepStepStart = p.Prep?.StepStartTime ?? 0f,
+                    PrepBlockedUntil = p.Prep?.BlockedUntil ?? 0f,
+                    PrepTossHold = p.Prep?.TossHold ?? 0f,
+                    PrepTaps = p.Prep?.KanniTapsDone ?? 0,
+                    PrepTugs = p.Prep?.TugsDone ?? 0,
+                    PrepSwipes = p.Prep?.SwipesDone ?? 0,
+                    Kanni = p.Prep != null && p.Prep.Full ? p.Prep.KanniGrade : p.LastKanni,
+                    PrepHelped = p.Prep?.HelperPresent ?? false,
+                    TraverseLink = p.Flyer == FlyerState.Traversing ? p.TraverseLink : -1,
+                    TraverseProgress = p.Flyer == FlyerState.Traversing ? 1f - KMath.Clamp01(p.TraverseLeft / KMath.Max(0.01f, p.TraverseTotal)) : 0f,
+                    GroundedTime = p.GroundedTime,
+                    PackUp01 = p.Flyer == FlyerState.PackingUp ? 1f - KMath.Clamp01(p.PackUpLeft / KMath.Max(0.01f, p.PackUpTotal)) : 0f
                 };
             }
 

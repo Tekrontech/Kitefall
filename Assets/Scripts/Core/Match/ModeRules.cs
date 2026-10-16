@@ -10,7 +10,9 @@ namespace Kitefall.Core
         PrivateRoom,
         TeamBattle,
         LastKiteFlying,
-        Tutorial
+        Tutorial,
+        /// <summary>Offline training ground (upgrade F8): everything unlocked, no rewards, no losses.</summary>
+        Training
     }
 
     public enum BotDifficulty { Easy, Medium, Hard, Dummy }
@@ -64,6 +66,16 @@ namespace Kitefall.Core
         /// <summary>Only Sooti + Lakri at start; better gear only from crates (LKF).</summary>
         public bool startWithBasicGear;
 
+        // ---- Upgrade v1.4
+        /// <summary>How rooftops are chosen when the arena uses the roof network (spec 10.3).</summary>
+        public RoofSelectMode roofSelect = RoofSelectMode.Free;
+        /// <summary>Players may pack up and move to another roof during the round (spec 10.4).</summary>
+        public bool roofHopping;
+        /// <summary>Waiting rooftop before the match (skipped vs bots in Quick Duel, Tutorial, Training).</summary>
+        public bool warmup = true;
+        /// <summary>No rewards, no inventory use, no durability, no rank, no ads (Training).</summary>
+        public bool noRewards;
+
         public bool IsDuel => roundsToWin > 0;
 
         public ModeRules Clone() => (ModeRules)MemberwiseClone();
@@ -77,48 +89,57 @@ namespace Kitefall.Core
                     {
                         mode = mode, displayName = "Ranked Duel", minPlayers = 2, maxPlayers = 2,
                         roundsToWin = 3, roundMaxTime = 180f, loadoutBreakTime = 20f,
-                        lossMode = true, ranked = true, allowBots = false
+                        lossMode = true, ranked = true, allowBots = false, roofSelect = RoofSelectMode.Assigned
                     };
                 case GameMode.QuickDuel:
                     return new ModeRules
                     {
                         mode = mode, displayName = "Quick Duel", minPlayers = 2, maxPlayers = 2,
-                        roundsToWin = 2, roundMaxTime = 120f, useStorm = false, lossMode = false
+                        roundsToWin = 2, roundMaxTime = 120f, useStorm = false, lossMode = false, roofSelect = RoofSelectMode.DuelPairs
                     };
                 case GameMode.FreeForAll:
                     return new ModeRules
                     {
                         mode = mode, displayName = "Free-for-All", minPlayers = 2, maxPlayers = 8,
                         roundsToWin = 0, matchTime = 720f, respawn = true, kiteStackSize = 3,
-                        crateInterval = 180f, lossMode = true
+                        crateInterval = 180f, lossMode = true, roofHopping = true
                     };
                 case GameMode.PrivateRoom:
                     return new ModeRules
                     {
                         mode = mode, displayName = "Private Room", minPlayers = 2, maxPlayers = 8,
                         roundsToWin = 0, matchTime = 600f, respawn = true, kiteStackSize = 3,
-                        crateInterval = 180f, lossMode = false, durabilityLoss = false
+                        crateInterval = 180f, lossMode = false, durabilityLoss = false, roofHopping = true
                     };
                 case GameMode.TeamBattle:
                     return new ModeRules
                     {
                         mode = mode, displayName = "Team Battle", minPlayers = 2, maxPlayers = 8,
                         roundsToWin = 0, matchTime = 900f, respawn = true, kiteStackSize = 3,
-                        teamCount = 2, teamCutsToWin = 25, crateInterval = 180f, lossMode = true
+                        teamCount = 2, teamCutsToWin = 25, crateInterval = 180f, lossMode = true,
+                        roofSelect = RoofSelectMode.TeamHalves, roofHopping = true
                     };
                 case GameMode.LastKiteFlying:
                     return new ModeRules
                     {
                         mode = mode, displayName = "Last Kite Flying", minPlayers = 2, maxPlayers = 20,
                         roundsToWin = 0, matchTime = 1200f, respawn = false, crateInterval = 60f,
-                        stormZone = true, startWithBasicGear = true, lossMode = true
+                        stormZone = true, startWithBasicGear = true, lossMode = true, roofHopping = true
                     };
                 case GameMode.Tutorial:
                     return new ModeRules
                     {
                         mode = mode, displayName = "Tutorial", minPlayers = 1, maxPlayers = 2,
                         roundsToWin = 0, matchTime = 0f, respawn = true, respawnDelay = 2f, useStorm = false,
-                        introTime = 0f, launchTime = 3f, lossMode = false, durabilityLoss = false
+                        introTime = 0f, launchTime = 3f, lossMode = false, durabilityLoss = false, warmup = false
+                    };
+                case GameMode.Training:
+                    return new ModeRules
+                    {
+                        mode = mode, displayName = "Training", minPlayers = 1, maxPlayers = 8,
+                        roundsToWin = 0, matchTime = 0f, respawn = true, respawnDelay = 2f, kiteStackSize = 1,
+                        introTime = 0f, launchTime = 3f, lossMode = false, durabilityLoss = false, warmup = false,
+                        roofHopping = true, noRewards = true
                     };
                 default:
                     throw new ArgumentOutOfRangeException(nameof(mode), mode, null);

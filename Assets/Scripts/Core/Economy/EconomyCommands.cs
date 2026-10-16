@@ -49,6 +49,11 @@ namespace Kitefall.Core
         public const string RankedQuit = "ranked_quit";
         public const string Link = "link_account";
         public const string SetMode = "set_mode";
+        public const string EquipCharacter = "equip_character";
+        public const string EquipOutfit = "equip_outfit";
+        public const string EquipAccessory = "equip_accessory";
+        public const string SetEmoteSlot = "set_emote_slot";
+        public const string SetAutoPrep = "set_auto_prep";
 
         public static OpResult Execute(PlayerProfile p, string op, string[] args, long nowUtc, EconomyBundle cfg)
         {
@@ -102,6 +107,11 @@ namespace Kitefall.Core
                 case Interstitial: AdsPolicy.RecordInterstitial(p, nowUtc); return OpResult.Success();
                 case BuyCosmetic: return EconomyService.BuyCosmetic(p, A(0), B(1));
                 case Equip: return EconomyService.Equip(p, A(0));
+                case EquipCharacter: return EconomyService.EquipCharacter(p, A(0));
+                case EquipOutfit: return EconomyService.EquipOutfit(p, A(0));
+                case EquipAccessory: return EconomyService.EquipAccessory(p, I(0), A(1));
+                case SetEmoteSlot: return EconomyService.SetEmoteSlot(p, I(0), A(1));
+                case SetAutoPrep: p.autoPrep = B(0); return OpResult.Success();
                 case BuyPassGems: return EconomyService.BuyPremiumPassWithGems(p, c);
                 case ClaimPass: return EconomyService.ClaimPassReward(p, I(0), B(1), c);
                 case GrantPurchase: return EconomyService.GrantPurchase(p, A(0));

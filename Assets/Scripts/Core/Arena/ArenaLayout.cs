@@ -50,6 +50,10 @@ namespace Kitefall.Core
         public float WindStrength { get; private set; } = 1f;
         public float WindVariation { get; private set; } = 1f;
         public float GroundHeight => 0f;
+        /// <summary>Rooftop network (upgrade spec 10.1), or null for the classic fixed row.</summary>
+        public RoofGraph Roofs { get; private set; }
+        /// <summary>Pre-match waiting plaza (upgrade spec F3), built on demand.</summary>
+        public WaitingArea Waiting { get; private set; }
 
         private ArenaLayout(ArenaType type, int seed)
         {
@@ -78,7 +82,11 @@ namespace Kitefall.Core
             }
         }
 
-        public static ArenaLayout Generate(ArenaType type, int seed, int playerCount)
+        public static ArenaLayout Generate(ArenaType type, int seed, int playerCount) => Generate(type, seed, playerCount, false, false, null);
+
+        /// <param name="roofs">Build the rooftop network instead of the fixed row (roof choice + hopping).</param>
+        /// <param name="mirror">Mirror the roofs left/right (duels: both players start equal).</param>
+        public static ArenaLayout Generate(ArenaType type, int seed, int playerCount, bool roofs, bool mirror, RoofSettings roofSettings)
         {
             var a = new ArenaLayout(type, seed);
             var rng = new DeterministicRandom(seed * 7919 + (int)type);
@@ -96,24 +104,42 @@ namespace Kitefall.Core
             }
             a.BaseWindDirection = 0f;
 
-            // ---- Flyer positions: a row across the wind (duel = 2 roofs ~44 m apart), more rows for big modes.
             int perRow = playerCount <= 8 ? playerCount : 10;
             float spacing = playerCount <= 2 ? 44f : 26f;
-            for (int i = 0; i < playerCount; i++)
+            if (roofs)
             {
-                int row = i / perRow;
-                int col = i % perRow;
-                int inRow = Math.Min(perRow, playerCount - row * perRow);
-                float x = (col - (inRow - 1) * 0.5f) * spacing;
-                float z = -row * 30f;
-                float h = roofHeight + rng.Range(-1.5f, 1.5f);
-                if (type == ArenaType.RoyalField) h = roofHeight;
-                a.Anchors.Add(new Vector3(x, h + 1.35f, z));
-                // The flyer's own building / platform.
-                a.Blocks.Add(Box(new Vector3(x, h * 0.5f, z), new Vector3(9f, h, 9f), type == ArenaType.CoastalCliffs ? BlockKind.Cliff : BlockKind.House, rng.Range(0, 4)));
+                a.Roofs = RoofGraph.Generate(type, seed, playerCount, mirror, roofSettings);
+                foreach (RoofNode r in a.Roofs.Roofs)
+                {
+                    var kind = type == ArenaType.CoastalCliffs || type == ArenaType.MountainValley ? BlockKind.Cliff : BlockKind.House;
+                    a.Blocks.Add(Box(new Vector3(r.Center.X, r.Height * 0.5f, r.Center.Z), new Vector3(r.SizeX, r.Height, r.SizeZ), kind, rng.Range(0, 4)));
+                }
+                // Default anchors (spread out); the match replaces them after roof selection.
+                List<int> spread = RoofClaims.SpreadAssignment(a.Roofs, playerCount);
+                for (int i = 0; i < playerCount; i++) a.Anchors.Add(a.Roofs.Roof(spread[i]).LaunchSpot());
+                perRow = Math.Max(perRow, (int)((a.Roofs.MaxX - a.Roofs.MinX) / spacing));
+            }
+            else
+            {
+                // ---- Flyer positions: a row across the wind (duel = 2 roofs ~44 m apart), more rows for big modes.
+                for (int i = 0; i < playerCount; i++)
+                {
+                    int row = i / perRow;
+                    int col = i % perRow;
+                    int inRow = Math.Min(perRow, playerCount - row * perRow);
+                    float x = (col - (inRow - 1) * 0.5f) * spacing;
+                    float z = -row * 30f;
+                    float h = roofHeight + rng.Range(-1.5f, 1.5f);
+                    if (type == ArenaType.RoyalField) h = roofHeight;
+                    a.Anchors.Add(new Vector3(x, h + 1.35f, z));
+                    // The flyer's own building / platform.
+                    a.Blocks.Add(Box(new Vector3(x, h * 0.5f, z), new Vector3(9f, h, 9f), type == ArenaType.CoastalCliffs ? BlockKind.Cliff : BlockKind.House, rng.Range(0, 4)));
+                }
+
             }
 
             float width = Math.Max(120f, perRow * spacing + 60f);
+            float cliffTop = a.Roofs != null ? a.Roofs.MinHeight - 2f : roofHeight - 2f;
 
             // ---- Neighbourhood around the flyers (upwind / sides only, so launches are clear).
             switch (type)
@@ -126,15 +152,16 @@ namespace Kitefall.Core
                         {
                             if (rng.Chance(0.15f)) continue;
                             if (NearAnchor(a, x, z, 11f)) continue;
+                            if (a.Roofs != null && a.Roofs.RoofAt(new Vector3(x, 0f, z), 7f) >= 0) continue;
                             float h = rng.Range(6f, roofHeight + 4f);
                             a.Blocks.Add(Box(new Vector3(x + rng.Range(-1f, 1f), h * 0.5f, z), new Vector3(10f, h, 10f), BlockKind.House, rng.Range(0, 4)));
                         }
                     break;
                 case ArenaType.CoastalCliffs:
-                    a.Blocks.Add(Box(new Vector3(0f, roofHeight * 0.5f - 1f, -40f), new Vector3(width + 80f, roofHeight - 2f, 70f), BlockKind.Cliff, 0));
+                    a.Blocks.Add(Box(new Vector3(0f, cliffTop * 0.5f, -40f), new Vector3(width + 80f, cliffTop, 70f), BlockKind.Cliff, 0));
                     break;
                 case ArenaType.MountainValley:
-                    a.Blocks.Add(Box(new Vector3(0f, roofHeight * 0.5f - 1f, -45f), new Vector3(width + 80f, roofHeight - 2f, 80f), BlockKind.Cliff, 1));
+                    a.Blocks.Add(Box(new Vector3(0f, cliffTop * 0.5f, -45f), new Vector3(width + 80f, cliffTop, 80f), BlockKind.Cliff, 1));
                     for (int i = 0; i < 16; i++)
                     {
                         float side = i % 2 == 0 ? -1f : 1f;
@@ -170,6 +197,13 @@ namespace Kitefall.Core
             centroid /= a.Anchors.Count;
             a.SkyCenter = new Vector3(centroid.X, 60f, centroid.Z + 140f);
             return a;
+        }
+
+        /// <summary>Builds (once) the waiting plaza used during Warmup, far upwind of the arena.</summary>
+        public WaitingArea BuildWaitingRoof(int playerCount)
+        {
+            if (Waiting == null) Waiting = WaitingArea.Build(Seed, playerCount);
+            return Waiting;
         }
 
         private static bool NearAnchor(ArenaLayout a, float x, float z, float range)

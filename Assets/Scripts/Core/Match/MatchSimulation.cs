@@ -73,7 +73,7 @@ namespace Kitefall.Core
 
             _rng = new DeterministicRandom(setup.Seed);
             _crateRng = new DeterministicRandom(setup.Seed * 31 + 5);
-            Arena = ArenaLayout.Generate(setup.Arena, setup.Seed, setup.Participants.Count);
+            Arena = ArenaLayout.Generate(setup.Arena, setup.Seed, setup.Participants.Count, setup.UseRoofGraph, Rules.IsDuel, setup.Roofs);
 
             // Wind pattern randomised per match around the arena's base direction (spec 11).
             var wind = Clone(setup.Wind);
@@ -112,8 +112,8 @@ namespace Kitefall.Core
             StormCenter = new Vector3(Arena.SkyCenter.X, 0f, Arena.SkyCenter.Z);
             StormRadius = setup.Phases.stormStartRadius;
             CurrentWind = Wind.Sample(0f, Arena.Anchors[0].Y);
-            EnterPhase(Rules.introTime > 0f ? MatchPhase.Intro : MatchPhase.Launch, Rules.introTime > 0f ? Rules.introTime : Rules.launchTime);
-            if (Phase == MatchPhase.Launch) PrepareLaunch();
+            InitUpgrade();
+            BeginPreMatch();
         }
 
         private static WindSettings Clone(WindSettings w) => new WindSettings
@@ -159,12 +159,22 @@ namespace Kitefall.Core
             if (Phase == MatchPhase.Results) return;
             Tick++;
             Time += Dt;
+            ProcessCommands(inputs);
 
             switch (Phase)
             {
+                case MatchPhase.Warmup:
+                    StepWarmup(inputs);
+                    break;
+                case MatchPhase.RoofSelect:
+                    StepRoofSelect();
+                    break;
+                case MatchPhase.Prep:
+                    StepPrepPhase(inputs);
+                    break;
                 case MatchPhase.Intro:
                     PhaseTimeLeft -= Dt;
-                    if (PhaseTimeLeft <= 0f) { EnterPhase(MatchPhase.Launch, Rules.launchTime); PrepareLaunch(); }
+                    if (PhaseTimeLeft <= 0f) BeginLaunch();
                     break;
                 case MatchPhase.Launch:
                     StepLaunch(inputs);
@@ -180,7 +190,7 @@ namespace Kitefall.Core
                     break;
                 case MatchPhase.LoadoutBreak:
                     PhaseTimeLeft -= Dt;
-                    if (PhaseTimeLeft <= 0f) { EnterPhase(MatchPhase.Launch, Rules.launchTime); PrepareLaunch(); }
+                    if (PhaseTimeLeft <= 0f) BeginLaunch();
                     break;
             }
         }
@@ -216,6 +226,7 @@ namespace Kitefall.Core
             p.Quit = true;
             p.Result.Quit = true;
             p.Eliminated = true;
+            p.Flyer = FlyerState.Out;
             if (p.Kite.IsFlying) p.Kite.EndFlight(KiteStatus.Crashed);
             CancelContestsOf(index);
             if (!_eliminationOrder.Contains(index)) _eliminationOrder.Add(index);
@@ -249,6 +260,7 @@ namespace Kitefall.Core
                 p.LaunchDone = false;
                 p.LaunchBonus = 0f;
                 if (p.Eliminated) continue;
+                p.Flyer = FlyerState.OnRoof;
 
                 if (Rules.IsDuel)
                 {
@@ -298,7 +310,14 @@ namespace Kitefall.Core
 
             foreach (MatchParticipant p in _participants)
             {
-                if (p.Eliminated) continue;
+                if (p.Eliminated || p.Kite.IsFlying) continue;
+                if (p.Prep != null && p.Flyer == FlyerState.Prep)
+                {
+                    // Ritual not finished at the cap: auto-complete with "Good" results (spec 11.2).
+                    p.Prep.AutoComplete(Time);
+                    LaunchFromPrep(p);
+                    continue;
+                }
                 p.LaunchDelayLeft = p.Kite.Loadout.LaunchDelay;
                 if (p.LaunchDelayLeft <= 0f) LaunchKite(p);
             }
@@ -306,11 +325,19 @@ namespace Kitefall.Core
 
         private void LaunchKite(MatchParticipant p)
         {
-            WindSample w = Wind.Sample(MatchTime, p.Kite.Anchor.Y);
+            LaunchWith(p, p.LaunchBonus + TraitStartBonus(p));
+            p.LaunchBonus = 0f;
+        }
+
+        private void LaunchWith(MatchParticipant p, float bonusHeight)
+        {
+            WindSample w = SampleWind(MatchTime, p.Kite.Anchor.Y);
             // Spread kites a little so duel kites do not start on top of each other.
             float spread = (p.Index - (_participants.Count - 1) * 0.5f) * (_participants.Count <= 2 ? 6f : 3f);
-            p.Kite.Reset(w.DirectionDeg, p.LaunchBonus, spread);
-            p.LaunchBonus = 0f;
+            if (Arena.Roofs != null) spread = 0f; // separate roofs already spread the kites
+            p.Kite.Reset(w.DirectionDeg, bonusHeight, spread);
+            p.Flyer = FlyerState.Flying;
+            OnLaunchedFromRoof(p);
             if (!p.Result.DorsUsed.Contains(p.Current.dorId)) p.Result.DorsUsed.Add(p.Current.dorId);
             if (!p.Result.CharkhisUsed.Contains(p.Current.charkhiId)) p.Result.CharkhisUsed.Add(p.Current.charkhiId);
             Raise(MatchEventType.Launched, p.Index);
@@ -335,7 +362,7 @@ namespace Kitefall.Core
                 return;
             }
             if (last != null && Rules.loadoutBreakTime > 0f) EnterPhase(MatchPhase.LoadoutBreak, Rules.loadoutBreakTime);
-            else { EnterPhase(MatchPhase.Launch, Rules.launchTime); PrepareLaunch(); }
+            else BeginLaunch();
         }
 
         // =====================================================================
@@ -353,15 +380,16 @@ namespace Kitefall.Core
             if (gustWarn) Raise(MatchEventType.GustWarning);
             if (gustStart) Raise(MatchEventType.GustStarted);
             if (arenaEvent) Raise(MatchEventType.ArenaEvent, -1, -1, 0f, (int)Arena.Type);
-            Wind.SpeedMultiplier = Phases.WindMultiplier * (Phases.ArenaEventActive && Arena.Type == ArenaType.CoastalCliffs ? 1.3f : 1f);
+            Wind.SpeedMultiplier = TrainingWindMultiplier(Phases.WindMultiplier) * (Phases.ArenaEventActive && Arena.Type == ArenaType.CoastalCliffs ? 1.3f : 1f);
             BirdsActive = Phases.ArenaEventActive && Arena.Type == ArenaType.OldCityRooftops;
-            CurrentWind = Wind.Sample(MatchTime, Arena.Anchors[0].Y);
+            CurrentWind = SampleWind(MatchTime, Arena.Anchors[0].Y);
 
             // ---- Kites
             for (int i = 0; i < _participants.Count; i++)
             {
                 MatchParticipant p = _participants[i];
                 if (p.Eliminated) continue;
+                if (StepFlyerUpgrade(p, i, inputs)) continue;
                 KiteSimulation kite = p.Kite;
 
                 if (kite.Status == KiteStatus.Waiting)
@@ -389,6 +417,7 @@ namespace Kitefall.Core
                 }
 
                 KiteInput input = !p.Connected ? HoldInput(p) : (i < inputs.Count ? inputs[i] : default);
+                if (p.Flyer == FlyerState.PackingUp) input = PackUpInput(p);
                 if (BirdsActive)
                 {
                     // Birds shake the lines for 2 s (spec 6.1).
@@ -397,9 +426,10 @@ namespace Kitefall.Core
                 }
 
                 kite.Tension.Floor = DheelFloorFor(i);
-                WindSample w = Wind.Sample(MatchTime, kite.Flight.Height);
+                WindSample w = KiteWind(p, SampleWind(MatchTime, kite.Flight.Height));
                 KiteStepResult r = kite.Step(input, w, MatchTime, Dt);
                 if (r.DiveStarted) Raise(MatchEventType.DiveStarted, i);
+                if (p.Flyer == FlyerState.PackingUp) StepPackUp(p);
 
                 if (Rules.stormZone && kite.IsFlying)
                 {
@@ -455,8 +485,9 @@ namespace Kitefall.Core
             p.Current = PrepareLoadout(next);
             p.Kite = NewKite(p, p.Index);
             _lines[p.Index] = p.Kite.LinePoints;
-            LaunchKite(p);
             Raise(MatchEventType.Respawned, p.Index);
+            if (Setup.UseLaunchRitual) StartShortPrep(p, false); // short prep replaces the 5 s respawn launch (spec 11.5)
+            else LaunchKite(p);
         }
 
         // =====================================================================
@@ -551,7 +582,8 @@ namespace Kitefall.Core
                 LineOut = k.Spool.LineOut,
                 Durability = k.Durability,
                 KitePosition = k.WorldPosition,
-                ContestCount = ContestCount(kite)
+                ContestCount = ContestCount(kite),
+                WindBonus = MatchTime < p.UpwindBonusUntil ? 1f + Setup.Roofs.upwindWindBonus : 0f
             };
         }
 
@@ -752,6 +784,7 @@ namespace Kitefall.Core
                 }
                 ended++;
                 p.Result.DurabilityEnd[p.Current.kiteId] = k.Durability;
+                p.Flyer = FlyerState.OnRoof;
 
                 if (!Rules.IsDuel)
                 {
@@ -759,6 +792,7 @@ namespace Kitefall.Core
                     else
                     {
                         p.Eliminated = true;
+                        p.Flyer = FlyerState.Out;
                         _eliminationOrder.Add(p.Index);
                         Raise(MatchEventType.Eliminated, p.Index);
                     }
@@ -893,10 +927,12 @@ namespace Kitefall.Core
             {
                 _nextCrateAt += Rules.crateInterval;
                 Vector3 c = Arena.SkyCenter;
+                Vector3 pos = new Vector3(c.X + _crateRng.Range(-70f, 70f), _crateRng.Range(cs.minHeight, cs.maxHeight), c.Z + _crateRng.Range(-60f, 60f));
+                if (_crateIds == 0 && CrateSpotPosition(cs, out Vector3 spot)) pos = spot;
                 var crate = new SkyCrate
                 {
                     Id = ++_crateIds,
-                    Position = new Vector3(c.X + _crateRng.Range(-70f, 70f), _crateRng.Range(cs.minHeight, cs.maxHeight), c.Z + _crateRng.Range(-60f, 60f)),
+                    Position = pos,
                     Content = (CrateContent)_crateRng.Range(0, 4),
                     SpawnTime = MatchTime,
                     Progress = new float[_participants.Count]

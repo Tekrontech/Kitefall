@@ -15,7 +15,7 @@ namespace Kitefall.Tests
             Assert.AreEqual(0.5f, back.SteerX, 0.01f);
             Assert.AreEqual(-1f, back.SteerY, 0.01f);
             Assert.IsTrue(back.PullHeld && back.DiveHeld && !back.ReelHeld);
-            Assert.LessOrEqual(data.Length, 8);
+            Assert.LessOrEqual(data.Length, 12);
         }
 
         [Test]

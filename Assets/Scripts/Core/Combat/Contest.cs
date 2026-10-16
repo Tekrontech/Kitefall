@@ -56,6 +56,8 @@ namespace Kitefall.Core
         public Vector3 KitePosition;
         /// <summary>How many contests this kite is in right now (2 = "Multi" penalty).</summary>
         public int ContestCount;
+        /// <summary>Extra wind factor (Upwind roof: 1.03 for the first 60 s). 0 = none.</summary>
+        public float WindBonus;
     }
 
     /// <summary>Things that are the same for both sides.</summary>

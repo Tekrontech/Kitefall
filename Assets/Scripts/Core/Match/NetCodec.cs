@@ -12,7 +12,7 @@ namespace Kitefall.Core
     /// </summary>
     public static class NetCodec
     {
-        public const byte Version = 1;
+        public const byte Version = 2;
 
         // ---- Inputs (client → server, 20 Hz) ---------------------------------
 
@@ -26,6 +26,9 @@ namespace Kitefall.Core
                 w.Write(Q(input.SteerY));
                 byte flags = (byte)((input.PullHeld ? 1 : 0) | (input.ReelHeld ? 2 : 0) | (input.DiveHeld ? 4 : 0));
                 w.Write(flags);
+                w.Write((byte)input.Command);
+                w.Write(input.CommandArg);
+                w.Write(input.CommandSeq);
             }
             return ms.ToArray();
         }
@@ -40,6 +43,12 @@ namespace Kitefall.Core
                 input.PullHeld = (f & 1) != 0;
                 input.ReelHeld = (f & 2) != 0;
                 input.DiveHeld = (f & 4) != 0;
+                if (r.BaseStream.Position < r.BaseStream.Length)
+                {
+                    input.Command = (PlayerCommand)r.ReadByte();
+                    input.CommandArg = r.ReadInt16();
+                    input.CommandSeq = r.ReadByte();
+                }
                 return input;
             }
         }
@@ -90,6 +99,16 @@ namespace Kitefall.Core
                     w.Write((byte)(k.LaunchHold * 50f));
                     w.Write((short)k.Score); w.Write((byte)k.RoundsWon); w.Write((short)k.Cuts); w.Write((byte)k.StackIndex);
                     w.Write(k.SweetCenter); w.Write((byte)k.SweetWidth);
+                    // Upgrade v1.4 – character state
+                    w.Write((byte)k.Flyer); w.Write((sbyte)k.RoofId);
+                    W(w, k.CharacterPosition); w.Write((short)(k.CharacterYaw * 10f)); w.Write((byte)(KMath.Clamp(k.CharacterSpeed, 0f, 12f) * 20f));
+                    w.Write((byte)k.PrepStep);
+                    w.Write((byte)((k.PrepFull ? 1 : 0) | (k.PrepHelped ? 2 : 0) | ((int)k.Kanni << 2)));
+                    w.Write(k.PrepStart); w.Write(k.PrepStepStart); w.Write(k.PrepBlockedUntil);
+                    w.Write((byte)(KMath.Clamp(k.PrepTossHold, 0f, 5f) * 50f));
+                    w.Write((byte)((k.PrepTaps & 15) | ((k.PrepSwipes & 15) << 4))); w.Write((byte)k.PrepTugs);
+                    w.Write((short)k.TraverseLink); w.Write((byte)(k.TraverseProgress * 255f));
+                    w.Write((byte)KMath.Clamp(k.GroundedTime * 5f, 0f, 255f)); w.Write((byte)(k.PackUp01 * 255f));
                 }
 
                 w.Write((byte)s.Contests.Count);
@@ -162,6 +181,16 @@ namespace Kitefall.Core
                     k.LaunchHold = r.ReadByte() / 50f;
                     k.Score = r.ReadInt16(); k.RoundsWon = r.ReadByte(); k.Cuts = r.ReadInt16(); k.StackIndex = r.ReadByte();
                     k.SweetCenter = r.ReadSingle(); k.SweetWidth = r.ReadByte();
+                    k.Flyer = (FlyerState)r.ReadByte(); k.RoofId = r.ReadSByte();
+                    k.CharacterPosition = RV(r); k.CharacterYaw = r.ReadInt16() / 10f; k.CharacterSpeed = r.ReadByte() / 20f;
+                    k.PrepStep = (PrepStep)r.ReadByte();
+                    byte pf = r.ReadByte();
+                    k.PrepFull = (pf & 1) != 0; k.PrepHelped = (pf & 2) != 0; k.Kanni = (PrepGrade)((pf >> 2) & 3);
+                    k.PrepStart = r.ReadSingle(); k.PrepStepStart = r.ReadSingle(); k.PrepBlockedUntil = r.ReadSingle();
+                    k.PrepTossHold = r.ReadByte() / 50f;
+                    byte ts = r.ReadByte(); k.PrepTaps = ts & 15; k.PrepSwipes = ts >> 4; k.PrepTugs = r.ReadByte();
+                    k.TraverseLink = r.ReadInt16(); k.TraverseProgress = r.ReadByte() / 255f;
+                    k.GroundedTime = r.ReadByte() / 5f; k.PackUp01 = r.ReadByte() / 255f;
                     s.Kites[i] = k;
                 }
 

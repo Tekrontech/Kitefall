@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace Kitefall.Core
 {
-    public enum MatchPhase { Intro, Launch, Round, RoundEnd, LoadoutBreak, Results }
+    public enum MatchPhase { Intro, Launch, Round, RoundEnd, LoadoutBreak, Results, Warmup, RoofSelect, Prep }
 
     public enum RoundEndReason { Cut, SelfSnap, Crash, Timer, Forfeit }
 
@@ -33,7 +33,29 @@ namespace Kitefall.Core
         Eliminated,
         DiveStarted,
         Disconnected,
-        Reconnected
+        Reconnected,
+        // ---- Upgrade v1.4
+        /// <summary>A = player, Code = roof id.</summary>
+        RoofClaimed,
+        /// <summary>A = player, Value = seconds to pack up.</summary>
+        PackUpStarted,
+        PackedUp,
+        /// <summary>A = player, Code = link id, Value = travel time.</summary>
+        TraverseStarted,
+        /// <summary>A = player, Code = roof id.</summary>
+        ArrivedOnRoof,
+        /// <summary>A = player, Code = 1 full / 0 short.</summary>
+        PrepStarted,
+        /// <summary>A = player, Code = (int)PrepEventType, Value = (int)PrepGrade.</summary>
+        Prep,
+        /// <summary>A = player, Code = emote index in the catalogue.</summary>
+        Emote,
+        /// <summary>A = player, Code = quick chat message id.</summary>
+        QuickChat,
+        /// <summary>A = helper, B = launcher.</summary>
+        HelpLaunch,
+        /// <summary>A = player – auto prep started after 25 s grounded.</summary>
+        GroundedTooLong
     }
 
     /// <summary>Something that happened this tick – drives effects, sounds, HUD messages and analytics.</summary>

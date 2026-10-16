@@ -21,6 +21,23 @@ namespace Kitefall.Core
         public bool PullHeld;
         public bool ReelHeld;
         public bool DiveHeld;
+        /// <summary>One-shot command (upgrade v1.4): roof claim, pack up, traverse, launch here, emote, quick chat, help launch.</summary>
+        public PlayerCommand Command;
+        public short CommandArg;
+        /// <summary>Client increments this per new command; the server runs each sequence number once (inputs repeat).</summary>
+        public byte CommandSeq;
+    }
+
+    public enum PlayerCommand : byte
+    {
+        None = 0,
+        ClaimRoof = 1,
+        PackUp = 2,
+        TraverseLink = 3,
+        LaunchHere = 4,
+        Emote = 5,
+        QuickChat = 6,
+        HelpLaunch = 7
     }
 
     /// <summary>What happened during one simulation step.</summary>
