@@ -75,6 +75,33 @@ namespace Kitefall.Core
             foreach (KiteInfo k in Kites) Names[k.Stats.id] = k.Name;
         }
 
+        // ---- Registry: the game (ScriptableObjects) or Remote Config can replace the spec values ----
+
+        public static void Register(KiteClassStats stats, string displayName)
+        {
+            int i = Kites.FindIndex(k => k.Stats.id == stats.id);
+            var info = i >= 0 ? Kites[i] : new KiteInfo { Launch = true };
+            info.Stats = stats;
+            if (!string.IsNullOrEmpty(displayName)) info.Name = displayName;
+            if (i >= 0) Kites[i] = info; else Kites.Add(info);
+            Names[stats.id] = info.Name ?? stats.id;
+        }
+
+        public static void Register(TailStats stats, string displayName) => Replace(Tails, stats.id, stats, displayName);
+        public static void Register(DorStats stats, string displayName) => Replace(Dors, stats.id, stats, displayName);
+        public static void Register(CharkhiStats stats, string displayName) => Replace(Charkhis, stats.id, stats, displayName);
+        public static void Register(TuningStats stats, string displayName) => Replace(Tunings, stats.id, stats, displayName);
+
+        private static void Replace<T>(List<KeyValuePair<string, T>> list, string id, T value, string displayName)
+        {
+            int i = list.FindIndex(kv => kv.Key == id);
+            var kv2 = new KeyValuePair<string, T>(id, value);
+            if (i >= 0) list[i] = kv2; else list.Add(kv2);
+            if (!string.IsNullOrEmpty(displayName)) Names[id] = displayName;
+        }
+
+        public static KiteInfo KiteInfoOf(string id) => Kites.Find(k => k.Stats.id == id);
+
         public static KiteClassStats Kite(string id)
         {
             foreach (KiteInfo k in Kites) if (k.Stats.id == id) return k.Stats;

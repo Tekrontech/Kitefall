@@ -1,0 +1,113 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Kitefall.Services
+{
+    public enum GraphicsQuality { Auto, Low, Medium, High }
+
+    [Serializable]
+    public class ControlPosition
+    {
+        public string id;
+        public Vector2 anchoredPosition;
+    }
+
+    /// <summary>Player settings (spec 4.4 Settings). Stored on the device only.</summary>
+    [Serializable]
+    public class SettingsData
+    {
+        // Controls
+        public bool leftHanded;
+        public bool oneThumb;
+        public float joystickScale = 1f;
+        public float buttonScale = 1f;
+        public float steerSensitivity = 1f;
+        public bool diveGesture = true;
+        public List<ControlPosition> customLayout = new List<ControlPosition>();
+
+        // Camera
+        public float cameraDistance = 16f;
+        public float cameraFollow = 0.5f;
+        public bool cameraShake = true;
+
+        // Graphics
+        public GraphicsQuality quality = GraphicsQuality.Auto;
+        public int fps = 60;
+        public bool batterySaver;
+
+        // Audio
+        public float masterVolume = 1f;
+        public float musicVolume = 0.6f;
+        public float sfxVolume = 1f;
+
+        // Haptics
+        public bool haptics = true;
+
+        // Gameplay
+        /// <summary>0 = bar, 1 = numbers.</summary>
+        public int contestMeterStyle;
+        public bool sweetZoneHighlight = true;
+        public bool colorBlind;
+
+        // Developer
+        public bool devBotRanked;
+        public bool devShowDebug;
+    }
+
+    public sealed class SettingsService
+    {
+        private const string Key = "kitefall.settings.v1";
+        public SettingsData Data { get; private set; } = new SettingsData();
+        public event Action Changed;
+
+        public void Load()
+        {
+            try
+            {
+                string json = PlayerPrefs.GetString(Key, "");
+                if (!string.IsNullOrEmpty(json)) Data = JsonUtility.FromJson<SettingsData>(json) ?? new SettingsData();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[Settings] Could not read settings, using defaults. " + e.Message);
+                Data = new SettingsData();
+            }
+            Apply();
+        }
+
+        public void Save()
+        {
+            PlayerPrefs.SetString(Key, JsonUtility.ToJson(Data));
+            PlayerPrefs.Save();
+            Apply();
+            Changed?.Invoke();
+        }
+
+        public GraphicsQuality EffectiveQuality
+        {
+            get
+            {
+                if (Data.quality != GraphicsQuality.Auto) return Data.quality;
+                int mem = SystemInfo.systemMemorySize;
+                if (mem > 0 && mem <= 3500) return GraphicsQuality.Low;      // 3 GB phones (spec 0)
+                if (mem > 0 && mem <= 6500) return GraphicsQuality.Medium;
+                return GraphicsQuality.High;
+            }
+        }
+
+        /// <summary>Tail rope segments per quality (spec 8.2: 6 / 10 / 14).</summary>
+        public int TailSegments => EffectiveQuality == GraphicsQuality.Low ? 6 : EffectiveQuality == GraphicsQuality.Medium ? 10 : 14;
+
+        public void Apply()
+        {
+            int fps = Data.batterySaver ? 30 : Data.fps;
+            if (EffectiveQuality == GraphicsQuality.Low) fps = Mathf.Min(fps, 30);
+            Application.targetFrameRate = fps;
+            QualitySettings.vSyncCount = 0;
+            AudioListener.volume = Mathf.Clamp01(Data.masterVolume);
+            QualitySettings.shadows = EffectiveQuality == GraphicsQuality.Low ? ShadowQuality.Disable
+                : EffectiveQuality == GraphicsQuality.Medium ? ShadowQuality.HardOnly : ShadowQuality.All;
+        }
+    }
+}

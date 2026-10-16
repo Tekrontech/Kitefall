@@ -1,4 +1,5 @@
 using System;
+using Kitefall.Core;
 using Kitefall.Data;
 using UnityEditor;
 using UnityEngine;
@@ -24,6 +25,7 @@ namespace Kitefall.EditorTools
             public FlightConfig Flight;
             public WindConfig Wind;
             public CameraConfig Camera;
+            public BalanceConfig Balance;
         }
 
         [MenuItem("Kitefall/Data/Create Missing Data Assets", priority = 10)]
@@ -46,36 +48,44 @@ namespace Kitefall.EditorTools
         public static Defaults EnsureDefaults(bool overwrite)
         {
             EnsureFolder(Root);
-            foreach (string sub in new[] { "Kites", "Tails", "Dors", "Charkhis", "Config" }) EnsureFolder(Root + "/" + sub);
+            foreach (string sub in new[] { "Kites", "Tails", "Dors", "Charkhis", "Tunings", "Arenas", "Config" }) EnsureFolder(Root + "/" + sub);
 
             var d = new Defaults();
 
-            // ---- Kite classes (spec 8.1 – launch classes only; the others arrive with their update).
-            d.Guddi = Kite("Guddi", "guddi", 3, 4, 3, 1.00f, 180, 15, overwrite);
-            Kite("Pipa", "pipa", 5, 4, 2, 0.92f, 240, 12, overwrite);
-            Kite("Rokkaku", "rokkaku", 2, 2, 5, 1.05f, 130, 18, overwrite);
-
-            // ---- Dum (spec 8.2)
-            Tail("None", "none", -5, 0.15f, -2, 0, overwrite);
-            d.ShortRibbon = Tail("Short ribbon", "short_ribbon", 0, 0f, 1, 10, overwrite);
-            Tail("Double ribbon", "double_ribbon", 3, -0.05f, 2, 10, overwrite);
-            Tail("Long tail", "long_tail", 5, -0.15f, 3, 14, overwrite);
-            Tail("Tassel", "tassel", 2, -0.05f, 1, 6, overwrite);
-
-            // ---- Dor (spec 7.2): name, id, cut, speed, strength, rise, wear, agility, sweet, dheelBonus, longBonus, level
-            d.Sooti = Dor("Sooti", "sooti", 1.00f, 1.00f, 95, 1.00f, 1.00f, 0f, 0, 1.15f, 1.10f, 1, overwrite);
-            Dor("Reshmi", "reshmi", 0.95f, 1.20f, 93, 1.10f, 1.00f, 0.05f, 0, 1.15f, 1.10f, 5, overwrite);
-            Dor("Tez Dhaar", "tez_dhaar", 1.10f, 1.00f, 92, 1.15f, 1.30f, 0f, 0, 1.15f, 1.10f, 10, overwrite);
-            Dor("Mazboot", "mazboot", 1.00f, 0.85f, 98, 1.00f, 1.00f, -0.08f, 0, 1.15f, 1.10f, 15, overwrite);
-            Dor("Lambi", "lambi", 0.95f, 0.95f, 94, 1.00f, 1.00f, 0f, 0, 1.15f, 1.15f, 20, overwrite);
-            Dor("Lachakdaar", "lachakdaar", 0.97f, 0.95f, 96, 1.00f, 1.00f, 0f, 4, 1.20f, 1.10f, 25, overwrite);
-
-            // ---- Charkhi (spec 7.3): name, id, capacity, reel, release, releaseDrop, floor, kheench, pullRise, launchDelay, level
-            d.Lakri = Charkhi("Lakri", "lakri", 600, 8, 10, 1.00f, 0, 1.00f, 1.00f, 0f, 1, overwrite);
-            Charkhi("Speed", "speed", 450, 14, 14, 1.20f, 0, 1.00f, 1.00f, 0f, 3, overwrite);
-            Charkhi("Bari", "bari", 1000, 6, 9, 1.00f, 0, 1.00f, 1.00f, 1f, 8, overwrite);
-            Charkhi("Brake", "brake", 600, 8, 7, 1.00f, 55, 1.00f, 1.00f, 0f, 12, overwrite);
-            Charkhi("Gear", "gear", 550, 10, 9, 1.00f, 0, 1.05f, 1.15f, 0f, 18, overwrite);
+            // ---- Items from the spec tables (single source: Core.SpecDefaults)
+            foreach (SpecDefaults.KiteInfo k in SpecDefaults.Kites)
+            {
+                KiteClassStats st = k.Stats;
+                KiteClassData asset = Kite(k.Name, st.id, st.speed, st.agility, st.stability, st.classBase, st.turnRate, st.sweetZoneBase, overwrite);
+                if (st.id == "guddi") d.Guddi = asset;
+            }
+            foreach (var kv in SpecDefaults.Tails)
+            {
+                TailStats t = kv.Value;
+                TailData asset = Tail(SpecDefaults.NameOf(kv.Key), kv.Key, t.sweetZoneMod, t.turnMod, (int)t.stabilityMod, t.ropeSegments, overwrite);
+                if (kv.Key == "short_ribbon") d.ShortRibbon = asset;
+            }
+            foreach (var kv in SpecDefaults.Dors)
+            {
+                DorStats x = kv.Value;
+                DorData asset = Dor(SpecDefaults.NameOf(kv.Key), kv.Key, x.dorCut, x.dorSpeed, x.strength, x.tensionRiseMult, x.wearMult, x.agilityMod, x.sweetZoneMod, x.dheelCounterBonus, x.longRangeAngleBonus, x.unlockLevel, overwrite);
+                if (kv.Key == "sooti") d.Sooti = asset;
+            }
+            foreach (var kv in SpecDefaults.Charkhis)
+            {
+                CharkhiStats x = kv.Value;
+                CharkhiData asset = Charkhi(SpecDefaults.NameOf(kv.Key), kv.Key, x.capacityMeters, x.reelSpeed, x.releaseSpeed, x.releaseTensionDropMult, x.dheelTensionFloor, x.kheenchPowerMult, x.pullTensionRiseMult, x.launchDelay, x.unlockLevel, overwrite);
+                if (kv.Key == "lakri") d.Lakri = asset;
+            }
+            foreach (var kv in SpecDefaults.Tunings)
+            {
+                TuningStats t = kv.Value;
+                string id = kv.Key;
+                Asset<TuningData>($"{Root}/Tunings/{SpecDefaults.NameOf(id).Replace(" ", "")}.asset", overwrite, x =>
+                {
+                    x.id = id; x.displayName = SpecDefaults.NameOf(id); x.target = t.target; x.plus = t.plus; x.minus = t.minus;
+                });
+            }
 
             // ---- Configs (field defaults = spec 14.6 starting values)
             d.Combat = Config<CombatConfig>("CombatConfig", overwrite, null);
@@ -87,6 +97,7 @@ namespace Kitefall.EditorTools
                 w.settings.directionVariationDeg = 20f; // "shifting wind between roofs"
             });
             d.Camera = Config<CameraConfig>("CameraConfig", overwrite, null);
+            d.Balance = Config<BalanceConfig>("BalanceConfig", overwrite, null);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

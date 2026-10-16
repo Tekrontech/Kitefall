@@ -44,6 +44,34 @@ namespace Kitefall.Data
         public float neutralCooldown = 1f;
         public float multiContestMult = 0.8f;
 
+        /// <summary>Contest settings: the flat spec fields here + the extra factors from BalanceConfig.</summary>
+        public ContestSettings ToContestSettings(ContestSettings extras)
+        {
+            var s = extras != null ? (ContestSettings)UnityEngine.JsonUtility.FromJson(UnityEngine.JsonUtility.ToJson(extras), typeof(ContestSettings)) : new ContestSettings();
+            s.contestK = contestK;
+            s.contestMaxTime = contestMaxTime;
+            s.lateWinThreshold = lateWinThreshold;
+            s.attackLockWindow = attackLockWindow;
+            s.counterWin = counterWin;
+            s.counterLose = counterLose;
+            s.diveBurst = diveBurst;
+            s.diveBurstTime = diveBurstTime;
+            s.noise = noise;
+            s.neutralDurabilityLoss = neutralDurabilityLoss;
+            s.multiContestMult = multiContestMult;
+            s.redZone = strongZoneMax;
+            return s;
+        }
+
+        public ContactSettings ToContactSettings(ContactSettings extras)
+        {
+            var s = extras != null ? (ContactSettings)UnityEngine.JsonUtility.FromJson(UnityEngine.JsonUtility.ToJson(extras), typeof(ContactSettings)) : new ContactSettings();
+            s.contactDistance = contactDistance;
+            s.approachDistance = approachDistance;
+            s.neutralCooldown = neutralCooldown;
+            return s;
+        }
+
         public TensionSettings ToTensionSettings() => new TensionSettings
         {
             pullRate = tensionPullRate,
