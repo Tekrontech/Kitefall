@@ -14,7 +14,7 @@ namespace Kitefall.EditorTools
         private static readonly HashSet<string> Stop = new HashSet<string>(
             ("the a an of and with on in at over for from to by its into as is are this that png jpg jpeg webp copy final image img new " +
              "version kitefall screen game art style painted hand flat front view also used where random behind tips card shop thumbnail " +
-             "texture sheet design artwork fills frame edge symmetrical colour color scheme fine ink linework rich ornament high quality " +
+             "texture sheet design artwork fills edge symmetrical colour color scheme fine ink linework rich ornament high quality " +
              "detailed illustration render digital generated upscaled").Split(' '));
 
         /// <summary>Time of day and praise words: every Kitefall picture is warm golden hour, so they say little.</summary>
@@ -36,7 +36,8 @@ namespace Kitefall.EditorTools
             { "cliffs", "cliff" }, { "riverside", "river" }, { "mountains", "mountain" }, { "valley", "mountain" }, { "stormy", "storm" },
             { "islands", "island" }, { "palace", "royal" }, { "town", "city" }, { "spool", "charkhi" }, { "reel", "charkhi" },
             { "thread", "dor" }, { "string", "dor" }, { "tail", "dum" }, { "coins", "coin" }, { "gems", "gem" }, { "jewels", "gem" },
-            { "shield", "badge" }, { "emblem", "badge" }, { "crest", "badge" }
+            { "shield", "badge" }, { "emblem", "badge" }, { "crest", "badge" }, { "parchment", "frame" },
+            { "hexagonal", "hexagonal" }, { "beeswax", "wax" }, { "waxed", "wax" }, { "twisted", "twist" }, { "medallion", "medallion" }
         };
 
         private static Dictionary<string, HashSet<string>> _docs;
@@ -50,14 +51,47 @@ namespace Kitefall.EditorTools
             {
                 if (raw.Length < 3 || Stop.Contains(raw)) continue;
                 string w = Syn.TryGetValue(raw, out string s) ? s : raw;
-                if (w.Length > 4 && w.EndsWith("s") && !w.EndsWith("ss"))
-                {
-                    w = w.Substring(0, w.Length - 1);
-                    if (Syn.TryGetValue(w, out string s2)) w = s2;
-                }
+                w = Stem(w);
+                if (Syn.TryGetValue(w, out string s2)) w = s2;
                 list.Add(w);
             }
             return list;
+        }
+
+        /// <summary>Tiny stemmer: loosely→loose, coiled→coil, kites→kite, hanging→hang.</summary>
+        private static string Stem(string w)
+        {
+            if (w.Length > 5 && w.EndsWith("ly")) w = w.Substring(0, w.Length - 2);
+            else if (w.Length > 5 && w.EndsWith("ing")) w = w.Substring(0, w.Length - 3);
+            else if (w.Length > 5 && w.EndsWith("ed")) w = w.Substring(0, w.Length - 2);
+            if (w.Length > 4 && w.EndsWith("s") && !w.EndsWith("ss")) w = w.Substring(0, w.Length - 1);
+            return w;
+        }
+
+        private static readonly string[] Kites = { "guddi", "pipa", "rokkaku", "pakpao", "gudiparan", "chula", "wau" };
+        private static readonly string[][] Palettes =
+        {
+            new[] { "sunset" }, new[] { "monsoon" }, new[] { "basant" }, new[] { "night", "bazaar" },
+            new[] { "sea", "glass" }, new[] { "saffron" }, new[] { "jade" }, new[] { "ember" }
+        };
+
+        /// <summary>"chula_kite_sail_sea_glass_teal_mint_paisley_rare_1024" → "skin_chula_4" (kite name + palette name in the file name).</summary>
+        public static string SkinFromName(string fileName)
+        {
+            var words = new HashSet<string>(Regex.Split((fileName ?? "").ToLowerInvariant(), "[^a-z]+"));
+            string kite = null;
+            foreach (string k in Kites) if (words.Contains(k)) { if (kite != null) return null; kite = k; }
+            if (kite == null) return null;
+            int found = -1;
+            for (int i = 0; i < Palettes.Length; i++)
+            {
+                bool all = true;
+                foreach (string w in Palettes[i]) if (!words.Contains(w)) all = false;
+                if (!all) continue;
+                if (found >= 0 && !(i == 3 && found == 0)) return null; // two palettes named: unclear
+                found = i;
+            }
+            return found >= 0 ? "skin_" + kite + "_" + found : null;
         }
 
         private static void Build()

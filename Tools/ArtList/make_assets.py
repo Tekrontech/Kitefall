@@ -386,6 +386,7 @@ open(sys.argv[2], "w").write("\n".join(cs))
 # Editor-only keyword table: what each image shows (prompt subject without the shared style text) – used to match
 # artist files whose names describe the picture ("Golden Kite Bazaar at Sunset") instead of the slot id.
 def subject(prompt):
+    prompt = prompt.replace("fills the frame edge to edge", "").replace("out of frame", "")
     for part in (STYLE, ICON, SCENE):
         prompt = prompt.replace(part, "")
     return re.sub(r"[^A-Za-z ]+", " ", prompt)

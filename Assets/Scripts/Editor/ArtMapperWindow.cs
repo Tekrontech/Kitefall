@@ -33,12 +33,14 @@ namespace Kitefall.EditorTools
             public List<MapEntry> entries = new List<MapEntry>();
             public List<NameEntry> installedFrom = new List<NameEntry>(); // original file name of each installed image
             public List<string> blocked = new List<string>();             // "guid|slot": the user sent this image back from that slot
+            public List<string> manual = new List<string>();
         }
 
         private readonly Dictionary<string, string> _assigned = new Dictionary<string, string>(); // slot id -> asset guid (not installed yet)
         private readonly HashSet<string> _guess = new HashSet<string>();      // pending matches AUTO must not install (by-order guesses)
         private readonly Dictionary<string, string> _installedFrom = new Dictionary<string, string>();
         private readonly HashSet<string> _blocked = new HashSet<string>();
+        private readonly HashSet<string> _manual = new HashSet<string>();     // slots the user filled by hand (pending or installed)
         private const string DuplicatesFolder = "ArtDuplicates"; // outside Assets: not imported, not in the game
         private readonly Dictionary<string, bool> _fold = new Dictionary<string, bool>();
         private Vector2 _scroll;
@@ -173,6 +175,7 @@ namespace Kitefall.EditorTools
                 if (picked != current)
                 {
                     _guess.Remove(s.Id);
+                    if (picked != null) _manual.Add(s.Id); else _manual.Remove(s.Id);
                     if (picked == null) _assigned.Remove(s.Id);
                     else _assigned[s.Id] = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(picked));
                     Save();
@@ -266,7 +269,7 @@ namespace Kitefall.EditorTools
             // Extra words in the file name that the slot does not have make the match a bit less sure.
             int extra = 0;
             foreach (string t in have) if (!want.Contains(t) && !Regex.IsMatch(t, "^[0-9]+$")) extra++;
-            return got / total - 0.04f * extra;
+            return got / total - Mathf.Min(0.1f, 0.02f * extra);
         }
 
         private void AutoMatch() => AutoMatch(null);
@@ -378,6 +381,7 @@ namespace Kitefall.EditorTools
             foreach (string g in new List<string>(w._guess)) w._assigned.Remove(g);
             w._guess.Clear();
             int dupes = w.RemoveDuplicates();
+            int strong = w.MatchStrong();
             int before = w._assigned.Count - w._guess.Count;
             w.AutoMatch();
             int byName = w._assigned.Count - w._guess.Count - before;
@@ -389,7 +393,7 @@ namespace Kitefall.EditorTools
             int left = w.UnusedIncoming().Count;
             if (total > 0) w.Install(confirm: false, includeGuesses: false);
             IncomingWatcher.MarkDone();
-            w._status = $"AUTO: {total} image(s) installed ({byName} by name, {byNumber} by # number, {byDescription} by picture description, {byShape} as loading screens). " +
+            w._status = $"AUTO: {total} image(s) installed ({strong} sure matches, {byName} by name, {byNumber} by # number, {byDescription} by picture description, {byShape} as loading screens). " +
                         (dupes > 0 ? $"{dupes} duplicate copies moved out to the '{DuplicatesFolder}' folder next to Assets. " : "") +
                         "Check with 'Only installed' – press 'Wrong' on any image in the wrong place. " +
                         (left > 0 ? $"{left} image(s) not recognised – their names are listed at the top. Rename them like the Excel 'File name', " +
@@ -684,6 +688,10 @@ namespace Kitefall.EditorTools
             var seen = new HashSet<string>();
             var pending = new HashSet<string>(_assigned.Values);
             int moved = 0;
+            // "x - Copy.png" / "x (1).png" whose original "x.png" is here or already installed is a copy even if the bytes differ.
+            var originals = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string p in paths) if (!IsCopyName(p)) originals.Add(Path.GetFileNameWithoutExtension(p));
+            foreach (string o in _installedFrom.Values) originals.Add(Path.GetFileNameWithoutExtension(o));
             using (var md5 = System.Security.Cryptography.MD5.Create())
             {
                 foreach (string p in paths)
@@ -691,7 +699,8 @@ namespace Kitefall.EditorTools
                     string hash;
                     try { hash = BitConverter.ToString(md5.ComputeHash(File.ReadAllBytes(p))); }
                     catch (IOException) { continue; }
-                    if (seen.Add(hash)) continue;
+                    bool copyOfOriginal = IsCopyName(p) && originals.Contains(BaseName(p));
+                    if (seen.Add(hash) && !copyOfOriginal) continue;
                     if (pending.Contains(AssetDatabase.AssetPathToGUID(p))) continue;
                     Directory.CreateDirectory(DuplicatesFolder);
                     string dest = Path.Combine(DuplicatesFolder, Path.GetFileName(p));
@@ -704,8 +713,65 @@ namespace Kitefall.EditorTools
             return moved;
         }
 
+        private static bool IsCopyName(string path) => Regex.IsMatch(Path.GetFileNameWithoutExtension(path), @"( - Copy( \([0-9]+\))?| \([0-9]+\))$", RegexOptions.IgnoreCase);
+
+        private static string BaseName(string path) =>
+            Regex.Replace(Path.GetFileNameWithoutExtension(path), @"( - Copy( \([0-9]+\))?| \([0-9]+\))$", "", RegexOptions.IgnoreCase);
+
+        /// <summary>How sure we are that a file name belongs to a slot (0..1+): exact id, kite+palette, slot words, description.</summary>
+        private static float Certainty(ArtSlot s, string name)
+        {
+            string skin = ArtDescriptionMatcher.SkinFromName(name);
+            if (skin != null && (s.Id == skin || s.Id.StartsWith(skin + "_"))) return 1f;
+            return Mathf.Max(Score(s, name), ArtDescriptionMatcher.Score(s.Id, name));
+        }
+
+        /// <summary>
+        /// Sure matches first (exact slot name, kite + palette, ≥ 0.9 certain). If AUTO earlier put a clearly worse image in that
+        /// slot, that image goes back to Incoming to be matched again. Images placed by hand (drag) are never moved.
+        /// </summary>
+        private int MatchStrong()
+        {
+            int matched = 0;
+            foreach (string path in UnusedIncoming())
+            {
+                string guid = AssetDatabase.AssetPathToGUID(path);
+                string name = NameWithFolders(path);
+                float aspect = SourceAspect(path);
+                ArtSlot best = default;
+                float bestScore = 0f;
+                foreach (ArtSlot s in ArtSlots.All)
+                {
+                    if (_assigned.ContainsKey(s.Id) || _blocked.Contains(guid + "|" + s.Id) || !AspectFits(s, aspect, 0.35f)) continue;
+                    float c = Certainty(s, name);
+                    if (c > bestScore) { bestScore = c; best = s; }
+                }
+                if (bestScore < 0.9f) continue;
+                string installed = InstalledPath(best);
+                if (installed != null)
+                {
+                    if (_manual.Contains(best.Id) || !_installedFrom.TryGetValue(best.Id, out string oldName)) continue;
+                    if (Certainty(best, Path.GetFileNameWithoutExtension(oldName)) > bestScore - 0.25f) continue;
+                    if (!ReturnToIncoming(best, installed, block: false)) continue;
+                }
+                _assigned[best.Id] = guid;
+                _guess.Remove(best.Id);
+                matched++;
+            }
+            Save();
+            return matched;
+        }
+
         /// <summary>"Wrong" button: the installed image goes back to Incoming under its original name and never returns to this slot.</summary>
         private void SendBack(ArtSlot s, string installedPath)
+        {
+            if (!ReturnToIncoming(s, installedPath, block: true)) return;
+            Save();
+            Art.ClearCache();
+            _status = $"#{s.Number} {s.Id}: image sent back to Incoming. Drag the right image onto this slot, or press AUTO.";
+        }
+
+        private bool ReturnToIncoming(ArtSlot s, string installedPath, bool block)
         {
             EnsureFolder(IncomingFolder);
             string name = _installedFrom.TryGetValue(s.Id, out string o) ? o : "returned_from_slot" + Path.GetExtension(installedPath);
@@ -713,12 +779,11 @@ namespace Kitefall.EditorTools
             string guid = AssetDatabase.AssetPathToGUID(installedPath);
             IncomingWatcher.Suspend();
             string err = AssetDatabase.MoveAsset(installedPath, target);
-            if (!string.IsNullOrEmpty(err)) { _status = "Could not move it back: " + err; return; }
-            _blocked.Add(guid + "|" + s.Id);
+            if (!string.IsNullOrEmpty(err)) { _status = "Could not move it back: " + err; return false; }
+            if (block) _blocked.Add(guid + "|" + s.Id);
             _installedFrom.Remove(s.Id);
-            Save();
-            Art.ClearCache();
-            _status = $"#{s.Number} {s.Id}: image sent back to Incoming as '{Path.GetFileName(target)}'. Drag the right image onto this slot, or press AUTO.";
+            _manual.Remove(s.Id);
+            return true;
         }
 
         // ---- Helpers ---------------------------------------------------------------
@@ -760,7 +825,7 @@ namespace Kitefall.EditorTools
 
         private void Load()
         {
-            _assigned.Clear(); _guess.Clear(); _installedFrom.Clear(); _blocked.Clear();
+            _assigned.Clear(); _guess.Clear(); _installedFrom.Clear(); _blocked.Clear(); _manual.Clear();
             if (!File.Exists(MappingFile)) return;
             try
             {
@@ -774,6 +839,7 @@ namespace Kitefall.EditorTools
                 }
                 foreach (NameEntry n in map.installedFrom) _installedFrom[n.slot] = n.original;
                 foreach (string b in map.blocked) _blocked.Add(b);
+                foreach (string m in map.manual) _manual.Add(m);
             }
             catch (Exception ex) { Debug.LogWarning("[Kitefall Art] Could not read " + MappingFile + ": " + ex.Message); }
         }
@@ -785,6 +851,7 @@ namespace Kitefall.EditorTools
             foreach (var kv in _assigned) map.entries.Add(new MapEntry { slot = kv.Key, guid = kv.Value, guess = _guess.Contains(kv.Key) });
             foreach (var kv in _installedFrom) map.installedFrom.Add(new NameEntry { slot = kv.Key, original = kv.Value });
             map.blocked.AddRange(_blocked);
+            map.manual.AddRange(_manual);
             File.WriteAllText(MappingFile, JsonUtility.ToJson(map, true));
         }
     }
