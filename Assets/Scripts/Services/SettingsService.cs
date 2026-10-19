@@ -59,6 +59,8 @@ namespace Kitefall.Services
         public int kiteWords;
         /// <summary>Home screen scene: 2 = painted design picture (animated, default), 0 = 3D world harbour, 1 = 3D old city rooftops.</summary>
         public int homeTheme = 2;
+        /// <summary>Settings format version (2 = painted home picture became the default).</summary>
+        public int version = 2;
         /// <summary>Win/lose animation on round end (upgrade F6).</summary>
         public bool autoEmotes = true;
         public bool quickChat = true;
@@ -84,7 +86,18 @@ namespace Kitefall.Services
             try
             {
                 string json = PlayerPrefs.GetString(Key, "");
-                if (!string.IsNullOrEmpty(json)) Data = JsonUtility.FromJson<SettingsData>(json) ?? new SettingsData();
+                if (!string.IsNullOrEmpty(json))
+                {
+                    // Older saves have no "version" field: start them at 0 so the upgrade below runs once.
+                    if (!json.Contains("\"version\"")) json = json.TrimEnd().TrimEnd('}') + ",\"version\":0}";
+                    Data = JsonUtility.FromJson<SettingsData>(json) ?? new SettingsData();
+                }
+                if (Data.version < 2)
+                {
+                    Data.homeTheme = 2; // the owner's painted home design is the default home scene from now on
+                    Data.version = 2;
+                    PlayerPrefs.SetString(Key, JsonUtility.ToJson(Data));
+                }
             }
             catch (Exception e)
             {

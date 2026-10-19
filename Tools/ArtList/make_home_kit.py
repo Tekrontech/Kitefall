@@ -119,6 +119,9 @@ cv2.polylines(mask,[pts],False,255,13)   # kite line from the flyer's hand
 # but the small kite + line areas with a fine inpaint so the open sky stays clean.
 fine=np.zeros_like(mask); fine[0:300,880:1130]=kite_mask[0:300,880:1130]
 cv2.polylines(fine,[pts],False,255,13)
+# The painted flyer is replaced in game by the player's own 3D character (HomeCharacterStage): erase it.
+boy=np.zeros_like(mask); cv2.ellipse(boy,(506,600),(64,80),0,0,360,255,-1); cv2.rectangle(boy,(446,560),(570,678),255,-1)
+fine|=boy; mask|=boy
 bg=cv2.inpaint(img,fine,5,cv2.INPAINT_TELEA)
 small=cv2.resize(bg,(W//8,H//8),interpolation=cv2.INTER_AREA)
 msmall=cv2.resize(mask,(W//8,H//8),interpolation=cv2.INTER_NEAREST)
@@ -127,6 +130,12 @@ big=cv2.GaussianBlur(cv2.resize(small,(W,H),interpolation=cv2.INTER_CUBIC),(0,0)
 coarse=mask.copy(); coarse[fine>0]=0
 f=cv2.GaussianBlur(coarse,(0,0),3).astype(np.float32)[...,None]/255.0
 bg=(bg*(1-f)+big*f).astype(np.uint8)
+# Fill the erased flyer with the sea / roof tiles just to his right (a real texture instead of a smear), feathered in.
+sx,sy,sw,sh,shift=440,516,136,166,128
+patch=bg[sy:sy+sh,sx+shift:sx+shift+sw].copy()
+feather=np.zeros((H,W),np.float32); cv2.ellipse(feather,(506,598),(70,86),0,0,360,1.0,-1); cv2.rectangle(feather,(444,566),(572,680),1.0,-1)
+feather=cv2.GaussianBlur(feather,(0,0),6)[sy:sy+sh,sx:sx+sw,None]
+bg[sy:sy+sh,sx:sx+sw]=(bg[sy:sy+sh,sx:sx+sw]*(1-feather)+patch*feather).astype(np.uint8)
 bg=cv2.resize(bg,(1920,1080),interpolation=cv2.INTER_CUBIC)
 cv2.imwrite(f'{OUT}/home_background.jpg',bg,[cv2.IMWRITE_JPEG_QUALITY,90])
 print('ok')

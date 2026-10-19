@@ -224,7 +224,9 @@ namespace Kitefall.EditorTools
         private static readonly HashSet<string> Stop = new HashSet<string>
         {
             "png", "jpg", "jpeg", "final", "img", "image", "copy", "new", "the", "a", "of", "and", "with", "kitefall", "mj", "midjourney",
-            "leonardo", "dalle", "sd", "sdxl", "ai", "4k", "hd", "upscaled", "upscale", "edit", "edited", "art", "v1", "v2", "v3", "version"
+            "leonardo", "dalle", "sd", "sdxl", "ai", "4k", "hd", "upscaled", "upscale", "edit", "edited", "art", "v1", "v2", "v3", "version",
+            // Shared slot prefixes say nothing about the picture ("ui_icon_wrench" must never match "ui_icon_coin").
+            "ui", "icon", "button", "card"
         };
 
         private static readonly Dictionary<string, string> Synonyms = new Dictionary<string, string>
@@ -378,6 +380,7 @@ namespace Kitefall.EditorTools
             var w = GetWindow<ArtMapperWindow>("Kitefall Image Mapper");
             w.minSize = new Vector2(760, 480);
             w.Load();
+            int healed = w.FixMisfiled();
             // By-order guesses hold files hostage: let AUTO try those files properly first.
             foreach (string g in new List<string>(w._guess)) w._assigned.Remove(g);
             w._guess.Clear();
@@ -395,6 +398,7 @@ namespace Kitefall.EditorTools
             if (total > 0) w.Install(confirm: false, includeGuesses: false);
             IncomingWatcher.MarkDone();
             w._status = $"AUTO: {total} image(s) installed ({strong} sure matches, {byName} by name, {byNumber} by # number, {byDescription} by picture description, {byShape} as loading screens). " +
+                        (healed > 0 ? $"{healed} wrongly placed image(s) were moved to their own slot. " : "") +
                         (dupes > 0 ? $"{dupes} duplicate copies moved out to the '{DuplicatesFolder}' folder next to Assets. " : "") +
                         "Check with 'Only installed' – press 'Wrong' on any image in the wrong place. " +
                         (left > 0 ? $"{left} image(s) not recognised – their names are listed at the top. Rename them like the Excel 'File name', " +
@@ -771,6 +775,26 @@ namespace Kitefall.EditorTools
             }
             Save();
             return matched;
+        }
+
+        /// <summary>
+        /// Self-repair: an installed image whose original file name is exactly ANOTHER slot's name (e.g. "ui_icon_wrench" sitting
+        /// in currency_coins) goes back to Incoming, so the sure-match pass puts it where it belongs.
+        /// </summary>
+        private int FixMisfiled()
+        {
+            int moved = 0;
+            foreach (ArtSlot s in ArtSlots.All)
+            {
+                if (_manual.Contains(s.Id) || !_installedFrom.TryGetValue(s.Id, out string from)) continue;
+                string stem = Path.GetFileNameWithoutExtension(from);
+                if (stem.Equals(s.Id, StringComparison.OrdinalIgnoreCase) || !ArtSlots.TryGet(stem, out ArtSlot owner) || owner.Id == s.Id) continue;
+                if (!owner.Id.Equals(stem, StringComparison.OrdinalIgnoreCase)) continue; // prefix lookups don't count
+                string path = InstalledPath(s);
+                if (path != null && ReturnToIncoming(s, path, block: true)) moved++;
+            }
+            if (moved > 0) { AssetDatabase.Refresh(); Save(); }
+            return moved;
         }
 
         /// <summary>"Wrong" button: the installed image goes back to Incoming under its original name and never returns to this slot.</summary>

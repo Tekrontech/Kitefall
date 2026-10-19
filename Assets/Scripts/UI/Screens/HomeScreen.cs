@@ -35,7 +35,12 @@ namespace Kitefall.UI.Screens
 
             // Painted home picture from the owner's design, brought to life by HomeAnimator (Settings ▸ Home scene).
             Sprite painted = Painted ? Art.Sprite("home_background") : null;
-            if (painted != null) HomeAnimator.Attach(MenuScreen.ArtBackground(Root, painted).rectTransform, Art.Sprite("home_kite"));
+            if (painted != null)
+            {
+                RectTransform picture = MenuScreen.ArtBackground(Root, painted).rectTransform;
+                HomeAnimator anim = HomeAnimator.Attach(picture, Art.Sprite("home_kite"));
+                PlaceOwnCharacter(picture, anim, p);
+            }
 
             // Soft shade on the left so the menu reads over a bright sky.
             Image left = UiKit.Image(Root, new Color(0.02f, 0.05f, 0.12f, 0.28f), Sprites.White, "LeftShade");
@@ -58,6 +63,35 @@ namespace Kitefall.UI.Screens
         private bool _built, _playingIntro;
         private readonly System.Collections.Generic.List<(Component, Vector2, float)> _intro = new System.Collections.Generic.List<(Component, Vector2, float)>();
         private void Intro(Component c, Vector2 from, float delay) => _intro.Add((c, from, delay));
+
+        // Where the painted flyer stood (1600×900 design): the player's own character is shown there instead.
+        private const float WallV = 1f - 672f / 900f;                  // top of the parapet – the character is clipped below it
+        private static readonly Rect CharacterBox = new Rect(0.3203f - 0.078f, 0.3128f - 0.174f, 0.156f, 0.348f); // u, v, w, h
+
+        /// <summary>The selected character (wardrobe look) on the rooftop of the painted picture, with the kite line from their hand.</summary>
+        private static void PlaceOwnCharacter(RectTransform picture, HomeAnimator anim, PlayerProfile p)
+        {
+            HomeCharacterStage stage = HomeCharacterStage.Get();
+            Texture tex = stage.Show(p);
+            RectTransform clip = UiKit.Rect("CharacterClip", picture);
+            clip.anchorMin = new Vector2(0f, WallV);
+            clip.anchorMax = Vector2.one;
+            clip.offsetMin = clip.offsetMax = Vector2.zero;
+            clip.gameObject.AddComponent<RectMask2D>();
+            var go = new GameObject("OwnCharacter", typeof(RectTransform));
+            go.transform.SetParent(clip, false);
+            var raw = go.AddComponent<RawImage>();
+            raw.texture = tex;
+            raw.raycastTarget = false;
+            RectTransform rt = raw.rectTransform;
+            float span = 1f - WallV;
+            rt.anchorMin = new Vector2(CharacterBox.xMin, (CharacterBox.yMin - WallV) / span);
+            rt.anchorMax = new Vector2(CharacterBox.xMax, (CharacterBox.yMax - WallV) / span);
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            stage.Bind(raw);
+            anim.HandUV = () => new Vector2(CharacterBox.xMin + stage.HandViewport.x * CharacterBox.width,
+                                            CharacterBox.yMin + stage.HandViewport.y * CharacterBox.height);
+        }
 
         /// <summary>Painted design picture as the home background (default) instead of the live 3D scene.</summary>
         private static bool Painted => (Game.Settings == null || Game.Settings.Data.homeTheme == 2) && Art.Has("home_background");

@@ -154,8 +154,10 @@ namespace Kitefall.Match
                 }
                 case CameraMode.HomeShot:
                     // Home design: behind and right of the flyer, looking past them at the kite and the sky (flyer sits left of centre).
-                    pos = Anchor + new Vector3(3.2f, 2.4f, -7.5f);
-                    look = Vector3.Lerp(Anchor + new Vector3(0f, 6f, 30f), target, 0.25f);
+                    // Close behind the character at head height so they stand left of centre, above the loadout bar,
+                    // with the kite high up on the right (matches the painted design's composition).
+                    pos = Anchor + new Vector3(1.2f, 0.25f, -5.5f);
+                    look = Vector3.Lerp(Anchor + new Vector3(0f, -0.3f, 0f), target, 0.3f);
                     return;
                 case CameraMode.Launch:
                     pos = Anchor + new Vector3(0f, 3.5f, -9f);

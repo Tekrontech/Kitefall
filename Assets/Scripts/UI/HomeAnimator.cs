@@ -26,6 +26,9 @@ namespace Kitefall.UI
         private readonly List<float> _sparklePhase = new List<float>();
         private float _birdTimer;
 
+        /// <summary>Hand position in picture 0..1 coordinates (the player's own character); null = the painted flyer's hand.</summary>
+        public System.Func<Vector2> HandUV;
+
         public static HomeAnimator Attach(RectTransform picture, Sprite kiteSprite)
         {
             var a = picture.gameObject.AddComponent<HomeAnimator>();
@@ -157,7 +160,7 @@ namespace Kitefall.UI
                 Vector2 kiteLocal = new Vector2((KiteAttach.x - 0.5f) * _kite.rect.width, (KiteAttach.y - 0.5f) * _kite.rect.height);
                 Vector3 world = _kite.TransformPoint(kiteLocal);
                 Vector2 end = (Vector2)_rect.InverseTransformPoint(world) + _rect.rect.size * _rect.pivot; // to bottom-left origin
-                Vector2 start = Vector2.Scale(Hand, size);
+                Vector2 start = Vector2.Scale(HandUV != null ? HandUV() : Hand, size);
                 Vector2 d = end - start;
                 _line.anchoredPosition = start;
                 _line.sizeDelta = new Vector2(d.magnitude, Mathf.Max(1.5f, size.y * 0.0022f));
