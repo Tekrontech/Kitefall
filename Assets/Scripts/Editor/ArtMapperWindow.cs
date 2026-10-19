@@ -33,6 +33,7 @@ namespace Kitefall.EditorTools
         private string _search = "";
         private bool _onlyMissing;
         private string _status = "";
+        private bool _showLeft = true;
 
         [MenuItem("Kitefall/Art/Image Mapper", priority = 40)]
         public static void Open()
@@ -68,6 +69,7 @@ namespace Kitefall.EditorTools
                 if (GUILayout.Button("Auto-match by name", GUILayout.Height(26))) AutoMatch();
                 if (GUILayout.Button("Match by # number", GUILayout.Height(26))) MatchByNumber();
                 if (GUILayout.Button("Import CSV…", GUILayout.Height(26))) ImportCsv();
+                if (GUILayout.Button("Match leftovers by order", GUILayout.Height(26))) MatchLeftoversByOrder();
                 if (GUILayout.Button("Clear matches", GUILayout.Height(26)) && EditorUtility.DisplayDialog("Clear", "Forget all matches that are not installed yet?", "Clear", "Cancel"))
                 {
                     _assigned.Clear(); Save();
@@ -85,7 +87,26 @@ namespace Kitefall.EditorTools
                 GUILayout.Label("Search", GUILayout.Width(46));
                 _search = GUILayout.TextField(_search, GUILayout.Width(180));
             }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUI.backgroundColor = new Color(1f, 0.85f, 0.4f);
+                if (GUILayout.Button("★ AUTO: match + install everything in Incoming", GUILayout.Height(30))) AutoInstallAll();
+                GUI.backgroundColor = Color.white;
+                IncomingWatcher.Enabled = GUILayout.Toggle(IncomingWatcher.Enabled, "Run AUTO when new images arrive", GUILayout.Width(230));
+            }
             if (!string.IsNullOrEmpty(_status)) EditorGUILayout.HelpBox(_status, MessageType.None);
+            List<string> leftovers = UnusedIncoming();
+            if (leftovers.Count > 0)
+            {
+                _showLeft = EditorGUILayout.Foldout(_showLeft, $"Not recognised yet: {leftovers.Count} image(s) in Incoming", true);
+                if (_showLeft)
+                    foreach (string l in leftovers)
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.ObjectField(AssetDatabase.LoadAssetAtPath<Texture2D>(l), typeof(Texture2D), false, GUILayout.Width(220));
+                            GUILayout.Label(l.Substring(Mathf.Min(l.Length, IncomingFolder.Length + 1)), EditorStyles.miniLabel);
+                        }
+            }
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             string category = null;
@@ -231,11 +252,14 @@ namespace Kitefall.EditorTools
             var candidates = new List<(float score, string slot, string path)>();
             foreach (string path in files)
             {
-                string name = Path.GetFileNameWithoutExtension(path);
+                string name = NameWithFolders(path);
+                float aspect = SourceAspect(path);
                 foreach (ArtSlot s in ArtSlots.All)
                 {
                     if (_assigned.ContainsKey(s.Id) || InstalledPath(s) != null) continue;
                     float sc = Score(s, name);
+                    if (sc <= 0f) continue;
+                    if (!AspectFits(s, aspect)) sc -= 0.3f; // a wide picture is not an icon
                     if (sc >= 0.5f) candidates.Add((sc, s.Id, path));
                 }
             }
@@ -251,6 +275,92 @@ namespace Kitefall.EditorTools
             }
             Save();
             _status = $"Auto-match: {matched} image(s) matched, {files.Count - matched} left. Check the yellow rows, then INSTALL. Drag the rest by hand.";
+            _lastMatched = matched;
+        }
+
+        private int _lastMatched;
+
+        /// <summary>File name plus its sub-folders inside Incoming ("Characters/Zara/face" counts as "characters zara face").</summary>
+        private static string NameWithFolders(string path)
+        {
+            string rel = path.StartsWith(IncomingFolder + "/") ? path.Substring(IncomingFolder.Length + 1) : Path.GetFileName(path);
+            rel = rel.Substring(0, rel.Length - Path.GetExtension(rel).Length);
+            return rel.Replace('/', ' ');
+        }
+
+        private static float SourceAspect(string path)
+        {
+            int w = 0, h = 0;
+#if UNITY_2021_2_OR_NEWER
+            if (AssetImporter.GetAtPath(path) is TextureImporter ti) ti.GetSourceTextureWidthAndHeight(out w, out h);
+#endif
+            if (w <= 0 || h <= 0)
+            {
+                var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (tex != null) { w = tex.width; h = tex.height; }
+            }
+            return w > 0 && h > 0 ? w / (float)h : 0f;
+        }
+
+        private static bool AspectFits(ArtSlot s, float aspect)
+        {
+            if (aspect <= 0f) return true;
+            Vector2Int want = ParseSize(s.Size);
+            float wa = want.x / (float)Mathf.Max(1, want.y);
+            return Mathf.Abs(aspect - wa) <= 0.25f * wa;
+        }
+
+        /// <summary>
+        /// Last resort for files whose names say nothing (e.g. "mj_83749.png"): the leftovers, sorted by file name, fill the
+        /// missing slots in Excel order (a slot is skipped when the picture's shape does not fit). Always check before INSTALL.
+        /// </summary>
+        private void MatchLeftoversByOrder()
+        {
+            List<string> files = UnusedIncoming();
+            files.Sort(NaturalCompare);
+            int f = 0, matched = 0;
+            foreach (ArtSlot s in ArtSlots.All)
+            {
+                if (f >= files.Count) break;
+                if (_assigned.ContainsKey(s.Id) || InstalledPath(s) != null) continue;
+                if (!AspectFits(s, SourceAspect(files[f]))) continue;
+                _assigned[s.Id] = AssetDatabase.AssetPathToGUID(files[f++]);
+                matched++;
+            }
+            Save();
+            _status = $"By order: {matched} image(s) placed in Excel order. CHECK every yellow row before INSTALL – order matching can be wrong.";
+        }
+
+        private static int NaturalCompare(string a, string b)
+        {
+            string pa = Regex.Replace(a.ToLowerInvariant(), "[0-9]+", m => m.Value.PadLeft(8, '0'));
+            string pb = Regex.Replace(b.ToLowerInvariant(), "[0-9]+", m => m.Value.PadLeft(8, '0'));
+            return string.CompareOrdinal(pa, pb);
+        }
+
+        // ---- Fully automatic -------------------------------------------------------
+
+        /// <summary>Runs on its own after images are copied into Incoming (see <see cref="IncomingWatcher"/>), or from the menu.</summary>
+        [MenuItem("Kitefall/Art/Auto Install All Images", priority = 42)]
+        public static void AutoInstallAll()
+        {
+            var w = GetWindow<ArtMapperWindow>("Kitefall Image Mapper");
+            w.minSize = new Vector2(760, 480);
+            w.Load();
+            int before = w._assigned.Count;
+            w.AutoMatch();
+            int byName = w._assigned.Count - before;
+            w.MatchByNumber();
+            int total = w._assigned.Count;
+            int byNumber = total - before - byName;
+            int left = w.UnusedIncoming().Count;
+            if (total > 0) w.Install(confirm: false);
+            IncomingWatcher.MarkDone();
+            w._status = $"AUTO: {total} image(s) installed ({byName} by name, {byNumber} by # number). " +
+                        (left > 0 ? $"{left} image(s) not recognised – their names are listed at the top. Rename them like the Excel 'File name', " +
+                                    "drag them onto a slot, or press 'Match leftovers by order'." : "Every image found its slot.");
+            Debug.Log("[Kitefall Art] " + w._status);
+            w.Repaint();
         }
 
         /// <summary>Files named only with the Excel row number, e.g. "45.png", "image (45).jpg", "img_045.png".</summary>
@@ -259,11 +369,15 @@ namespace Kitefall.EditorTools
             int matched = 0;
             foreach (string path in UnusedIncoming())
             {
-                MatchCollection nums = Regex.Matches(Path.GetFileNameWithoutExtension(path), "[0-9]+");
-                if (nums.Count != 1 || !int.TryParse(nums[0].Value, out int n)) continue;
+                string name = Path.GetFileNameWithoutExtension(path);
+                // Only names that are just a number ("45", "image (45)", "img_045") – never "loading_03_river".
+                bool words = false;
+                foreach (string t in Tokens(name)) if (!Regex.IsMatch(t, "^[0-9]+$")) words = true;
+                MatchCollection nums = Regex.Matches(name, "[0-9]+");
+                if (words || nums.Count != 1 || !int.TryParse(nums[0].Value, out int n)) continue;
                 foreach (ArtSlot s in ArtSlots.All)
                 {
-                    if (s.Number != n || _assigned.ContainsKey(s.Id)) continue;
+                    if (s.Number != n || _assigned.ContainsKey(s.Id) || InstalledPath(s) != null) continue;
                     _assigned[s.Id] = AssetDatabase.AssetPathToGUID(path);
                     matched++;
                     break;
@@ -359,12 +473,12 @@ namespace Kitefall.EditorTools
 
         // ---- Install ---------------------------------------------------------------
 
-        private void Install()
+        private void Install(bool confirm = true)
         {
             int replace = 0;
             foreach (var kv in _assigned)
                 if (ArtSlots.TryGet(kv.Key, out ArtSlot s) && InstalledPath(s) != null && InstalledPath(s) != AssetDatabase.GUIDToAssetPath(kv.Value)) replace++;
-            if (replace > 0 && !EditorUtility.DisplayDialog("Replace images",
+            if (replace > 0 && confirm && !EditorUtility.DisplayDialog("Replace images",
                     $"{replace} slot(s) already have an installed image. The old image will be deleted and replaced by the new one.", "Replace", "Cancel"))
                 return;
 
@@ -517,6 +631,55 @@ namespace Kitefall.EditorTools
             var map = new MapFile();
             foreach (var kv in _assigned) map.entries.Add(new MapEntry { slot = kv.Key, guid = kv.Value });
             File.WriteAllText(MappingFile, JsonUtility.ToJson(map, true));
+        }
+    }
+
+    /// <summary>Starts the AUTO install shortly after new images land in Assets/Art/Incoming (one run per copy batch).</summary>
+    [InitializeOnLoad]
+    public sealed class IncomingWatcher : AssetPostprocessor
+    {
+        private const string Pref = "Kitefall.Art.AutoInstall";
+        private const string DonePref = "Kitefall.Art.LastIncomingCount";
+        private static bool _queued;
+
+        /// <summary>Images copied in before this tool existed (or while Unity was closed) are picked up when the editor loads.</summary>
+        static IncomingWatcher()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (!Enabled || Application.isBatchMode || !AssetDatabase.IsValidFolder("Assets/Art/Incoming")) return;
+                int count = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/Incoming" }).Length;
+                if (count > 0 && count != EditorPrefs.GetInt(DonePref, -1)) ArtMapperWindow.AutoInstallAll();
+            };
+        }
+
+        /// <summary>Remembers how many images were left, so unrecognised leftovers do not re-open the window on every load.</summary>
+        public static void MarkDone() =>
+            EditorPrefs.SetInt(DonePref, AssetDatabase.IsValidFolder("Assets/Art/Incoming") ? AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/Incoming" }).Length : 0);
+
+        public static bool Enabled
+        {
+            get => EditorPrefs.GetBool(Pref, true);
+            set => EditorPrefs.SetBool(Pref, value);
+        }
+
+        private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
+        {
+            if (!Enabled || _queued || Application.isBatchMode) return;
+            foreach (string path in imported)
+            {
+                if (!path.StartsWith("Assets/Art/Incoming/")) continue;
+                if (AssetDatabase.GetMainAssetTypeAtPath(path) != typeof(Texture2D)) continue;
+                _queued = true;
+                // Wait until the whole copy has been imported and the editor is idle.
+                EditorApplication.delayCall += () => EditorApplication.delayCall += () =>
+                {
+                    _queued = false;
+                    if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode) return;
+                    ArtMapperWindow.AutoInstallAll();
+                };
+                return;
+            }
         }
     }
 }

@@ -487,14 +487,14 @@ Images ki list, sizes aur AI prompts: **[`Kitefall_Image_Assets.xlsx`](Kitefall_
 **File ke naam kuch bhi hon – koi masla nahi.** Tool khud sahi naam rakh deta hai.
 
 1. Pehle images chhoti karein (backgrounds JPG quality 85, Excel wale size par resize). Poora set ~60–100 MB ho.
-2. Unity menu **Kitefall ▸ Art ▸ Open Incoming Folder** → saari images `Assets/Art/Incoming` mein copy karein.
-3. **Kitefall ▸ Art ▸ Image Mapper** kholein. Matching ke 4 tareeqe (jo asaan lage):
-   - **Auto-match by name** – naam mein "zara face", "guddi sunset", "shop bg" jaise words hon to khud jod deta hai.
-   - **Match by # number** – agar file ka naam sirf Excel ka # number hai (`45.png`, `image (45).jpg`).
-   - **Import CSV** – Excel ke aakhri column "Your file name" mein apni file ka naam likhein, sheet ko CSV save karein, import karein.
-   - **Hath se** – image ko us slot ke chhote box mein drag karein.
-4. Peeli rows ("Waiting to install") check karein → **INSTALL** dabayein.
-   Images ka naam slot ke naam par ho jata hai, `Assets/Resources/KitefallArt` mein chali jati hain, mobile compression lag jati hai, aur app icon set ho jata hai.
+2. Unity menu **Kitefall ▸ Art ▸ Open Incoming Folder** → saari images `Assets/Art/Incoming` mein copy karein (sub-folders bhi chalenge, jaise `Incoming/Characters/Zara.png`).
+3. **Bas.** Unity images import karte hi khud **AUTO** chalata hai: naam (aur folder ke naam) se match, phir sirf-number wale naam (`45.png`) Excel # se, phir install.
+   Image Mapper window khud khul jati hai aur batati hai kitni lagi. Dobara chalana ho: **Kitefall ▸ Art ▸ Auto Install All Images**.
+4. Jo images ka naam kuch nahi batata (jaise `mj_83749.png`) wo **"Not recognised"** list mein rehti hain. Un ke liye:
+   - naam Excel ke "File name" jaisa kar dein (AUTO khud dobara chalega), ya
+   - Excel ke aakhri column "Your file name" bhar ke **Import CSV**, ya
+   - **Match leftovers by order** (Excel ki tarteeb se – install se pehle zaroor check karein), ya
+   - image ko slot ke box mein drag karein, phir **INSTALL**.
 5. Play dabayein. Jo image nahi lagi, us jagah game apni banayi hui drawing dikhata hai – kuch toot ta nahi.
 
 Game abhi yeh images use karta hai: kite skins (3D kite par), shop/wardrobe cards, characters ki tasveer (squad lobby), menu backgrounds, splash + logo, HUD / quick-chat / roof icons.
