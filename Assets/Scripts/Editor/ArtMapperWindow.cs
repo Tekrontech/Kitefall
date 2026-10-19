@@ -766,7 +766,8 @@ namespace Kitefall.EditorTools
                 if (installed != null)
                 {
                     if (_manual.Contains(best.Id) || !_installedFrom.TryGetValue(best.Id, out string oldName)) continue;
-                    if (Certainty(best, Path.GetFileNameWithoutExtension(oldName)) > bestScore - 0.25f) continue;
+                    // A file named exactly like the slot is a deliberate update and always replaces an AUTO-placed image.
+                    if (bestScore < 10f && Certainty(best, Path.GetFileNameWithoutExtension(oldName)) > bestScore - 0.25f) continue;
                     if (!ReturnToIncoming(best, installed, block: false)) continue;
                 }
                 _assigned[best.Id] = guid;
