@@ -9,16 +9,34 @@ namespace Kitefall.UI.Screens
     /// <summary>Splash (spec 3.1 step 1): logo, wind sound, preload.</summary>
     public sealed class SplashScreen : UIScreen
     {
-        private Text _logo;
+        private RectTransform _pulse;
 
         protected override void Build()
         {
             Image bg = UiKit.Image(Root, Theme.Background, Sprites.White, "Bg", true);
             bg.rectTransform.Stretch();
-            Image glow = UiKit.Image(Root, new Color(1f, 0.55f, 0.1f, 0.35f), Sprites.VerticalFade, "Glow");
-            glow.rectTransform.Band(Vector2.zero, new Vector2(1, 0.6f), Vector2.zero, Vector2.zero);
-            _logo = UiKit.Label(Root, "KITEFALL", 140, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
-            _logo.rectTransform.Place(new Vector2(0.5f, 0.58f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1600, 200));
+            Sprite splash = Art.Sprite("splash_screen");
+            if (splash != null) MenuScreen.ArtBackground(Root, splash);
+            else
+            {
+                Image glow = UiKit.Image(Root, new Color(1f, 0.55f, 0.1f, 0.35f), Sprites.VerticalFade, "Glow");
+                glow.rectTransform.Band(Vector2.zero, new Vector2(1, 0.6f), Vector2.zero, Vector2.zero);
+            }
+            // The finished logo artwork already carries the word (the designer letters it by hand).
+            Sprite logoArt = Art.Sprite("logo_kitefall");
+            if (logoArt != null)
+            {
+                Image logo = UiKit.Image(Root, Color.white, logoArt, "Logo");
+                logo.preserveAspect = true;
+                logo.rectTransform.Place(new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100, 550));
+                _pulse = logo.rectTransform;
+            }
+            else
+            {
+                Text logoText = UiKit.Label(Root, "KITEFALL", 140, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
+                logoText.rectTransform.Place(new Vector2(0.5f, 0.58f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1600, 200));
+                _pulse = logoText.rectTransform;
+            }
             Text tag = UiKit.Label(Root, "Read the wind, win the cross, cut the line.", 36, Theme.TextDim, TextAnchor.MiddleCenter);
             tag.rectTransform.Place(new Vector2(0.5f, 0.45f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1600, 60));
             Text ver = UiKit.Label(Root, "v" + Application.version, 22, Theme.TextDim, TextAnchor.LowerRight);
@@ -28,7 +46,7 @@ namespace Kitefall.UI.Screens
 
         public override void Tick()
         {
-            if (_logo != null) _logo.rectTransform.localScale = Vector3.one * (1f + 0.02f * Mathf.Sin(Time.unscaledTime * 2f));
+            if (_pulse != null) _pulse.localScale = Vector3.one * (1f + 0.02f * Mathf.Sin(Time.unscaledTime * 2f));
         }
 
         public override bool OnBack() => false;

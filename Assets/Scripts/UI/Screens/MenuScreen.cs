@@ -15,7 +15,9 @@ namespace Kitefall.UI.Screens
 
         protected sealed override void Build()
         {
-            Image bg = UiKit.Image(Root, new Color(0.04f, 0.07f, 0.12f, BackgroundAlpha), Sprites.White, "Dim", true);
+            Sprite art = Art.ForScreen(GetType().Name);
+            if (art != null) ArtBackground(Root, art);
+            Image bg = UiKit.Image(Root, new Color(0.04f, 0.07f, 0.12f, art != null ? Mathf.Min(BackgroundAlpha, 0.35f) : BackgroundAlpha), Sprites.White, "Dim", true);
             bg.rectTransform.Stretch();
             RectTransform top = UiKit.Rect("TopBar", Root);
             top.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(24, -110), new Vector2(-24, -16));
@@ -32,6 +34,17 @@ namespace Kitefall.UI.Screens
         }
 
         protected abstract void BuildContent(RectTransform content);
+
+        /// <summary>Full-screen painted background that fills the screen without stretching (crops the edges).</summary>
+        public static Image ArtBackground(RectTransform parent, Sprite art)
+        {
+            Image img = UiKit.Image(parent, Color.white, art, "ArtBackground");
+            img.rectTransform.Stretch();
+            var fit = img.gameObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fit.aspectRatio = art.rect.width / Mathf.Max(1f, art.rect.height);
+            return img;
+        }
 
         public static void Currencies(RectTransform top)
         {

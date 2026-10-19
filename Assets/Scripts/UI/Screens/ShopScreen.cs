@@ -55,6 +55,12 @@ namespace Kitefall.UI.Screens
             swatch.Size(-1, 110);
             Image accent = UiKit.Image(swatch.transform, KiteVisualFactory.Hex(item.secondaryHex), Sprites.Rounded, "Accent");
             accent.rectTransform.Band(new Vector2(0.6f, 0.15f), new Vector2(0.9f, 0.85f), Vector2.zero, Vector2.zero);
+            Sprite art = Art.ForCosmetic(item);
+            if (art != null)
+            {
+                swatch.sprite = art; swatch.color = Color.white; swatch.preserveAspect = true;
+                accent.gameObject.SetActive(false);
+            }
             Color rc = Theme.RarityColors[(int)item.rarity];
             UiKit.Label(col, $"<b>{item.name}</b>\n<size=20><color=#{ColorUtility.ToHtmlStringRGB(rc)}>{item.rarity}</color> · {item.type}</size>", 24).Size(-1, 70);
             int owned = p.Cosmetic(item.id);

@@ -97,6 +97,12 @@ namespace Kitefall.UI.Screens
             pb.onClick.AddListener(() => TryOn(item));
             Image icon = UiKit.Image(swatch.transform, new Color(0, 0, 0, 0.55f), Icons.Get(item.type == CosmeticType.Emote ? "emote" : item.type == CosmeticType.Character ? "person" : "star"), "Icon");
             icon.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(60, 60));
+            Sprite art = Art.ForCosmetic(item);
+            if (art != null)
+            {
+                swatch.sprite = art; swatch.color = Color.white; swatch.preserveAspect = true;
+                icon.gameObject.SetActive(false);
+            }
             string region = item.type == CosmeticType.Character ? $" · {item.region}" : "";
             UiKit.Label(col, $"<b>{item.name}</b>\n<size=18><color=#{ColorUtility.ToHtmlStringRGB(Theme.RarityColors[(int)item.rarity])}>{item.rarity}</color>{region}</size>", 22).Size(-1, 58);
             bool owned = EconomyService.OwnsCosmetic(p, item.id) || item.type == CosmeticType.Outfit && CharacterCatalog.DefaultOutfitOf(p.characterId) == item.id;
@@ -249,6 +255,8 @@ namespace Kitefall.UI.Screens
                     CosmeticItem ch = CharacterCatalog.Character(m.characterId);
                     Image av = UiKit.Image(col, KiteVisualFactory.Hex(ch.skinHex), Sprites.Circle, "Avatar");
                     av.Size(110, 110);
+                    Sprite portrait = Art.Portrait(ch.id);
+                    if (portrait != null) { av.sprite = portrait; av.color = Color.white; av.preserveAspect = true; }
                     if (m.leader) UiKit.Image(av.transform, Theme.Coin, Icons.Get("crown"), "Crown").rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 0f), new Vector2(0, -10), new Vector2(60, 50));
                     UiKit.Label(col, $"<b>{m.name}</b>\n<size=20>{RankRules.TierName(RankRules.TierOf(m.rankPoints, Game.Ranks))} · {ch.name}</size>", 26, Color.white, TextAnchor.MiddleCenter).Size(-1, 70);
                     UiKit.Label(col, m.ready ? "<color=#3BB273>✔ READY</color>" : "<color=#FFFFFF99>not ready</color>", 24, Color.white, TextAnchor.MiddleCenter).Size(-1, 40);

@@ -16,6 +16,9 @@ namespace Kitefall.UI
         public static Sprite Get(string name)
         {
             if (Cache.TryGetValue(name, out Sprite s) && s != null) return s;
+            // Artist glyphs (white on transparent, tinted like the drawn ones) win over the code-drawn shape.
+            s = Art.Sprite("hud_" + name) ?? Art.Sprite("chat_" + name) ?? Art.Sprite("trait_" + name);
+            if (s != null) { Cache[name] = s; return s; }
             var p = new Painter();
             Draw(name, p);
             s = p.ToSprite(name);

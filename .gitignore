@@ -56,3 +56,7 @@ Thumbs.db
 # Cloud Code module build output
 /Server/**/bin/
 /Server/**/obj/
+
+# Raw artist images before the Image Mapper installs them (large files)
+/Assets/Art/Incoming/
+/Assets/Art/Incoming.meta

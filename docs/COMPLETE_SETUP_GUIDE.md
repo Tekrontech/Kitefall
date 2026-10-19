@@ -480,3 +480,23 @@ Naya code lene ke baad Unity mein **Kitefall ▸ Build Game Scene (complete game
 Har step ki tafseel: **[`UPGRADE_TEST_GUIDE.md`](UPGRADE_TEST_GUIDE.md)**. Online test (2 phones): **[`ONLINE_SMOKE_TEST.md`](ONLINE_SMOKE_TEST.md)**.
 
 > Sach: yeh sab code abhi asli Unity Editor / phone par chala kar nahi dekha gaya (compile + 202 tests pass). Pehli dafa koi error aaye to Console ka pehla laal error bhejein.
+
+## 21. Apni images game mein lagana (Image Mapper)
+
+Images ki list, sizes aur AI prompts: **[`Kitefall_Image_Assets.xlsx`](Kitefall_Image_Assets.xlsx)** (278 slots).
+**File ke naam kuch bhi hon – koi masla nahi.** Tool khud sahi naam rakh deta hai.
+
+1. Pehle images chhoti karein (backgrounds JPG quality 85, Excel wale size par resize). Poora set ~60–100 MB ho.
+2. Unity menu **Kitefall ▸ Art ▸ Open Incoming Folder** → saari images `Assets/Art/Incoming` mein copy karein.
+3. **Kitefall ▸ Art ▸ Image Mapper** kholein. Matching ke 4 tareeqe (jo asaan lage):
+   - **Auto-match by name** – naam mein "zara face", "guddi sunset", "shop bg" jaise words hon to khud jod deta hai.
+   - **Match by # number** – agar file ka naam sirf Excel ka # number hai (`45.png`, `image (45).jpg`).
+   - **Import CSV** – Excel ke aakhri column "Your file name" mein apni file ka naam likhein, sheet ko CSV save karein, import karein.
+   - **Hath se** – image ko us slot ke chhote box mein drag karein.
+4. Peeli rows ("Waiting to install") check karein → **INSTALL** dabayein.
+   Images ka naam slot ke naam par ho jata hai, `Assets/Resources/KitefallArt` mein chali jati hain, mobile compression lag jati hai, aur app icon set ho jata hai.
+5. Play dabayein. Jo image nahi lagi, us jagah game apni banayi hui drawing dikhata hai – kuch toot ta nahi.
+
+Game abhi yeh images use karta hai: kite skins (3D kite par), shop/wardrobe cards, characters ki tasveer (squad lobby), menu backgrounds, splash + logo, HUD / quick-chat / roof icons.
+HUD, quick-chat aur roof-trait icons **safed (white) shape, transparent background** par hon – game unhe khud rang deta hai.
+Adaptive icon (foreground/background) Player Settings ▸ Icon mein hath se lagayein. Excel badalni ho: `python3 Tools/ArtList/make_assets.py docs/Kitefall_Image_Assets.xlsx Assets/Scripts/UI/ArtSlots.Generated.cs`.
