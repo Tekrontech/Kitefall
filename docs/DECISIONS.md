@@ -77,6 +77,7 @@ Spec rule 17.7: *"If something is unclear, contradictory or risky, say so and as
 | D54 | Teamwork XP (11.3) | "Help launch" works (+2 m on a teammate's Perfect toss); the small XP bonus is not added to the reward yet. |
 | D55 | Voice (F7) | Vivox code is behind the `com.unity.services.vivox` package (party channel + Team Battle team channel, push-to-talk, mic permission on first tap, under-13 off). Stub-compiled only. Check Vivox pricing/free tier before launch. |
 | D56 | Kill feed avatars (F4) | Round avatar = outfit colour + initial (no portrait renders). |
+| D57 | Audience | **International** (owner, Oct 2026): global art style and plain-English UI; regional kite cultures appear as one of many. See `INTERNATIONAL_PLAN.md`. |
 
 ## Questions for you
 1. **D3 / D15** – Should letting go of PULL keep feeding line (current), and should Dheel need line already releasing at contact?

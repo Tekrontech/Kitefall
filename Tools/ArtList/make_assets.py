@@ -7,10 +7,10 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 OUT = sys.argv[1]
 
-STYLE = ("classical hand-painted South Asian miniature painting style blended with premium mobile game art, "
-         "gouache and watercolour texture on aged ivory wasli paper, fine gold-leaf filigree accents, warm golden-hour light, "
+STYLE = ("classical hand-painted storybook illustration in a timeless world kite-festival style, premium mobile game art, "
+         "gouache and watercolour texture on warm ivory paper, fine antique-gold ornament accents, warm golden-hour light, "
          "rich jewel tones (saffron, indigo, vermilion, emerald, ivory, antique gold), delicate brushwork, elegant composition, "
-         "crisp readable silhouette, masterpiece, highly detailed, original design")
+         "crisp readable silhouette, culturally respectful, welcoming to players worldwide, masterpiece, highly detailed, original design")
 ICON = ("single object centred, isolated on a plain transparent background, three-quarter view, soft painted shading, "
         "thin antique-gold outline, readable at 64 px, no background scenery")
 SCENE = "cinematic wide composition, layered depth, soft atmospheric haze, festival sky full of colourful paper kites"
@@ -62,7 +62,7 @@ for i in range(1, 9):
 
 # ---------- Menus ----------
 for f, w, d in [
-    ("bg_home.jpg", "Home screen background", "a cosy rooftop at golden hour with a charpai bed, potted plants, wooden spools and a kite rack, city of rooftops behind, kites in the sky, gentle and inviting"),
+    ("bg_home.jpg", "Home screen background", "a cosy rooftop at golden hour with a wooden day-bed, potted plants, wooden spools and a kite rack, city of rooftops behind, kites in the sky, gentle and inviting"),
     ("bg_shop.jpg", "Shop background", "an old bazaar kite stall with kites hanging from wooden beams, spools of coloured cotton thread on shelves, warm lantern light"),
     ("bg_hangar.jpg", "Hangar / loadout background", "a craftsman's kite workshop with bamboo sticks, tissue paper sheets, glue pots, painted wooden spools, soft window light"),
     ("bg_wardrobe.jpg", "Wardrobe / character screen background", "an elegant tailor's room with folded festive clothes, carved wooden mirror frame, embroidered curtains, a soft spotlight circle on the floor in the centre"),
@@ -298,7 +298,7 @@ sg.column_dimensions["B"].width = 120
 sg["A1"] = "KITEFALL – Image Art Style Guide"
 sg["A1"].font = Font(bold=True, size=18, color="3A2A6B")
 guide = [
-    ("Art direction", "Classical South Asian miniature painting + premium mobile game polish. Hand-painted gouache feel, fine gold-leaf ornament, warm golden-hour light. Elegant, festive, friendly – never dark or violent."),
+    ("Art direction", "INTERNATIONAL game: classical hand-painted storybook look that welcomes players worldwide + premium mobile polish. Gouache feel, fine gold ornament, warm golden-hour light. Regional items (an arena, a character, a kite) may show their own culture respectfully; menus, branding and UI stay globally neutral. Elegant, festive, friendly – never dark or violent."),
     ("Master style prompt (add to every prompt)", STYLE),
     ("Icon add-on", ICON),
     ("Scene add-on", SCENE),

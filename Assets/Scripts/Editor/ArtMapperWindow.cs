@@ -84,6 +84,7 @@ namespace Kitefall.EditorTools
                 if (GUILayout.Button("Match by # number", GUILayout.Height(26))) MatchByNumber();
                 if (GUILayout.Button("Import CSV…", GUILayout.Height(26))) ImportCsv();
                 if (GUILayout.Button("Match leftovers by order", GUILayout.Height(26))) MatchLeftoversByOrder();
+                if (GUILayout.Button("Export missing list", GUILayout.Height(26))) ExportMissing();
                 if (GUILayout.Button("Clear matches", GUILayout.Height(26)) && EditorUtility.DisplayDialog("Clear", "Forget all matches that are not installed yet?", "Clear", "Cancel"))
                 {
                     _assigned.Clear(); _guess.Clear(); Save();
@@ -784,6 +785,25 @@ namespace Kitefall.EditorTools
             _installedFrom.Remove(s.Id);
             _manual.Remove(s.Id);
             return true;
+        }
+
+        /// <summary>Writes Assets/Art/missing_images.csv: every slot without an image (# matches the Excel sheet, where the prompt is).</summary>
+        private void ExportMissing()
+        {
+            EnsureFolder("Assets/Art");
+            var sb = new StringBuilder("#,File name,Category,Size\n");
+            int n = 0;
+            foreach (ArtSlot s in ArtSlots.All)
+            {
+                if (InstalledPath(s) != null || _assigned.ContainsKey(s.Id)) continue;
+                sb.Append(s.Number).Append(',').Append(s.Id).Append(".png,").Append(s.Category).Append(',').Append(s.Size).Append('\n');
+                n++;
+            }
+            const string path = "Assets/Art/missing_images.csv";
+            File.WriteAllText(path, sb.ToString());
+            AssetDatabase.ImportAsset(path);
+            EditorUtility.RevealInFinder(path);
+            _status = $"{n} image(s) still missing – list saved to {path}. Find each # in the Excel sheet for its AI prompt.";
         }
 
         // ---- Helpers ---------------------------------------------------------------
