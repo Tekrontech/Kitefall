@@ -67,7 +67,8 @@ namespace Kitefall.UI
 
         public static LayoutElement Size(this Component c, float width = -1, float height = -1, float flexW = -1, float flexH = -1)
         {
-            var le = c.GetComponent<LayoutElement>() ?? c.gameObject.AddComponent<LayoutElement>();
+            var le = c.GetComponent<LayoutElement>();
+            if (le == null) le = c.gameObject.AddComponent<LayoutElement>();
             if (width >= 0) { le.preferredWidth = width; le.minWidth = width; }
             if (height >= 0) { le.preferredHeight = height; le.minHeight = height; }
             if (flexW >= 0) le.flexibleWidth = flexW;

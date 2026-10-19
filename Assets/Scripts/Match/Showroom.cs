@@ -63,7 +63,8 @@ namespace Kitefall.Match
             _view.transform.SetParent(_world.transform, false);
             _view.Init(0, kiteId, skinId, tailId, new Color(0.97f, 0.96f, 0.92f), Game.Settings != null ? Game.Settings.TailSegments : 10, new TailRopeSettings());
 
-            _cam = cam.GetComponent<MatchCamera>() ?? cam.gameObject.AddComponent<MatchCamera>();
+            _cam = cam.GetComponent<MatchCamera>();
+            if (_cam == null) _cam = cam.gameObject.AddComponent<MatchCamera>();
             _characterKey = null;
             SetCharacter(characterId, outfitId, accessories);
             Turntable(false);

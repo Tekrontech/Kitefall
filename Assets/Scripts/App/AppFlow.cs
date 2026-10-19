@@ -428,7 +428,8 @@ namespace Kitefall.App
 
         public void StartTutorial()
         {
-            Tutorial = Game.App.gameObject.GetComponent<TutorialDirector>() ?? Game.App.gameObject.AddComponent<TutorialDirector>();
+            Tutorial = Game.App.gameObject.GetComponent<TutorialDirector>();
+            if (Tutorial == null) Tutorial = Game.App.gameObject.AddComponent<TutorialDirector>();
             Tutorial.Begin();
         }
 

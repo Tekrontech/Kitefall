@@ -108,7 +108,8 @@ namespace Kitefall.Match
             _lookAhead = new GameObject("CameraLookAhead").transform;
             _lookAhead.SetParent(_world.transform, false);
 
-            Camera = cam.GetComponent<MatchCamera>() ?? cam.gameObject.AddComponent<MatchCamera>();
+            Camera = cam.GetComponent<MatchCamera>();
+            if (Camera == null) Camera = cam.gameObject.AddComponent<MatchCamera>();
             ApplyCameraSettings();
             int local = Mathf.Clamp(session.LocalIndex, 0, n - 1);
             Camera.Anchor = ArenaBuilder.ToUnity(session.Arena.Anchors[local]);

@@ -41,7 +41,9 @@ namespace Kitefall.UI
         {
             _rt = (RectTransform)transform;
             _target = _rt.anchoredPosition;
-            _group = gameObject.GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+            // Unity components are never C# null when missing ("fake null"), so ?? would not add one – check with == null.
+            _group = gameObject.GetComponent<CanvasGroup>();
+            if (_group == null) _group = gameObject.AddComponent<CanvasGroup>();
             Apply(0f);
             _ready = true;
         }
