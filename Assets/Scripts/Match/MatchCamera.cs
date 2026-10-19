@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Kitefall.Match
 {
     /// <summary>Follow = "KiteCam" (kept for compatibility). Shoulder = PUBG-style third person (upgrade W2).</summary>
-    public enum CameraMode { FlyOver, Launch, Follow, Spectate, Replay, Showroom, Shoulder, PrepClose, PrepWide, Map }
+    public enum CameraMode { FlyOver, Launch, Follow, Spectate, Replay, Showroom, Shoulder, PrepClose, PrepWide, Map, HomeShot }
 
     /// <summary>
     /// Match camera: arena fly-over (intro), behind the flyer at launch, follow the kite along the line,
@@ -73,7 +73,7 @@ namespace Kitefall.Match
             _blend = Mathf.MoveTowards(_blend, 1f, dt / Mathf.Max(0.05f, BlendTime));
             Desired(out Vector3 pos, out Vector3 look);
             float smooth = Mathf.Lerp(0.45f, 0.08f, Follow);
-            if (Mode == CameraMode.FlyOver || Mode == CameraMode.Showroom) smooth = 0.6f;
+            if (Mode == CameraMode.FlyOver || Mode == CameraMode.Showroom || Mode == CameraMode.HomeShot) smooth = 0.6f;
             if (Mode == CameraMode.Shoulder || Mode == CameraMode.PrepClose || Mode == CameraMode.PrepWide || Mode == CameraMode.Map)
                 smooth = Mathf.Lerp(BlendTime * 0.5f, 0.06f, _blend);
             UpdateFov(dt);
@@ -152,6 +152,11 @@ namespace Kitefall.Match
                     look = c;
                     return;
                 }
+                case CameraMode.HomeShot:
+                    // Home design: behind and right of the flyer, looking past them at the kite and the sky (flyer sits left of centre).
+                    pos = Anchor + new Vector3(3.2f, 2.4f, -7.5f);
+                    look = Vector3.Lerp(Anchor + new Vector3(0f, 6f, 30f), target, 0.25f);
+                    return;
                 case CameraMode.Launch:
                     pos = Anchor + new Vector3(0f, 3.5f, -9f);
                     look = Anchor + new Vector3(0f, 20f, 50f);

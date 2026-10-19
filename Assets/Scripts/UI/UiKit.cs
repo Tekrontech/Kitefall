@@ -95,8 +95,28 @@ namespace Kitefall.UI
 
         public static Image Panel(Transform parent, Color? color = null, string name = "Panel", bool raycast = true)
         {
-            Image img = Image(parent, color ?? Theme.Panel, Sprites.Rounded, name, raycast);
+            Color c = color ?? Theme.Panel;
+            // Standard panels and cards use the glossy navy glass of the home design; custom tints keep the plain look.
+            bool glossy = Same(c, Theme.Panel) || Same(c, Theme.Card) || Same(c, Theme.CardSelected);
+            Image img = glossy
+                ? Image(parent, Same(c, Theme.CardSelected) ? new Color(0.75f, 0.9f, 1.25f) : Color.white, Glossy.Sprite(Glossy.Style.Panel), name, raycast)
+                : Image(parent, c, Sprites.Rounded, name, raycast);
             return img;
+        }
+
+        private static bool Same(Color a, Color b) => Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b) < 0.03f;
+
+        /// <summary>Theme colour → glossy button skin (orange call-to-action, blue menu, bright selected, green confirm).</summary>
+        private static Sprite ButtonSkin(Color c, out Color tint)
+        {
+            tint = Color.white;
+            if (Same(c, Theme.Accent)) return Glossy.Sprite(Glossy.Style.Orange);
+            if (Same(c, Theme.Good)) return Glossy.Sprite(Glossy.Style.Green);
+            if (Same(c, Theme.Accent2) || Same(c, Theme.CardSelected)) return Glossy.Sprite(Glossy.Style.Selected);
+            if (Same(c, Theme.PanelLight) || Same(c, Theme.Card) || Same(c, Theme.Panel) || Same(c, new Color(0.12f, 0.17f, 0.28f))) return Glossy.Sprite(Glossy.Style.Menu);
+            if (Same(c, Theme.Disabled)) return Glossy.Sprite(Glossy.Style.Locked);
+            tint = c;
+            return Sprites.Rounded;
         }
 
         public static Text Label(Transform parent, string text, int size = Theme.BodySize, Color? color = null, TextAnchor align = TextAnchor.MiddleLeft, FontStyle style = FontStyle.Normal, string name = "Label")
@@ -128,7 +148,8 @@ namespace Kitefall.UI
 
         public static Button Button(Transform parent, string text, Action onClick, Color? color = null, int fontSize = Theme.BodySize, string name = null)
         {
-            Image img = Image(parent, color ?? Theme.Accent, Sprites.Rounded, name ?? ("Button " + text), true);
+            Sprite skin = ButtonSkin(color ?? Theme.Accent, out Color tint);
+            Image img = Image(parent, tint, skin, name ?? ("Button " + text), true);
             var b = img.gameObject.AddComponent<Button>();
             ColorBlock cb = b.colors;
             cb.normalColor = Color.white;

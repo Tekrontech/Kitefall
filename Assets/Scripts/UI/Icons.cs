@@ -17,7 +17,7 @@ namespace Kitefall.UI
         {
             if (Cache.TryGetValue(name, out Sprite s) && s != null) return s;
             // Artist glyphs (white on transparent, tinted like the drawn ones) win over the code-drawn shape.
-            s = Art.Sprite("hud_" + name) ?? Art.Sprite("chat_" + name) ?? Art.Sprite("trait_" + name);
+            s = Art.Sprite("ui_icon_" + name) ?? Art.Sprite("hud_" + name) ?? Art.Sprite("chat_" + name) ?? Art.Sprite("trait_" + name);
             if (s != null) { Cache[name] = s; return s; }
             var p = new Painter();
             Draw(name, p);
@@ -154,6 +154,85 @@ namespace Kitefall.UI
                     break;
                 case "star":
                     p.Star(48, 48, 40, 18);
+                    break;
+                // ---- Home screen (glossy design) -----------------------------------
+                case "chevron_right":
+                    p.Line(36, 22, 60, 48, 9); p.Line(60, 48, 36, 74, 9);
+                    break;
+                case "chevron_left":
+                    p.Line(60, 22, 36, 48, 9); p.Line(36, 48, 60, 74, 9);
+                    break;
+                case "shirt":
+                    p.Tri(10, 62, 28, 80, 30, 52); p.Tri(86, 62, 68, 80, 66, 52); p.RoundRect(28, 14, 40, 66, 6);
+                    p.Circle(48, 80, 9, true);
+                    break;
+                case "people":
+                    p.Circle(34, 64, 13); p.RoundRect(14, 16, 40, 36, 14);
+                    p.Circle(64, 62, 11); p.RoundRect(52, 16, 32, 32, 12);
+                    break;
+                case "target":
+                    p.Ring(48, 48, 34, 8); p.Ring(48, 48, 18, 8); p.Circle(48, 48, 6); p.Line(48, 48, 82, 82, 6);
+                    break;
+                case "hangar": // kite on a stand
+                    p.Tri(48, 88, 74, 56, 48, 30); p.Tri(48, 88, 48, 30, 22, 56); p.Line(48, 30, 48, 8, 6); p.Rect(30, 6, 36, 6);
+                    break;
+                case "wrench":
+                    p.Line(24, 24, 62, 62, 14); p.Circle(68, 68, 18); p.Circle(76, 76, 9, true); p.Circle(24, 24, 9);
+                    break;
+                case "cart":
+                    p.Line(10, 76, 24, 76, 7); p.Line(24, 76, 34, 36, 7); p.RoundRect(28, 36, 54, 32, 5); p.Circle(38, 22, 7); p.Circle(72, 22, 7);
+                    break;
+                case "trophy":
+                    p.RoundRect(28, 44, 40, 40, 12); p.Ring(26, 66, 12, 6, 90f, 270f); p.Ring(70, 66, 12, 6, -90f, 90f);
+                    p.Rect(44, 22, 8, 24); p.RoundRect(30, 10, 36, 12, 4);
+                    break;
+                case "gear":
+                    for (int i = 0; i < 8; i++)
+                    {
+                        float a = i * Mathf.PI / 4f;
+                        p.Line(48 + Mathf.Cos(a) * 24, 48 + Mathf.Sin(a) * 24, 48 + Mathf.Cos(a) * 38, 48 + Mathf.Sin(a) * 38, 13);
+                    }
+                    p.Circle(48, 48, 28); p.Circle(48, 48, 11, true);
+                    break;
+                case "mail":
+                    p.RoundRect(12, 22, 72, 52, 6); p.Line(14, 72, 48, 44, 6, true); p.Line(82, 72, 48, 44, 6, true);
+                    break;
+                case "chest":
+                    p.RoundRect(14, 14, 68, 40, 6); p.RoundRect(14, 50, 68, 26, 12); p.Rect(14, 50, 68, 5, true);
+                    p.RoundRect(42, 40, 12, 18, 3, true); p.Rect(45, 43, 6, 10);
+                    break;
+                case "swords":
+                    p.Line(18, 18, 78, 78, 9); p.Line(78, 18, 18, 78, 9);
+                    p.Line(22, 34, 34, 22, 9); p.Line(62, 22, 74, 34, 9);
+                    break;
+                case "door":
+                    p.RoundRect(26, 10, 44, 78, 4); p.RoundRect(32, 16, 32, 66, 2, true); p.Tri(32, 16, 58, 24, 58, 76); p.Tri(32, 16, 58, 76, 32, 82); p.Circle(52, 48, 4, true);
+                    break;
+                case "pencil":
+                    p.Line(24, 24, 70, 70, 14); p.Tri(14, 14, 30, 18, 18, 30); p.Line(66, 66, 76, 76, 14, true); p.Line(70, 70, 80, 80, 10);
+                    break;
+                case "clock":
+                    p.Ring(48, 48, 34, 8); p.Line(48, 48, 48, 72, 7); p.Line(48, 48, 64, 40, 7);
+                    break;
+                case "coin":
+                    p.Circle(48, 48, 38); p.Ring(48, 48, 26, 5, 0f, 360f, true); p.Star(48, 48, 16, 7);
+                    break;
+                case "gem":
+                    p.Tri(48, 88, 18, 56, 78, 56); p.Tri(18, 56, 48, 8, 78, 56);
+                    p.Line(30, 56, 48, 80, 3, true); p.Line(66, 56, 48, 80, 3, true);
+                    break;
+                case "parts":
+                    p.RoundRect(14, 24, 68, 48, 10); p.Rect(30, 42, 36, 12, true); p.Circle(48, 48, 8);
+                    break;
+                case "ribbon":
+                    p.Wave(10, 56, 76, 10, 10); p.Wave(14, 36, 70, 10, 8);
+                    break;
+                case "spool":
+                    p.RoundRect(26, 10, 44, 10, 4); p.RoundRect(26, 76, 44, 10, 4); p.RoundRect(32, 18, 32, 60, 4);
+                    p.Line(32, 30, 64, 34, 3, true); p.Line(32, 44, 64, 48, 3, true); p.Line(32, 58, 64, 62, 3, true);
+                    break;
+                case "thread":
+                    p.Circle(48, 48, 32); p.Ring(48, 48, 22, 3, 0f, 360f, true); p.Ring(48, 48, 12, 3, 0f, 360f, true); p.Line(70, 30, 90, 10, 4);
                     break;
                 default:
                     p.Circle(48, 48, 30);

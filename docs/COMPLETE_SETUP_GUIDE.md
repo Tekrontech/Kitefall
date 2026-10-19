@@ -510,3 +510,14 @@ Adaptive icon (foreground/background) Player Settings ▸ Icon mein hath se laga
 - Naye: 3 kites (Delta, Box, Volantín), 6 arenas (Rio, Santiago, Mediterranean, Atlantic Beach, Caribbean, Bali), 9 characters, 7 outfits, Home par World Kite Calendar banner.
 - Unity mein update ke baad ek dafa **Kitefall ▸ Fix Game Scene Links** dabayein – naye arenas ka data khud ban jata hai.
 - Nayi images: Excel ki rows **#279–#358** ("(world)" categories). Purani #1–#278 waisi hi hain.
+
+## 23. Naya Home screen design
+
+Home screen ab owner ke design (`docs/design/home_screen_design.jpg`) jaisa hai:
+profile (portrait + rank), Settings / Inbox, coins · gems · parts, chamakdar menu (icons + ›), Daily Missions (progress bars + coin
+rewards + naranji "Open daily chest"), mode buttons (Quick Duel blue = selected, Ranked locked), arena picker (tasveer ke saath),
+bada naranji PLAY, neeche loadout bar (kite · tail · line · spool), peeche rooftop par character aur kite.
+
+- Sab buttons / panels code se bante hain (`UI/Glossy.cs`), is liye images ke bagair bhi isi style mein dikhte hain.
+- Baaqi screens ke buttons/panels bhi isi style mein aa gaye.
+- Apni behtar art lagani ho: Excel "UI kit" rows (#359+) – `ui_panel`, `ui_button_orange`, `ui_icon_gear` waghera. Image Mapper khud 9-slice set karta hai.

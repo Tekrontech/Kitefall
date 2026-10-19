@@ -361,6 +361,28 @@ for fid, d in FESTIVALS:
         "Wide, calm banner – the festival name is added by the game UI. Respectful, joyful, no flags or religious symbols.",
         f"Wide panoramic banner of {d}, {SCENE}, {STYLE}")
 
+# ======================= UI kit (owner's home-screen design, docs/design/home_screen_design.jpg) =======================
+UI_STYLE = ("polished mobile game UI element, glossy deep navy glass with a bright sky-blue rim, soft inner glow, subtle gold accents, "
+            "clean vector-like edges, high-end casual game interface, front view, isolated on transparent background")
+for sid, d, note in [
+        ("ui_panel", "an empty rounded rectangle panel of deep navy glass with a thin bright blue rim and soft top highlight", "Generic panel (missions, profile, currencies). MUST be 9-slice friendly: plain middle, all detail in the corners/edges."),
+        ("ui_button_blue", "an empty rounded rectangle button, navy-to-royal-blue gradient, bright blue rim, glossy top highlight", "Menu buttons (Wardrobe, Squad…). 9-slice friendly."),
+        ("ui_button_selected", "an empty rounded rectangle button, bright electric blue gradient, white-blue glowing rim", "Selected mode button. 9-slice friendly."),
+        ("ui_button_orange", "an empty large rounded rectangle button, golden-yellow to deep orange gradient, warm light rim and glossy highlight", "PLAY / Open daily chest. 9-slice friendly."),
+        ("ui_button_locked", "an empty rounded rectangle button, muted slate grey-blue, dim rim", "Locked buttons. 9-slice friendly."),
+        ("ui_button_green", "an empty rounded rectangle button, fresh green gradient with light rim", "Claim / confirm. 9-slice friendly."),
+        ("ui_pill", "an empty small capsule pill shape, very dark navy with a thin blue rim", "Reward pills, + buttons, arrows. 9-slice friendly.")]:
+    add("UI kit", f"{sid}.png", "256x128", "PNG (transparent)", "Every screen (replaces the code-drawn glossy skin)", "Medium", note + " Keep it EMPTY – no text, no icons.",
+        f"{d}, {UI_STYLE}", NEG_ICON + ", text, icons")
+for ic, d in [("gear", "a settings gear"), ("mail", "an envelope"), ("shirt", "a t-shirt"), ("people", "two people silhouettes"), ("target", "a target with an arrow"),
+              ("hangar", "a kite on a small stand"), ("wrench", "a wrench"), ("cart", "a shopping cart"), ("star", "a five-point star"), ("trophy", "a trophy cup"),
+              ("swords", "two crossed kite sticks"), ("crown", "a crown"), ("door", "an open door"), ("kite", "a diamond kite"), ("chest", "a treasure chest"),
+              ("lock", "a padlock"), ("clock", "a clock"), ("pencil", "a pencil"), ("coin", "a gold coin"), ("gem", "a blue gem"), ("parts", "a crafting parts box"),
+              ("ribbon", "a curling ribbon"), ("thread", "a ball of cotton thread"), ("spool", "a wooden spool"), ("chevron_right", "a right arrow chevron"), ("chevron_left", "a left arrow chevron")]:
+    add("UI kit", f"ui_icon_{ic}.png", "128x128", "PNG (transparent)", "Home screen + menus icon", "Medium",
+        "WHITE glyph on transparent background (the game tints it). Bold, simple, readable at 32 px.",
+        f"a simple flat white silhouette icon of {d}, pure white on transparent background, clean bold edges, no shading, game UI glyph", NEG_ICON + ", colours, gradients")
+
 wb = Workbook()
 hdr_fill = PatternFill("solid", fgColor="3A2A6B")
 hdr_font = Font(bold=True, color="FFFFFF", size=11)

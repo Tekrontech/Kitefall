@@ -102,6 +102,28 @@ namespace Kitefall.UI
 
         public static Sprite Portrait(string characterId) => Sprite("char_" + characterId + "_portrait");
 
+        /// <summary>Arena card picture (arena_old_city_card …), or null.</summary>
+        public static Sprite ForArena(ArenaType type)
+        {
+            switch (type)
+            {
+                case ArenaType.OldCityRooftops: return Sprite("arena_old_city_card");
+                case ArenaType.CoastalCliffs: return Sprite("arena_coastal_cliffs_card");
+                case ArenaType.RiverFestival: return Sprite("arena_river_festival_card");
+                case ArenaType.RoyalField: return Sprite("arena_royal_field_card");
+                case ArenaType.MountainValley: return Sprite("arena_mountain_valley_card");
+                case ArenaType.StormArchipelago: return Sprite("arena_storm_archipelago_card");
+                case ArenaType.RioHillside: return Sprite("arena_rio_hillside_card");
+                case ArenaType.SantiagoRooftops: return Sprite("arena_santiago_rooftops_card");
+                case ArenaType.MediterraneanHarbour: return Sprite("arena_mediterranean_harbour_card");
+                case ArenaType.AtlanticBeach: return Sprite("arena_atlantic_beach_card");
+                case ArenaType.CaribbeanShore: return Sprite("arena_caribbean_shore_card");
+                default: return Sprite("arena_bali_terraces_card");
+            }
+        }
+
+        public static Sprite Rank(RankTier tier) => Sprite(tier == RankTier.SkyLegend ? "rank_sky_legend" : "rank_" + tier.ToString().ToLowerInvariant());
+
         /// <summary>Full-screen background for a menu screen class name (null = keep the 3D scene / colour).</summary>
         public static Sprite ForScreen(string screenClass)
         {

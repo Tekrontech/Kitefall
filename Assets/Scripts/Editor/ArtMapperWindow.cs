@@ -590,6 +590,8 @@ namespace Kitefall.EditorTools
             {
                 ti.textureType = TextureImporterType.Sprite;
                 ti.spriteImportMode = SpriteImportMode.Single;
+                // UI kit skins stretch as 9-slice: keep the rounded corners / rim unscaled.
+                if (s.Category == "UI kit" && !s.Id.StartsWith("ui_icon_")) ti.spriteBorder = new Vector4(44, 44, 44, 44);
                 ti.alphaIsTransparency = true;
                 ti.mipmapEnabled = surface;
                 ti.wrapMode = s.Category == "Environment textures" ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;

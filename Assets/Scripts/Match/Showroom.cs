@@ -103,6 +103,8 @@ namespace Kitefall.Match
             }
             else
             {
+                _cam.Mode = CameraMode.HomeShot;
+                _cam.Anchor = _anchor;
                 _cam.Target = _view != null ? _view.transform.GetChild(0) : null;
                 _cam.OrbitRadius = 22f;
                 _cam.OrbitHeight = 4f;
@@ -164,7 +166,7 @@ namespace Kitefall.Match
                 };
                 _character.Apply(f, dt);
             }
-            if (_cam != null && _cam.Mode == CameraMode.Showroom && !_turntable) _cam.Target = _view.transform.GetChild(0);
+            if (_cam != null && (_cam.Mode == CameraMode.Showroom || _cam.Mode == CameraMode.HomeShot) && !_turntable) _cam.Target = _view.transform.GetChild(0);
         }
     }
 }
