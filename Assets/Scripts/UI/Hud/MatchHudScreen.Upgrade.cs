@@ -701,7 +701,10 @@ namespace Kitefall.UI.Hud
             }
         }
 
-        /// <summary>A small round avatar: the character's outfit colour with an initial.</summary>
+        /// <summary>
+        /// A small round avatar: the player's chosen character portrait (char_&lt;id&gt;_portrait from the Image Mapper) inside a ring in
+        /// their outfit colour; without the portrait art, the outfit colour with an initial.
+        /// </summary>
         private void Avatar(Transform parent, int i, float size)
         {
             ParticipantSetup p = S.Setup.Participants[i];
@@ -710,6 +713,18 @@ namespace Kitefall.UI.Hud
             Color c = o != null ? KiteVisualFactory.Hex(o.primaryHex) : Theme.PanelLight;
             Image img = UiKit.Image(parent, c, Sprites.Circle, "Avatar");
             img.Size(size, size);
+            Sprite portrait = Art.Portrait(ch.id);
+            if (portrait != null)
+            {
+                // Round crop: a Mask on the inner circle clips the square portrait.
+                Image inner = UiKit.Image(img.transform, Color.white, Sprites.Circle, "Clip");
+                inner.rectTransform.Stretch(2, 2, 2, 2);
+                inner.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+                Image face = UiKit.Image(inner.transform, Color.white, portrait, "Portrait");
+                face.preserveAspect = true;
+                face.rectTransform.Stretch();
+                return;
+            }
             Text t = UiKit.Label(img.transform, string.IsNullOrEmpty(p.displayName) ? "?" : p.displayName.Substring(0, 1).ToUpper(), Mathf.RoundToInt(size * 0.6f), Color.black, TextAnchor.MiddleCenter, FontStyle.Bold);
             t.rectTransform.Stretch();
         }
