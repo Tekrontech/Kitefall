@@ -28,6 +28,15 @@ namespace Kitefall.UI.Screens
             if (p == null) return;
             if (Enum.TryParse(p.lastMode, out GameMode last) && Array.IndexOf(Modes, last) >= 0 && _mode == GameMode.QuickDuel) _mode = last;
 
+            bool intro = !_built;
+            _built = true;
+            _playingIntro = intro;
+            _intro.Clear();
+
+            // Painted home picture from the owner's design, brought to life by HomeAnimator (Settings ▸ Home scene).
+            Sprite painted = Painted ? Art.Sprite("home_background") : null;
+            if (painted != null) HomeAnimator.Attach(MenuScreen.ArtBackground(Root, painted).rectTransform, Art.Sprite("home_kite"));
+
             // Soft shade on the left so the menu reads over a bright sky.
             Image left = UiKit.Image(Root, new Color(0.02f, 0.05f, 0.12f, 0.28f), Sprites.White, "LeftShade");
             left.rectTransform.Band(Vector2.zero, new Vector2(0.22f, 1f), Vector2.zero, Vector2.zero);
@@ -42,7 +51,16 @@ namespace Kitefall.UI.Screens
             BuildPlayButton();
             BuildLoadoutBar(p);
             BuildFestival();
+            if (intro)
+                foreach (var (c, offset, delay) in _intro) UiMotion.SlideIn(c, offset, delay);
         }
+
+        private bool _built, _playingIntro;
+        private readonly System.Collections.Generic.List<(Component, Vector2, float)> _intro = new System.Collections.Generic.List<(Component, Vector2, float)>();
+        private void Intro(Component c, Vector2 from, float delay) => _intro.Add((c, from, delay));
+
+        /// <summary>Painted design picture as the home background (default) instead of the live 3D scene.</summary>
+        private static bool Painted => (Game.Settings == null || Game.Settings.Data.homeTheme == 2) && Art.Has("home_background");
 
         // ---- Top ----------------------------------------------------------------
 
@@ -51,6 +69,8 @@ namespace Kitefall.UI.Screens
             Image chip = Glossy.Panel(Root, Glossy.Style.Panel, "Profile");
             chip.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(96, -26), new Vector2(460, 118));
             chip.gameObject.AddComponent<Button>().onClick.AddListener(() => UI.Push(new ProfileScreen()));
+            UiMotion.Bounce(chip);
+            Intro(chip, new Vector2(-40, 160), 0f);
 
             // Big round portrait with a gold ring, overlapping the chip's left edge.
             Image ring = UiKit.Image(chip.transform, Glossy.Gold, Sprites.Circle, "Ring");
@@ -81,11 +101,13 @@ namespace Kitefall.UI.Screens
 
         private void BuildTopCentre(PlayerProfile p)
         {
-            Glossy.Button(Root, "Settings", Icons.Get("gear"), () => UI.Push(new SettingsScreen()), Glossy.Style.Panel, 28)
-                .GetComponent<RectTransform>().Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-53, -26), new Vector2(206, 78));
+            Button settings = Glossy.Button(Root, "Settings", Icons.Get("gear"), () => UI.Push(new SettingsScreen()), Glossy.Style.Panel, 28);
+            Intro(settings, new Vector2(0, 140), 0.05f);
+            settings.GetComponent<RectTransform>().Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-53, -26), new Vector2(206, 78));
             int unread = p.inbox.FindAll(m => !m.claimed).Count;
             Button inbox = Glossy.Button(Root, "Inbox", Icons.Get("mail"), () => UI.Push(new InboxScreen()), Glossy.Style.Panel, 28);
             inbox.GetComponent<RectTransform>().Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(165, -26), new Vector2(200, 78));
+            Intro(inbox, new Vector2(0, 140), 0.1f);
             if (unread > 0)
             {
                 Image dot = UiKit.Image(inbox.transform, Theme.Bad, Sprites.Circle, "Unread");
@@ -98,14 +120,20 @@ namespace Kitefall.UI.Screens
         {
             Image bar = Glossy.Panel(Root, Glossy.Style.Panel, "Currencies");
             bar.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -26), new Vector2(600, 78));
+            Intro(bar, new Vector2(0, 140), 0.08f);
             int parts = 0;
             foreach (ItemCount c in p.parts) parts += c.count;
-            Currency(bar.transform, 0, Art.Sprite("currency_coins") ?? Icons.Get("coin"), Glossy.Gold, p.coins.ToString("N0"), () => UI.Push(new ShopScreen()));
-            Currency(bar.transform, 1, Art.Sprite("currency_gems") ?? Icons.Get("gem"), Theme.Hex("#4FA8FF"), p.gems.ToString("N0"), () => UI.Push(new ShopScreen()));
+            Text coins = Currency(bar.transform, 0, Art.Sprite("currency_coins") ?? Icons.Get("coin"), Glossy.Gold, p.coins.ToString("N0"), () => UI.Push(new ShopScreen()));
+            Text gems = Currency(bar.transform, 1, Art.Sprite("currency_gems") ?? Icons.Get("gem"), Theme.Hex("#4FA8FF"), p.gems.ToString("N0"), () => UI.Push(new ShopScreen()));
+            if (_playingIntro)
+            {
+                coins.gameObject.AddComponent<CountUp>().Value = p.coins;
+                gems.gameObject.AddComponent<CountUp>().Value = p.gems;
+            }
             Currency(bar.transform, 2, Art.Sprite("currency_parts") ?? Icons.Get("parts"), Theme.Gem, $"{parts} parts", null);
         }
 
-        private static void Currency(Transform bar, int slot, Sprite icon, Color tint, string value, Action plus)
+        private static Text Currency(Transform bar, int slot, Sprite icon, Color tint, string value, Action plus)
         {
             RectTransform cell = UiKit.Rect("Cur" + slot, bar);
             cell.Band(new Vector2(slot / 3f, 0), new Vector2((slot + 1) / 3f, 1), new Vector2(10, 8), new Vector2(-6, -8));
@@ -115,9 +143,10 @@ namespace Kitefall.UI.Screens
             ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(52, 52));
             Text t = UiKit.Label(cell, value, 28, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed();
             t.rectTransform.Stretch(58, 0, plus != null ? 52 : 0, 0);
-            if (plus == null) return;
+            if (plus == null) return t;
             Button add = Glossy.Button(cell, "+", null, plus, Glossy.Style.Pill, 30);
             add.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(48, 48));
+            return t;
         }
 
         // ---- Left menu --------------------------------------------------------------
@@ -126,6 +155,7 @@ namespace Kitefall.UI.Screens
         {
             RectTransform col = UiKit.Column(Root, 10, 0);
             col.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(36, -186), new Vector2(356, 9 * 74 + 8 * 10));
+            _menuIndex = 0;
             Item(col, "Wardrobe", "shirt", () => UI.Push(new WardrobeScreen()));
             Item(col, "Squad", "people", () => UI.Push(new SquadLobbyScreen()));
             Item(col, "Training", "target", () => UI.Push(new TrainingScreen()));
@@ -137,8 +167,17 @@ namespace Kitefall.UI.Screens
             Item(col, "Friends", "people", () => UI.Push(new FriendsScreen()));
         }
 
-        private static void Item(Transform parent, string text, string icon, Action click) =>
-            Glossy.Button(parent, text, Icons.Get(icon), click, Glossy.Style.Menu, 28, chevron: true).Size(-1, 74);
+        private int _menuIndex;
+
+        private void Item(Transform parent, string text, string icon, Action click)
+        {
+            // The column layout owns the slot; the button slides inside it (staggered, one after another).
+            RectTransform slot = UiKit.Rect("Slot_" + text, parent);
+            slot.Size(-1, 74);
+            Button b = Glossy.Button(slot, text, Icons.Get(icon), click, Glossy.Style.Menu, 28, chevron: true);
+            b.GetComponent<RectTransform>().Stretch();
+            Intro(b, new Vector2(-420, 0), 0.12f + _menuIndex++ * 0.045f);
+        }
 
         // ---- Daily missions ---------------------------------------------------------
 
@@ -147,6 +186,7 @@ namespace Kitefall.UI.Screens
             EconomyService.EnsureMissions(p, Game.Now);
             Image panel = Glossy.Panel(Root, Glossy.Style.Panel, "Missions");
             panel.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -132), new Vector2(570, 386));
+            Intro(panel, new Vector2(620, 0), 0.15f);
 
             Image star = UiKit.Image(panel.transform, Glossy.Gold, Sprites.Circle, "StarBadge");
             star.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(16, -12), new Vector2(66, 66));
@@ -169,7 +209,10 @@ namespace Kitefall.UI.Screens
                 RectTransform row = UiKit.Rect("Mission", col);
                 row.Size(-1, 62);
                 UiKit.Label(row, t.text, 24, Color.white, TextAnchor.UpperLeft).rectTransform.Band(new Vector2(0, 0.5f), new Vector2(0.72f, 1), Vector2.zero, Vector2.zero);
-                Image bar = Glossy.Bar(row, m.progress / (float)Math.Max(1, t.target));
+                float value = m.progress / (float)Math.Max(1, t.target);
+                Image bar = Glossy.Bar(row, value);
+                Transform fill = bar.transform.Find("Fill");
+                if (_playingIntro && fill != null && fill.gameObject.activeSelf) { var bf = fill.gameObject.AddComponent<BarFill>(); bf.Target = Mathf.Clamp01(value); bf.Delay = 0.5f + shown * 0.12f; }
                 bar.rectTransform.Band(new Vector2(0, 0.12f), new Vector2(0.6f, 0.36f), Vector2.zero, Vector2.zero);
                 UiKit.Label(row, $"{Math.Min(m.progress, t.target)}/{t.target}", 22, new Color(1, 1, 1, 0.9f), TextAnchor.MiddleCenter)
                     .rectTransform.Band(new Vector2(0.6f, 0), new Vector2(0.74f, 0.5f), Vector2.zero, Vector2.zero);
@@ -191,6 +234,7 @@ namespace Kitefall.UI.Screens
                     else Ad(RewardedPlacement.DailyChestDouble);
                 }, chest || canDouble ? Glossy.Style.Orange : Glossy.Style.Locked, 28, iconColor: Art.Has("daily_chest") ? Color.white : Theme.Hex("#7A4A0A"));
             open.interactable = chest || canDouble;
+            if (chest) open.gameObject.AddComponent<Breathe>().Amount = 0.02f;
             open.GetComponent<RectTransform>().Band(new Vector2(0, 0), new Vector2(1, 0), new Vector2(18, 16), new Vector2(-18, 84));
         }
 
@@ -212,6 +256,7 @@ namespace Kitefall.UI.Screens
         {
             RectTransform grid = UiKit.Grid(Root, new Vector2(279, 74), new Vector2(12, 10), 2);
             grid.Place(new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 300), new Vector2(570, 3 * 74 + 2 * 10));
+            Intro(grid, new Vector2(620, 0), 0.22f);
             foreach (GameMode m in Modes)
             {
                 GameMode mode = m;
@@ -220,6 +265,7 @@ namespace Kitefall.UI.Screens
                 Button b = Glossy.Button(grid, ModeRules.For(m).displayName, Icons.Get(locked ? "lock" : ModeIcon(m)), () => { _mode = mode; Refresh(); },
                     style, 26, sub: locked ? "(Locked)" : null, iconColor: locked ? new Color(1, 1, 1, 0.7f) : Color.white);
                 if (locked) b.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 0.75f);
+                if (m == _mode) Shine.Add((RectTransform)b.transform);
             }
         }
 
@@ -227,6 +273,7 @@ namespace Kitefall.UI.Screens
         {
             Image row = Glossy.Panel(Root, Glossy.Style.Panel, "Arena");
             row.rectTransform.Place(new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 196), new Vector2(570, 92));
+            Intro(row, new Vector2(620, 0), 0.28f);
             Glossy.Button(row.transform, "", Icons.Get("chevron_left"), () => CycleArena(-1), Glossy.Style.Pill, 26)
                 .GetComponent<RectTransform>().Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(8, 0), new Vector2(58, 76));
             Glossy.Button(row.transform, "", Icons.Get("chevron_right"), () => CycleArena(1), Glossy.Style.Pill, 26)
@@ -253,8 +300,11 @@ namespace Kitefall.UI.Screens
 
         private void BuildPlayButton()
         {
-            Button play = Glossy.Button(Root, "PLAY", Icons.Get("swords"), Play, Glossy.Style.Orange, 84, iconColor: Theme.Hex("#FFF4C8"));
+            Button play = Glossy.Button(Root, "PLAY", Icons.Get("swords"), Play, Glossy.Style.Play, 84, iconColor: Theme.Hex("#FFF4C8"));
             play.GetComponent<RectTransform>().Place(new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 26), new Vector2(570, 156));
+            play.gameObject.AddComponent<Breathe>();
+            Shine.Add((RectTransform)play.transform);
+            Intro(play, new Vector2(0, -260), 0.34f);
             Text label = play.GetComponentInChildren<Text>();
             label.alignment = TextAnchor.MiddleCenter;
             label.rectTransform.Stretch(110, 0, 20, 0);
@@ -269,6 +319,8 @@ namespace Kitefall.UI.Screens
             SavedLoadout l = p.loadout;
             Image bar = Glossy.Panel(Root, Glossy.Style.Panel, "Loadout");
             bar.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-180, 26), new Vector2(740, 156));
+            Intro(bar, new Vector2(0, -240), 0.3f);
+            UiMotion.Bounce(bar);
             bar.gameObject.AddComponent<Button>().onClick.AddListener(() => UI.Push(new HangarScreen()));
             KiteOwned k = p.Kite(l.kite);
             string kiteCount = l.kite == "guddi" && (k == null || k.count == 0) ? "Free" : $"×{(k != null ? k.count : 0)}";
@@ -349,6 +401,9 @@ namespace Kitefall.UI.Screens
             return false;
         }
 
-        public override void OnShow() => Game.Flow?.ShowShowroom();
+        public override void OnShow()
+        {
+            if (!Painted) Game.Flow?.ShowShowroom(); // the painted picture covers the screen – no 3D scene needed behind it
+        }
     }
 }

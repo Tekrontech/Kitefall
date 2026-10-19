@@ -156,6 +156,9 @@ namespace Kitefall.UI
                     p.Star(48, 48, 40, 18);
                     break;
                 // ---- Home screen (glossy design) -----------------------------------
+                case "bird":
+                    p.Ring(30, 30, 20, 7, 40f, 140f); p.Ring(66, 30, 20, 7, 40f, 140f);
+                    break;
                 case "chevron_right":
                     p.Line(36, 22, 60, 48, 9); p.Line(60, 48, 36, 74, 9);
                     break;

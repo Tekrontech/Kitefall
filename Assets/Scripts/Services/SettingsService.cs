@@ -57,8 +57,8 @@ namespace Kitefall.Services
         public bool autoPrep;
         /// <summary>0 = International words (Release / Pull / Line / Spool), 1 = South Asian (Dheel / Kheench / Dor / Charkhi).</summary>
         public int kiteWords;
-        /// <summary>Home screen scene: 0 = World (harbour), 1 = South Asian old city rooftops.</summary>
-        public int homeTheme;
+        /// <summary>Home screen scene: 2 = painted design picture (animated, default), 0 = 3D world harbour, 1 = 3D old city rooftops.</summary>
+        public int homeTheme = 2;
         /// <summary>Win/lose animation on round end (upgrade F6).</summary>
         public bool autoEmotes = true;
         public bool quickChat = true;

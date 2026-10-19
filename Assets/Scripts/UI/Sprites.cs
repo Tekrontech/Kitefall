@@ -15,6 +15,25 @@ namespace Kitefall.UI
         public static Sprite White => Get("white", () => Solid());
         public static Sprite VerticalFade => Get("vfade", () => Gradient());
         public static Sprite Triangle => Get("tri", () => TriangleSprite(64));
+        /// <summary>Soft round glow (clouds, sparkles, sun) – alpha falls off smoothly to the edge.</summary>
+        public static Sprite Soft => Get("soft", () => SoftSprite(64));
+
+        private static Sprite SoftSprite(int size)
+        {
+            Texture2D tex = NewTex(size, size);
+            var px = new Color32[size * size];
+            float r = size * 0.5f;
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Mathf.Sqrt((x + 0.5f - r) * (x + 0.5f - r) + (y + 0.5f - r) * (y + 0.5f - r)) / r;
+                    float a = Mathf.Clamp01(1f - d);
+                    px[y * size + x] = new Color32(255, 255, 255, (byte)(a * a * 255));
+                }
+            tex.SetPixels32(px);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+        }
 
         private static Sprite Get(string key, System.Func<Sprite> make)
         {

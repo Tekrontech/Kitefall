@@ -383,6 +383,17 @@ for ic, d in [("gear", "a settings gear"), ("mail", "an envelope"), ("shirt", "a
         "WHITE glyph on transparent background (the game tints it). Bold, simple, readable at 32 px.",
         f"a simple flat white silhouette icon of {d}, pure white on transparent background, clean bold edges, no shading, game UI glyph", NEG_ICON + ", colours, gradients")
 
+# ======================= Home design kit (cut from the owner's design picture by Tools/ArtList/make_home_kit.py) ==========
+for sid, size, fmt, where, note in [
+        ("home_background", "1920x1080", "JPG", "Home screen painted background (Settings ▸ Home scene ▸ Painted design)",
+         "ALREADY MADE from docs/design/home_screen_design.jpg (UI removed, kite removed). Replace only if you want a new home picture – keep the flyer at the same spot."),
+        ("home_kite", "195x175", "PNG (transparent)", "Animated kite on the home picture",
+         "ALREADY MADE (cut from the design). Kite + tail only, transparent background."),
+        ("ui_button_play", "460x128", "PNG (transparent)", "PLAY button skin (9-slice)",
+         "ALREADY MADE (cut from the design, text removed). Keep it EMPTY.")]:
+    add("Home design", f"{sid}.{'jpg' if fmt == 'JPG' else 'png'}", size, fmt, where, "Done", note,
+        "Made from the owner's own design picture – no AI prompt needed.", "")
+
 wb = Workbook()
 hdr_fill = PatternFill("solid", fgColor="3A2A6B")
 hdr_font = Font(bold=True, color="FFFFFF", size=11)
@@ -434,10 +445,10 @@ for i, (h, w) in enumerate(zip(headers, widths), 1):
     c.fill = hdr_fill; c.font = hdr_font; c.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center"); c.border = border
     ws.column_dimensions[get_column_letter(i)].width = w
 ws.row_dimensions[1].height = 28
-pri_colour = {"Critical": "F8CBAD", "High": "FFE699", "Medium": "E2EFDA", "Low": "DDEBF7"}
+pri_colour = {"Critical": "F8CBAD", "High": "FFE699", "Medium": "E2EFDA", "Low": "DDEBF7", "Done": "C6EFCE"}
 band = PatternFill("solid", fgColor="FBF8F1")
 for n, row in enumerate(rows, 1):
-    vals = [n] + list(row) + ["To do", "", ""]
+    vals = [n] + list(row) + ["Approved" if row[5] == "Done" else "To do", "", ""]
     for j, v in enumerate(vals, 1):
         c = ws.cell(row=n + 1, column=j, value=v)
         c.alignment = wrap; c.border = border

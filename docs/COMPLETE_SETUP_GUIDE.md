@@ -521,3 +521,18 @@ bada naranji PLAY, neeche loadout bar (kite · tail · line · spool), peeche ro
 - Sab buttons / panels code se bante hain (`UI/Glossy.cs`), is liye images ke bagair bhi isi style mein dikhte hain.
 - Baaqi screens ke buttons/panels bhi isi style mein aa gaye.
 - Apni behtar art lagani ho: Excel "UI kit" rows (#359+) – `ui_panel`, `ui_button_orange`, `ui_icon_gear` waghera. Image Mapper khud 9-slice set karta hai.
+
+## 24. Home screen = aap ki design wali tasveer (animated)
+
+Nayi tasveerein banane ki zaroorat nahi: aap ki design picture se hi game ke parts kaat liye gaye (`docs/design/kit/`):
+- `home_background.jpg` – design ka manzar, buttons aur kite hata kar (saaf aasman / harbour / character).
+- `home_kite.png` – kite alag, taa ke hawa mein hil sake.
+- Button skins: `ui_button_blue`, `ui_button_selected`, `ui_button_locked`, `ui_button_orange`, `ui_button_play`, `ui_panel`, `ui_pill`.
+- Icons: gear, mail, shirt, people, target, hangar, wrench, cart, star, trophy, swords, lock, door, kite, pencil, clock, arrows.
+
+**Lagana:** zip extract karein – files `Assets/Art/Incoming` mein aa jati hain aur AUTO khud install kar deta hai.
+**Animation:** kite figure-8 mein lehrati hai (dor haath se kite tak), baadal chalte hain, parinde udte hain, samandar chamakta hai,
+sooraj ki roshni saans leti hai; buttons baayein/daayein/upar/neeche se slide hote hain, PLAY halki saans + chamak, button dabane par
+bounce, coins count-up, mission bars bharti hain.
+**Settings ▸ Gameplay ▸ Home scene:** Painted design (default) · 3D world harbour · 3D old city rooftops.
+Preview: `docs/design/home_preview.jpg`.

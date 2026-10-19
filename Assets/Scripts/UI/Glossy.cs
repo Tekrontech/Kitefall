@@ -12,7 +12,7 @@ namespace Kitefall.UI
     /// </summary>
     public static class Glossy
     {
-        public enum Style { Panel, Menu, Selected, Orange, Pill, Locked, Green }
+        public enum Style { Panel, Menu, Selected, Orange, Pill, Locked, Green, Play }
 
         private static readonly Dictionary<Style, Sprite> Cache = new Dictionary<Style, Sprite>();
 
@@ -40,6 +40,7 @@ namespace Kitefall.UI
                 case Style.Orange: return "ui_button_orange";
                 case Style.Pill: return "ui_pill";
                 case Style.Locked: return "ui_button_locked";
+                case Style.Play: return "ui_button_play";
                 default: return "ui_button_green";
             }
         }
@@ -54,6 +55,7 @@ namespace Kitefall.UI
                 case Style.Orange: return Rounded(128, 30, "#FFD34A", "#F06A0F", "#FFE9A8", 4f, 0.32f, 1f);
                 case Style.Pill: return Rounded(64, 30, "#0F2347", "#081530", "#2E6BB5", 2f, 0.06f, 0.95f);
                 case Style.Locked: return Rounded(96, 20, "#2A3550", "#161E33", "#4C5A78", 3f, 0.08f, 0.95f);
+                case Style.Play: return Make(Style.Orange);
                 default: return Rounded(96, 20, "#4FD08A", "#1E8F55", "#C8FFD9", 3f, 0.25f, 1f);
             }
         }
@@ -99,6 +101,7 @@ namespace Kitefall.UI
         {
             Image bg = Panel(parent, style, "Btn_" + text);
             var btn = bg.gameObject.AddComponent<Button>();
+            UiMotion.Bounce(btn);
             ColorBlock cb = btn.colors;
             cb.pressedColor = new Color(0.8f, 0.85f, 0.95f);
             cb.highlightedColor = new Color(1.05f, 1.05f, 1.1f);

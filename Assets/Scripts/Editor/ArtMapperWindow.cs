@@ -577,7 +577,7 @@ namespace Kitefall.EditorTools
             int max = Mathf.Min(2048, Mathf.NextPowerOfTwo(Mathf.Max(size.x, size.y)));
             bool surface = s.Category == "Kite skins" || s.Category == "Environment textures";
             bool picture = s.Category.Contains("background") || s.Category.Contains("Loading") || s.Category == "Arenas" ||
-                           s.Category == "Game modes" || s.Category == "Onboarding" || s.Id == "splash_screen" || s.Id == "pass_banner";
+                           s.Category == "Game modes" || s.Category == "Onboarding" || s.Id == "splash_screen" || s.Id == "pass_banner" || s.Id == "home_background";
 
             if (s.BuildOnly)
             {
@@ -591,7 +591,15 @@ namespace Kitefall.EditorTools
                 ti.textureType = TextureImporterType.Sprite;
                 ti.spriteImportMode = SpriteImportMode.Single;
                 // UI kit skins stretch as 9-slice: keep the rounded corners / rim unscaled.
-                if (s.Category == "UI kit" && !s.Id.StartsWith("ui_icon_")) ti.spriteBorder = new Vector4(44, 44, 44, 44);
+                if ((s.Category == "UI kit" || s.Id == "ui_button_play") && !s.Id.StartsWith("ui_icon_"))
+                {
+                    int w = 0, h = 0;
+#if UNITY_2021_2_OR_NEWER
+                    ti.GetSourceTextureWidthAndHeight(out w, out h);
+#endif
+                    float bx = w > 0 ? Mathf.Min(44f, w * 0.5f - 2f) : 30f, by = h > 0 ? Mathf.Min(44f, h * 0.5f - 2f) : 20f;
+                    ti.spriteBorder = new Vector4(bx, by, bx, by);
+                }
                 ti.alphaIsTransparency = true;
                 ti.mipmapEnabled = surface;
                 ti.wrapMode = s.Category == "Environment textures" ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;

@@ -398,6 +398,9 @@ namespace Kitefall.EditorTools
             { "ui_icon_spool", "ui kit home screen + menus icon ui icon spool a simple flat white silhouette icon of a wooden spool pure white on transparent background clean bold edges no shading game ui glyph" },
             { "ui_icon_chevron_right", "ui kit home screen + menus icon ui icon chevron right a simple flat white silhouette icon of a right arrow chevron pure white on transparent background clean bold edges no shading game ui glyph" },
             { "ui_icon_chevron_left", "ui kit home screen + menus icon ui icon chevron left a simple flat white silhouette icon of a left arrow chevron pure white on transparent background clean bold edges no shading game ui glyph" },
+            { "home_background", "home design home screen painted background (settings ▸ home scene ▸ painted design) home background made from the owner s own design picture no ai prompt needed" },
+            { "home_kite", "home design animated kite on the home picture home kite made from the owner s own design picture no ai prompt needed" },
+            { "ui_button_play", "home design play button skin (9-slice) ui button play made from the owner s own design picture no ai prompt needed" },
         };
     }
 }

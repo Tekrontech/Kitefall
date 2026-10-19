@@ -396,6 +396,9 @@ namespace Kitefall.UI
             new ArtSlot(389, "ui_icon_spool", "UI kit", "128x128", false),
             new ArtSlot(390, "ui_icon_chevron_right", "UI kit", "128x128", false),
             new ArtSlot(391, "ui_icon_chevron_left", "UI kit", "128x128", false),
+            new ArtSlot(392, "home_background", "Home design", "1920x1080", false),
+            new ArtSlot(393, "home_kite", "Home design", "195x175", false),
+            new ArtSlot(394, "ui_button_play", "Home design", "460x128", false),
         };
     }
 }

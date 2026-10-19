@@ -56,7 +56,9 @@ namespace Kitefall.UI.Screens
                 case 4:
                     UiKit.Choice(col, "Kite words", new[] { "International (Release · Pull · Line · Spool)", "South Asian (Dheel · Kheench · Dor · Charkhi)" }, d.kiteWords,
                         i => { d.kiteWords = i; Save(); Refresh(); });
-                    UiKit.Choice(col, "Home scene", new[] { "World harbour", "Old city rooftops" }, d.homeTheme, i => { d.homeTheme = i; Save(); });
+                    // homeTheme: 2 = painted design (default), 0 = 3D world harbour, 1 = 3D old city rooftops.
+                    UiKit.Choice(col, "Home scene", new[] { "Painted design (animated)", "3D world harbour", "3D old city rooftops" },
+                        d.homeTheme == 2 ? 0 : d.homeTheme + 1, i => { d.homeTheme = i == 0 ? 2 : i - 1; Save(); });
                     UiKit.Label(col, "Only words and scenery change – gameplay is the same for everyone.", 22, Theme.TextDim).Size(-1, 36);
                     UiKit.Choice(col, "Contest meter", new[] { "Bar", "Bar + numbers" }, d.contestMeterStyle, i => { d.contestMeterStyle = i; Save(); });
                     UiKit.Toggle(col, "Sweet-zone highlight", d.sweetZoneHighlight, v => { d.sweetZoneHighlight = v; Save(); });
