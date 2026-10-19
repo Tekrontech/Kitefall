@@ -18,7 +18,7 @@ namespace Kitefall.UI.Screens
             EconomyConfig c = Game.Economy;
             RectTransform tabs = UiKit.Rect("Tabs", content);
             tabs.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -76), Vector2.zero);
-            UiKit.Tabs(tabs, new[] { "Craft kite", "Repair", "Dor spools", "Charkhi", "Tuning", "Salvage" }, _tab, i => { _tab = i; Refresh(); });
+            UiKit.Tabs(tabs, new[] { "Craft kite", "Repair", Terms.Line + " spools", Terms.Spool, "Tuning", "Salvage" }, _tab, i => { _tab = i; Refresh(); });
 
             RectTransform host = UiKit.Rect("List", content);
             host.Band(Vector2.zero, Vector2.one, Vector2.zero, new Vector2(0, -90));
@@ -117,7 +117,7 @@ namespace Kitefall.UI.Screens
             }
             foreach (var d in SpecDefaults.Dors) if (p.DorMeters(d.Key) > 0f || p.loadout.dor == d.Key) Item(d.Key, TuningTarget.Dor);
             foreach (string ch in p.charkhis) Item(ch, TuningTarget.Charkhi);
-            UiKit.Label(list, "Waxed coat: DorSpeed +5 % / Strength −1 · Double twist: Strength +2 / DorSpeed −5 % · Light thread: agility +3 % / DorCut −2 %\nOiled axle: reel +20 % / capacity −50 m · Wide drum: capacity +100 m / reel −15 % · Soft grip: sweet zone +2 / Kheench −3 %", 22, Theme.TextDim).Size(-1, 90);
+            UiKit.Label(list, $"Waxed coat: {Terms.Line} speed +5 % / Strength −1 · Double twist: Strength +2 / {Terms.Line} speed −5 % · Light thread: agility +3 % / {Terms.Line} cut −2 %\nOiled axle: reel +20 % / capacity −50 m · Wide drum: capacity +100 m / reel −15 % · Soft grip: sweet zone +2 / {Terms.Pull} −3 %", 22, Theme.TextDim).Size(-1, 90);
         }
 
         private static RectTransform Line(RectTransform list, string title, string cost, string action, System.Action click, bool enabled)

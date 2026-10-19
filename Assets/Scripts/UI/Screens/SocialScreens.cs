@@ -103,7 +103,7 @@ namespace Kitefall.UI.Screens
             UiKit.Label(left,
                 $"Matches {p.matches}   Wins {p.wins} ({p.WinRate:P0})\n" +
                 $"Cuts {p.cuts}   Best streak {p.bestStreak}   Current {p.winStreak}\n" +
-                $"Favourite kite {SpecDefaults.NameOf(p.FavouriteKite() ?? "guddi")} · dor {SpecDefaults.NameOf(p.FavouriteDor() ?? "sooti")}", 28).Size(-1, 130);
+                $"Favourite kite {SpecDefaults.NameOf(p.FavouriteKite() ?? "guddi")} · {Terms.LineLower} {SpecDefaults.NameOf(p.FavouriteDor() ?? "sooti")}", 28).Size(-1, 130);
 
             UiKit.Label(left, "Account", 30, Theme.Accent, TextAnchor.MiddleLeft, FontStyle.Bold).Size(-1, 44);
             UiKit.Label(left, p.guest ? "<color=#F5C400>Guest – link an account so you never lose progress.</color>" : $"Linked: {p.linkedProvider}", 24).Size(-1, 40);

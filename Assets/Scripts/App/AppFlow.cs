@@ -319,7 +319,7 @@ namespace Kitefall.App
             switch (e.Type)
             {
                 case MatchEventType.KiteCut:
-                    if (e.B == me) Hud.Announce("YOU CUT THEIR LINE!", $"−{e.Value:0} m of their dor cut away");
+                    if (e.B == me) Hud.Announce("YOU CUT THEIR LINE!", $"−{e.Value:0} m of their {Terms.LineLower} cut away");
                     else if (e.A == me) Hud.Announce("YOUR LINE WAS CUT", "Read the results to see why");
                     break;
                 case MatchEventType.SelfSnap:

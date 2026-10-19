@@ -36,6 +36,9 @@ namespace Kitefall.Match
                 case "gudiparan": return new Look { Primary = Hex("#2E8B57"), Secondary = Hex("#F5DEB3"), Pattern = 5 };
                 case "chula": return new Look { Primary = Hex("#8B0000"), Secondary = Hex("#FFD700"), Pattern = 4 };
                 case "wau": return new Look { Primary = Hex("#00897B"), Secondary = Hex("#FFB300"), Pattern = 3 };
+                case "delta": return new Look { Primary = Hex("#2F6FDB"), Secondary = Hex("#F4F1E8"), Pattern = 1 };
+                case "box": return new Look { Primary = Hex("#C8102E"), Secondary = Hex("#F4F1E8"), Pattern = 5 };
+                case "volantin": return new Look { Primary = Hex("#F5C400"), Secondary = Hex("#1F8F5F"), Pattern = 2 };
                 default: return new Look { Primary = Hex("#F25A3C"), Secondary = Hex("#FFE08A"), Pattern = 2 };
             }
         }
@@ -60,7 +63,16 @@ namespace Kitefall.Match
             // Bamboo frame: spine + bow.
             Material stick = Materials.Lit(new Color(0.74f, 0.6f, 0.36f), 0.1f);
             Stick(sail.transform, new Vector3(0f, (0.6f + tailY) * 0.5f, -0.01f), new Vector3(0.02f, 0.6f - tailY, 0.02f), stick);
-            Stick(sail.transform, new Vector3(0f, kiteId == "rokkaku" ? 0.25f : 0f, 0.04f), new Vector3(kiteId == "chula" ? 1.1f : 0.95f, 0.02f, 0.02f), stick);
+            Stick(sail.transform, new Vector3(0f, kiteId == "rokkaku" ? 0.25f : kiteId == "delta" ? -0.15f : 0f, 0.04f),
+                new Vector3(kiteId == "chula" ? 1.1f : kiteId == "delta" ? 1.0f : kiteId == "box" ? 0.62f : 0.95f, 0.02f, 0.02f), stick);
+            if (kiteId == "box")
+            {
+                // Box kite: second cross spar + side cells so it reads as a 3-D box.
+                Stick(sail.transform, new Vector3(0f, 0.38f, 0.04f), new Vector3(0.62f, 0.02f, 0.02f), stick);
+                Stick(sail.transform, new Vector3(0f, -0.38f, 0.04f), new Vector3(0.62f, 0.02f, 0.02f), stick);
+                Stick(sail.transform, new Vector3(0.32f, 0f, 0.18f), new Vector3(0.02f, 1.2f, 0.36f), stick);
+                Stick(sail.transform, new Vector3(-0.32f, 0f, 0.18f), new Vector3(0.02f, 1.2f, 0.36f), stick);
+            }
 
             var tail = new GameObject("TailPoint");
             tail.transform.SetParent(root.transform, false);
@@ -109,6 +121,18 @@ namespace Kitefall.Match
                 case "wau": // moon kite: crescent bottom, wide wings
                     outline = new[] { V(0, 0.6f), V(0.18f, 0.3f), V(0.55f, 0.15f), V(0.25f, -0.05f), V(0.42f, -0.45f), V(0, -0.3f), V(-0.42f, -0.45f), V(-0.25f, -0.05f), V(-0.55f, 0.15f), V(-0.18f, 0.3f) };
                     tailY = -0.3f;
+                    break;
+                case "delta": // wide triangle, flat trailing edge with a small keel notch
+                    outline = new[] { V(0, 0.6f), V(0.62f, -0.35f), V(0.1f, -0.3f), V(0, -0.4f), V(-0.1f, -0.3f), V(-0.62f, -0.35f) };
+                    tailY = -0.4f;
+                    break;
+                case "box": // tall rectangle (a box kite seen from the front)
+                    outline = new[] { V(-0.32f, 0.6f), V(0.32f, 0.6f), V(0.32f, -0.6f), V(-0.32f, -0.6f) };
+                    tailY = -0.6f;
+                    break;
+                case "volantin": // small square diamond, slightly taller than wide
+                    outline = new[] { V(0, 0.52f), V(0.42f, 0.04f), V(0, -0.42f), V(-0.42f, 0.04f) };
+                    tailY = -0.42f;
                     break;
                 default: // guddi / patang: square diamond
                     outline = new[] { V(0, 0.55f), V(0.5f, 0.05f), V(0, -0.45f), V(-0.5f, 0.05f) };

@@ -17,23 +17,34 @@ namespace Kitefall.Match
             var root = new GameObject("Arena_" + layout.Type);
             root.transform.SetParent(parent, false);
 
-            Color ground = data != null ? data.groundColor : new Color(0.55f, 0.5f, 0.4f);
+            // Arenas without a data asset yet (added in an update) use their built-in look.
+            ArenaLook look = ArenaLook.For(layout.Type);
+            Color ground = data != null ? data.groundColor : look.Ground;
             Color[] houses = data != null && data.buildingColors != null && data.buildingColors.Length > 0
-                ? data.buildingColors : new[] { new Color(0.86f, 0.8f, 0.7f) };
-            Color far = data != null ? data.farColor : new Color(0.45f, 0.5f, 0.6f);
-            bool water = data != null && data.water;
+                ? data.buildingColors : look.Buildings;
+            Color far = data != null ? data.farColor : look.Far;
+            bool water = data != null ? data.water : look.Water;
+            Color waterColor = data != null ? data.waterColor : look.WaterColor;
 
             // ---- Ground / water
             GameObject g = Prim(PrimitiveType.Plane, root.transform, "Ground");
             g.transform.localScale = new Vector3(260f, 1f, 260f);
             g.transform.position = new Vector3(0f, 0f, 400f);
-            g.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(water ? data.waterColor : ground, water ? 0.75f : 0.05f);
+            g.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(water ? waterColor : ground, water ? 0.75f : 0.05f);
+            if (look.SeaDownwind)
+            {
+                // Beach / harbour: sand or quay where the flyers stand, open sea where the kites fly.
+                GameObject sea = Prim(PrimitiveType.Cube, root.transform, "Sea");
+                sea.transform.position = new Vector3(0f, 0.02f, 700f);
+                sea.transform.localScale = new Vector3(3000f, 0.04f, 1200f);
+                sea.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(look.WaterColor, 0.85f);
+            }
             if (layout.Type == ArenaType.RiverFestival)
             {
                 GameObject river = Prim(PrimitiveType.Cube, root.transform, "River");
                 river.transform.position = new Vector3(0f, 0.02f, 160f);
                 river.transform.localScale = new Vector3(2000f, 0.04f, 70f);
-                river.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(data != null ? data.waterColor : new Color(0.2f, 0.45f, 0.6f), 0.8f);
+                river.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(waterColor, 0.8f);
             }
             if (layout.Type == ArenaType.StormArchipelago)
             {
@@ -55,6 +66,23 @@ namespace Kitefall.Match
             {
                 switch (b.Kind)
                 {
+                    case BlockKind.Tree when b.Variant == 1:
+                    {
+                        // Palm: tall thin trunk, flat fan of leaves.
+                        GameObject trunk = Prim(PrimitiveType.Cylinder, root.transform, "Palm");
+                        trunk.transform.position = new Vector3(b.Center.X, b.Size.Y * 0.5f, b.Center.Z);
+                        trunk.transform.localScale = new Vector3(0.45f, b.Size.Y * 0.5f, 0.45f);
+                        trunk.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(new Color(0.55f, 0.42f, 0.28f));
+                        for (int leaf = 0; leaf < 5; leaf++)
+                        {
+                            GameObject frond = Prim(PrimitiveType.Cube, root.transform, "Frond");
+                            frond.transform.position = new Vector3(b.Center.X, b.Size.Y, b.Center.Z);
+                            frond.transform.rotation = Quaternion.Euler(18f, leaf * 72f, 0f);
+                            frond.transform.localScale = new Vector3(0.9f, 0.08f, 4.2f);
+                            frond.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(new Color(0.24f, 0.55f, 0.27f));
+                        }
+                        break;
+                    }
                     case BlockKind.Tree:
                     {
                         GameObject trunk = Prim(PrimitiveType.Cylinder, root.transform, "Tree");
@@ -98,7 +126,7 @@ namespace Kitefall.Match
                         GameObject box = Prim(PrimitiveType.Cube, root.transform, b.Kind.ToString());
                         box.transform.position = ToUnity(b.Center);
                         box.transform.localScale = ToUnity(b.Size);
-                        Color c = b.Kind == BlockKind.Cliff ? new Color(0.55f, 0.5f, 0.44f)
+                        Color c = b.Kind == BlockKind.Cliff ? (b.Variant == 2 ? new Color(0.42f, 0.6f, 0.3f) : new Color(0.55f, 0.5f, 0.44f))
                             : b.Kind == BlockKind.Stall ? Color.HSVToRGB((b.Variant * 0.23f) % 1f, 0.55f, 0.9f)
                             : houses[Mathf.Abs(b.Variant) % houses.Length];
                         Texture2D tex = b.Kind == BlockKind.Cliff ? ProceduralTextures.Concrete(c) : null;
@@ -296,5 +324,52 @@ namespace Kitefall.Match
         }
 
         public static Vector3 ToUnity(System.Numerics.Vector3 v) => new Vector3(v.X, v.Y, v.Z);
+    }
+
+    /// <summary>Built-in colours per arena, used when the project has no ArenaData asset for it (and by the editor to create one).</summary>
+    public struct ArenaLook
+    {
+        public Color Ground, Far, WaterColor;
+        public Color[] Buildings;
+        public bool Water, SeaDownwind;
+
+        private static Color H(string hex) => ColorUtility.TryParseHtmlString(hex, out Color c) ? c : Color.gray;
+
+        public static ArenaLook For(ArenaType type)
+        {
+            var l = new ArenaLook
+            {
+                Ground = new Color(0.55f, 0.5f, 0.4f), Far = new Color(0.45f, 0.5f, 0.6f), WaterColor = new Color(0.18f, 0.45f, 0.62f),
+                Buildings = new[] { new Color(0.86f, 0.8f, 0.7f), new Color(0.66f, 0.4f, 0.3f), new Color(0.93f, 0.88f, 0.76f), new Color(0.55f, 0.66f, 0.74f) }
+            };
+            switch (type)
+            {
+                case ArenaType.RioHillside: // bright painted hillside houses
+                    l.Ground = H("#7A8F4E"); l.Far = H("#5E7F6A");
+                    l.Buildings = new[] { H("#F2C14E"), H("#E86F51"), H("#4FA3C7"), H("#F4EFE6"), H("#7BC67E") };
+                    break;
+                case ArenaType.SantiagoRooftops: // terracotta city under the Andes
+                    l.Ground = H("#8C7A62"); l.Far = H("#8A8FA6");
+                    l.Buildings = new[] { H("#D9A273"), H("#B5654A"), H("#EDE0C8"), H("#9DB4C0") };
+                    break;
+                case ArenaType.MediterraneanHarbour: // white walls, blue doors, sea
+                    l.Ground = H("#CDBB98"); l.Far = H("#6F8FB0"); l.WaterColor = H("#1E6FA8"); l.SeaDownwind = true;
+                    l.Buildings = new[] { H("#F7F5EF"), H("#F2EEE4"), H("#2F6FB5"), H("#E9E2D0") };
+                    break;
+                case ArenaType.AtlanticBeach: // sand, dunes, striped beach huts
+                    l.Ground = H("#E2CFA0"); l.Far = H("#8FA9BF"); l.WaterColor = H("#2D6E8E"); l.SeaDownwind = true;
+                    l.Buildings = new[] { H("#F4F1E8"), H("#D94F4F"), H("#3C7DBF") };
+                    break;
+                case ArenaType.CaribbeanShore: // turquoise water, pastel cottages
+                    l.Ground = H("#EAD9AE"); l.Far = H("#5FA8A0"); l.WaterColor = H("#21A6A6"); l.SeaDownwind = true;
+                    l.Buildings = new[] { H("#FFD6E0"), H("#BDE8F5"), H("#FFF1B8"), H("#C8F2C2") };
+                    break;
+                case ArenaType.BaliTerraces: // green terraces, stone and thatch
+                    l.Ground = H("#5E8F3E"); l.Far = H("#4E6E5A");
+                    l.Buildings = new[] { H("#A9876A"), H("#C9B48F"), H("#6E5A44") };
+                    break;
+            }
+            return l;
+        }
     }
 }

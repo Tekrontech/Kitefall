@@ -68,7 +68,7 @@ namespace Kitefall.EditorTools
             return w;
         }
 
-        private static readonly string[] Kites = { "guddi", "pipa", "rokkaku", "pakpao", "gudiparan", "chula", "wau" };
+        private static readonly string[] Kites = { "guddi", "pipa", "rokkaku", "pakpao", "gudiparan", "chula", "wau", "delta", "box", "volantin" };
         private static readonly string[][] Palettes =
         {
             new[] { "sunset" }, new[] { "monsoon" }, new[] { "basant" }, new[] { "night", "bazaar" },

@@ -15,7 +15,7 @@ namespace Kitefall.UI.Screens
 
         private static readonly GameMode[] Modes = { GameMode.QuickDuel, GameMode.RankedDuel, GameMode.FreeForAll, GameMode.PrivateRoom, GameMode.TeamBattle, GameMode.LastKiteFlying };
         private static GameMode _mode = GameMode.QuickDuel;
-        private static ArenaType _arena = ArenaType.OldCityRooftops;
+        private static ArenaType _arena = KiteCalendar.Current(DateTime.Now)?.Arena ?? ArenaType.MediterraneanHarbour;
 
         protected override void Build()
         {
@@ -33,6 +33,27 @@ namespace Kitefall.UI.Screens
             BuildMissions(p);
             BuildLoadoutChip(p);
             BuildPlay(p);
+            BuildFestival();
+        }
+
+        /// <summary>World Kite Calendar banner (D57): today's festival somewhere in the world.</summary>
+        private void BuildFestival()
+        {
+            KiteFestival now = KiteCalendar.Current(DateTime.Now);
+            KiteFestival next = KiteCalendar.Next(DateTime.Now);
+            string text = now != null
+                ? $"<color=#FFD24D>★ {now.Name}</color>  <size=20>{now.Region}</size>"
+                : $"<color=#FFD24D>World Kite Season</color>  <size=20>next: {next.Name} · {next.Region}</size>";
+            Sprite art = now != null ? Art.Sprite("festival_" + now.Id) : null;
+            Image band = UiKit.Panel(Root, new Color(0, 0, 0, 0.45f), "Festival", false);
+            band.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -136), new Vector2(760, art != null ? 190 : 54));
+            if (art != null)
+            {
+                Image pic = UiKit.Image(band.transform, Color.white, art, "FestivalArt");
+                pic.rectTransform.Stretch();
+                pic.preserveAspect = true;
+            }
+            UiKit.Label(band.transform, text, 24, Color.white, TextAnchor.MiddleCenter).rectTransform.Stretch(10, 0, 10, 0);
         }
 
         private void BuildProfileChip(PlayerProfile p)
@@ -143,7 +164,8 @@ namespace Kitefall.UI.Screens
             arenaRow.Size(-1, 60);
             UiKit.Button(arenaRow, "‹", () => CycleArena(-1), Theme.PanelLight, 30).Size(70, 56);
             ArenaData data = Game.Db.Arena(_arena);
-            UiKit.Label(arenaRow, ArenaLayout.DisplayName(_arena) + (data != null && !data.availableAtLaunch ? " *" : ""), 24, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Size(-1, 56, 1);
+            UiKit.Label(arenaRow, ArenaLayout.DisplayName(_arena) + (data != null && !data.availableAtLaunch ? " *" : "") + $"\n<size=17><color=#FFFFFFAA>{ArenaLayout.Region(_arena)}</color></size>",
+                22, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Size(-1, 56, 1);
             UiKit.Button(arenaRow, "›", () => CycleArena(1), Theme.PanelLight, 30).Size(70, 56);
 
             Button play = UiKit.Button(Root, "PLAY", Play, Theme.Accent, 64);

@@ -35,7 +35,7 @@ namespace Kitefall.UI
             _sb.Clear();
             _sb.Append("<b>KITEFALL · Milestone 1 – Flight test</b>\n");
             _sb.Append("Loadout: ").Append(kite.KiteClass.displayName)
-               .Append(" · ").Append(kite.Tail != null ? kite.Tail.displayName : "No dum")
+               .Append(" · ").Append(kite.Tail != null ? kite.Tail.displayName : "No " + Kitefall.Core.Terms.TailLower)
                .Append(" · ").Append(kite.Dor.displayName)
                .Append(" · ").Append(kite.Charkhi.displayName).Append('\n');
             _sb.Append("Status: ").Append(sim.Status).Append("   Action: ").Append(sim.CurrentAction).Append('\n');

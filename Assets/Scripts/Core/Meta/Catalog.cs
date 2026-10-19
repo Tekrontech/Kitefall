@@ -159,7 +159,7 @@ namespace Kitefall.Core
         private static List<CosmeticItem> BuildCosmetics()
         {
             var list = new List<CosmeticItem>();
-            string[] kites = { "guddi", "pipa", "rokkaku", "pakpao", "gudiparan", "chula", "wau" };
+            string[] kites = { "guddi", "pipa", "rokkaku", "pakpao", "gudiparan", "chula", "wau", "delta", "box", "volantin" };
             var palettes = new[]
             {
                 new[] { "Sunset", "#F25A3C", "#FFE08A" }, new[] { "Monsoon", "#2F6FDB", "#9FD8FF" },

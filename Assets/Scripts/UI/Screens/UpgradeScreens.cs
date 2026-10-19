@@ -322,9 +322,9 @@ namespace Kitefall.UI.Screens
                 string id = k.Stats.id;
                 UiKit.Button(kites, k.Name, () => { Req.Kite = id; Refresh(); }, id == Req.Kite ? Theme.Accent : Theme.PanelLight, 22);
             }
-            Pick(list, "Dum", SpecDefaults.Tails, Req.Tail, id => Req.Tail = id);
-            Pick(list, "Dor", SpecDefaults.Dors, Req.Dor, id => Req.Dor = id);
-            Pick(list, "Charkhi", SpecDefaults.Charkhis, Req.Charkhi, id => Req.Charkhi = id);
+            Pick(list, Terms.Tail, SpecDefaults.Tails, Req.Tail, id => Req.Tail = id);
+            Pick(list, Terms.Line, SpecDefaults.Dors, Req.Dor, id => Req.Dor = id);
+            Pick(list, Terms.Spool, SpecDefaults.Charkhis, Req.Charkhi, id => Req.Charkhi = id);
             UiKit.Label(list, "Tunings (up to 2)", 28, Theme.Accent, TextAnchor.MiddleLeft, FontStyle.Bold).Size(-1, 44);
             RectTransform tun = UiKit.Grid(list, new Vector2(300, 64), new Vector2(10, 10), 4);
             foreach (var t in SpecDefaults.Tunings)

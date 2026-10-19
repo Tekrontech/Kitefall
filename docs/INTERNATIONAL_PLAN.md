@@ -5,34 +5,30 @@ Kitefall shows many kite cultures side by side. South Asian rooftops stay as one
 
 Status key: ✅ done · 🔜 proposed (needs owner OK) · ⚠️ check
 
-## 1. Done now
-| Area | Change |
+## 1. Done (international update)
+Asia stays fully available – players choose. Images already made keep working (their # numbers did not change).
+
+| Area | What changed |
 |---|---|
-| Project rule | `CLAUDE.md` + decision D57: every future change must work for a worldwide audience. |
-| Art style (Excel prompts) | Master prompt changed from "South Asian miniature on wasli paper" to a **classical storybook world kite-festival** look (same gouache + gold, so the 131 images already made still fit). |
-| Image Mapper | "Export missing list" button → `Assets/Art/missing_images.csv`. |
+| Project rule | `CLAUDE.md` + decision D57. |
+| **Kite words** (Settings ▸ Gameplay) | **International** (default): Release · Pull · Line · Spool · Tail, item names "Cotton line", "Wooden spool"… / **South Asian**: Dheel · Kheench · Dor · Charkhi · Dum, Sooti, Lakri… Same gameplay. (`Core/Meta/Terms.cs`) |
+| **Home scene** (Settings ▸ Gameplay) | World harbour (default) or Old city rooftops. |
+| **Kites** | + Delta (USA/Europe), Box Kite (Australia/UK), Volantín (Chile) – stats inside existing ranges, 8 skins each. All 7 Asian kites stay. |
+| **Arenas** | + Rio Hillside, Santiago Rooftops, Mediterranean Harbour, Atlantic Beach Festival, Caribbean Shore, Bali Rice Terraces (each shows its region on the arena picker). Old 6 arenas unchanged. Unity adds their data assets automatically (Kitefall ▸ Fix Game Scene Links / any build). |
+| **Characters** | + Mateus (Rio), Valentina (Santiago), Diego (Guatemala), Emma (France), Jack (USA), Amara (Lagos), Youssef (Marrakesh), Elif (Istanbul), Nikos (Athens) → 19 characters, 18 home towns. |
+| **Outfits** | + Denim Jacket, Windbreaker, Track Suit, Beach Shirt, Carnival Shirt, Andes Poncho, Festival Print → 19 outfits. Kurta, sherwani, topi stay optional. |
+| **World Kite Calendar** | Home banner shows today's festival (Makar Sankranti, Basant, Clean Monday, Good Friday, Children's Day, beach festivals, Bali, Fiestas Patrias, Guatemala giant kites, Brazilian pipas) and picks its arena first. Cosmetic only. (`Core/Meta/KiteCalendar.cs`) |
+| Art style (Excel) | Classical storybook world kite-festival style. 80 new image rows appended (#279–#358). |
+| Image Mapper | "Export missing list" button. |
 
-## 2. Words in the game (UI) 🔜
-Players outside South Asia do not know *dheel, kheench, dor, charkhi, dum, guddi*. Proposal: **English first, local word as flavour**.
+## 2. Words still South-Asian-only
+Item ids (save data, servers) keep their original names – only display text changes. The "Bo Kata!" emote stays as a fun regional emote.
 
-| Now | Proposed label | Note |
-|---|---|---|
-| Dheel | **Release** | Button + tutorial |
-| Kheench | **Pull** | Button + tutorial |
-| Dor | **Line** (sub-text "dor") | Loadout, shop |
-| Charkhi | **Spool** (sub-text "charkhi") | Loadout, shop |
-| Dum | **Tail** | Loadout |
-| Bo Kata! | **Cut!** (emote keeps "Bo Kata!" as a fun regional emote) | Kill feed / banner |
-| Guddi, Pipa, Pakpao… | Kite name + type: "Guddi – Fighter Diamond", "Rokkaku – Hexagon" | Kite cards |
-| Basant (palette, event) | "Spring Festival" (Basant stays as a palette name) | Season events |
-
-About 130 text strings in UI/App code (Dor 37, Charkhi 30, Dum 24, Guddi 22, Dheel 8, Basant 8, Kheench 5).
-
-## 3. Languages 🔜
-Use the Unity Localization package: English (default), Spanish, Portuguese (Brazil), French, Arabic (right-to-left),
+## 3. Languages 🔜 (next step)
+Not done yet: needs a translator check and fonts for Arabic/Urdu (right-to-left shaping) and Japanese. Plan: Unity Localization package: English (default), Spanish, Portuguese (Brazil), French, Arabic (right-to-left),
 Indonesian, Hindi, Urdu, Japanese, Turkish. Needs fonts with those scripts.
 
-## 4. More kite cultures 🔜
+## 4. More kite cultures ✅ first batch done (see section 1) – ideas for later
 **Kites.** All 7 kite classes now come from Asia. Add at least 3 from elsewhere, with stats balanced against the existing ones:
 - Delta (USA/Europe), which is fast and stable.
 - Box kite (Australia/UK), which is heavy and strong.

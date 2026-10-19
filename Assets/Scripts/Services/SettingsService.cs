@@ -55,6 +55,10 @@ namespace Kitefall.Services
         public bool colorBlind;
         /// <summary>Plays the launch ritual automatically with "Good" results (upgrade 11.2).</summary>
         public bool autoPrep;
+        /// <summary>0 = International words (Release / Pull / Line / Spool), 1 = South Asian (Dheel / Kheench / Dor / Charkhi).</summary>
+        public int kiteWords;
+        /// <summary>Home screen scene: 0 = World (harbour), 1 = South Asian old city rooftops.</summary>
+        public int homeTheme;
         /// <summary>Win/lose animation on round end (upgrade F6).</summary>
         public bool autoEmotes = true;
         public bool quickChat = true;
@@ -115,6 +119,7 @@ namespace Kitefall.Services
 
         public void Apply()
         {
+            Kitefall.Core.Terms.Words = (Kitefall.Core.KiteWords)Mathf.Clamp(Data.kiteWords, 0, 1);
             int fps = Data.batterySaver ? 30 : Data.fps;
             if (EffectiveQuality == GraphicsQuality.Low) fps = Mathf.Min(fps, 30);
             Application.targetFrameRate = fps;

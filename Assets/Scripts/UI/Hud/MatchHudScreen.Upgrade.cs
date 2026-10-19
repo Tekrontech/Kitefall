@@ -181,7 +181,7 @@ namespace Kitefall.UI.Hud
                     break;
                 }
                 case PrepStep.Climb:
-                    Hint("dheel", "DHEEL", "");
+                    Hint("dheel", Terms.ReleaseUpper, "");
                     break;
                 case PrepStep.Untangle:
                     Hint("snap", "SWIPE ◀ ▶", $"{k.PrepSwipes}/{ps.untangleSwipes}");

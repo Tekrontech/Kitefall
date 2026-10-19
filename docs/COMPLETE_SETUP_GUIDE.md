@@ -502,3 +502,11 @@ Images ki list, sizes aur AI prompts: **[`Kitefall_Image_Assets.xlsx`](Kitefall_
 Game abhi yeh images use karta hai: kite skins (3D kite par), shop/wardrobe cards, characters ki tasveer (squad lobby), menu backgrounds, splash + logo, HUD / quick-chat / roof icons.
 HUD, quick-chat aur roof-trait icons **safed (white) shape, transparent background** par hon – game unhe khud rang deta hai.
 Adaptive icon (foreground/background) Player Settings ▸ Icon mein hath se lagayein. Excel badalni ho: `python3 Tools/ArtList/make_assets.py docs/Kitefall_Image_Assets.xlsx Assets/Scripts/UI/ArtSlots.Generated.cs`.
+
+## 22. International update (Asia + world dono)
+
+- **Settings ▸ Gameplay ▸ Kite words:** International (Release / Pull / Line / Spool) ya South Asian (Dheel / Kheench / Dor / Charkhi). Gameplay same.
+- **Settings ▸ Gameplay ▸ Home scene:** World harbour ya Old city rooftops.
+- Naye: 3 kites (Delta, Box, Volantín), 6 arenas (Rio, Santiago, Mediterranean, Atlantic Beach, Caribbean, Bali), 9 characters, 7 outfits, Home par World Kite Calendar banner.
+- Unity mein update ke baad ek dafa **Kitefall ▸ Fix Game Scene Links** dabayein – naye arenas ka data khud ban jata hai.
+- Nayi images: Excel ki rows **#279–#358** ("(world)" categories). Purani #1–#278 waisi hi hain.

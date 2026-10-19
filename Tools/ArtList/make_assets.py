@@ -283,6 +283,84 @@ for f, d in [("tex_brick_wall.png", "old weathered red brick wall"), ("tex_plast
         "MUST tile seamlessly. Flat lighting, no shadows baked in. Code currently draws procedural textures – these replace them later.",
         f"Seamless tileable texture of {d}, flat even lighting, top-down orthographic, stylised painterly, game texture, {STYLE}", NEG + ", perspective, shadows, objects")
 
+# ======================= International update (D57) =======================
+# Appended AFTER the first 278 rows so their # numbers (and installed images) never change.
+FIRST_UPDATE_ROW = len(rows) + 1
+NEW_KITES = {
+    "delta": "a modern delta sport kite (wide triangle with a centre keel), seen from the front, light ripstop-style fabric look",
+    "box": "a classic rectangular box kite with two cloth cells on a light wooden frame, three-quarter view",
+    "volantin": "a small Chilean fighter kite (volantin): square diamond of thin tissue paper on two slim sticks, bright and nimble",
+}
+for k, d in NEW_KITES.items():
+    icon("Kites (world)", f"kite_{k}_card.png", "Hangar kite cards, shop, loadout picker",
+         f"Card art for the {k} kite class (international update). Plain ivory/neutral sail so the skin colour reads in game.", d, "1024x1024", "Critical")
+for ki, k in enumerate(NEW_KITES, 7):
+    for i, (p, colours, hexes) in enumerate(PAL):
+        rarity = "Common" if i < 3 else "Rare" if i < 6 else "Epic" if i == 6 else "Legendary (pass only)"
+        pat = PATTERNS[(i + ki) % 6]
+        add("Kite skins (world)", f"skin_{k}_{i}_{p.lower().replace(' ', '_')}.png", "1024x1024", "PNG (tileable not needed)", f"Kite paper texture for {k} · {p} ({rarity}); also shop thumbnail", "High" if i < 3 else "Medium",
+            f"FLAT front-view texture of the {k} sail only, filling the whole square – UV-mapped onto the 3D kite. Colours {hexes}. Pattern: {pat}.",
+            f"Flat front-on artwork of a {k} kite sail as a design sheet, {colours} colour scheme, {pat} hand-painted, {'rich gold ornament' if i >= 6 else 'fine ink linework'}, symmetrical, {STYLE}",
+            NEG + ", sky, background, perspective, sticks, hands")
+NEW_ARENAS = [
+    ("rio_hillside", "Rio Hillside", "Brazil", "brightly painted houses stacked up a green hillside above a bay, children flying small pipas from flat rooftops, sugarloaf-like hills in the haze"),
+    ("santiago_rooftops", "Santiago Rooftops", "Chile", "terracotta-roofed city houses with snowy mountains behind, September festival bunting, small volantin kites dancing above"),
+    ("mediterranean_harbour", "Mediterranean Harbour", "Greece", "white-washed harbour houses with blue doors, fishing boats, families on terraces flying kites over a deep blue sea"),
+    ("atlantic_beach", "Atlantic Beach Festival", "Europe", "a wide sandy beach with dunes and striped beach huts, huge colourful show kites and small fighter kites over the surf"),
+    ("caribbean_shore", "Caribbean Shore", "Caribbean", "pastel cottages and palm trees on a turquoise bay, hexagonal festival kites with long tails over the water"),
+    ("bali_terraces", "Bali Rice Terraces", "Indonesia", "green stepped rice terraces with thatched shelters, giant traditional festival kites with long ribbon tails in the sky"),
+]
+for aid, name, region, d in NEW_ARENAS:
+    add("Arenas (world)", f"arena_{aid}_card.jpg", "1280x720", "JPG (quality 90)", f"Arena select card + match intro for '{name}' ({region})", "Critical",
+        "No text. Show the place respectfully and warmly – real kite culture of the region, no stereotypes, no flags or logos.",
+        f"{d}, {SCENE}, {STYLE}")
+    add("Arenas (world)", f"arena_{aid}_minimap.png", "512x512", "PNG", f"Map camera / roof select overlay for '{name}'", "Medium",
+        "Top-down stylised map like an old painted map. Trace the real roof layout from a top-down screenshot.",
+        f"Top-down illustrated antique map of {d}, painted like an old travel map, soft colours, {STYLE}")
+    add("Loading screens (world)", f"loading_{aid}.jpg", "2400x1080 (landscape)", "JPG (quality 85)", f"Loading screen for '{name}'", "High",
+        "Bottom 20 % is covered by the loading bar – keep it calm.", f"{d}, {SCENE}, {STYLE}")
+NEW_CHARS = [("mateus", "Mateus", "a cheerful young man from Rio de Janeiro with short curly dark hair, warm brown skin, yellow and green carnival shirt"),
+             ("valentina", "Valentina", "a confident young woman from Santiago with long wavy brown hair, fair olive skin, red and cream Andean poncho"),
+             ("diego", "Diego", "a friendly young man from Guatemala City with short black hair, tan skin, green track suit"),
+             ("emma", "Emma", "a bright young woman from coastal France with a honey-blonde bob, fair skin, orange and blue windbreaker"),
+             ("jack", "Jack", "an easy-going young man from California with brown side-parted hair, fair skin, blue denim jacket"),
+             ("amara", "Amara", "a joyful young woman from Lagos with a high bun, deep brown skin, orange and blue festival print outfit"),
+             ("youssef", "Youssef", "a calm young man from Marrakesh with short dark hair and a neat beard, light brown skin, mint linen shirt"),
+             ("elif", "Elif", "a lively young woman from Istanbul with a long dark ponytail, light olive skin, red and blue windbreaker"),
+             ("nikos", "Nikos", "a sunny young man from Athens with short dark hair, olive skin, turquoise beach shirt")]
+for cid, name, d in NEW_CHARS:
+    add("Characters (world)", f"char_{cid}_portrait.png", "1024x1024", "PNG (transparent)", f"{name} – portrait in wardrobe, party lobby, profile", "Critical",
+        "Head-and-shoulders, friendly, looking slightly left. Match the in-game look (CharacterCatalog colours). Fictional adult – not a real person. Respectful, no stereotypes.",
+        f"Portrait of {name}, {d}, holding a small paper kite near the shoulder, warm smile, three-quarter view, isolated on transparent background, {STYLE}", NEG_ICON)
+    add("Characters (world)", f"char_{cid}_fullbody.png", "1024x1536 (portrait)", "PNG (transparent)", f"{name} – character select / shop card", "High",
+        "Full body standing, feet visible, holding a wooden kite spool. Same face & outfit as the portrait.",
+        f"Full-body character art of {name}, {d}, standing proudly holding a wooden kite spool, kite string rising upward, isolated on transparent background, {STYLE}", NEG_ICON)
+NEW_OUTFITS = [("denim_jacket", "Denim Jacket", "a mid-blue denim jacket over a cream t-shirt and dark jeans"),
+               ("windbreaker", "Windbreaker", "a light orange and blue windbreaker jacket with dark trousers"),
+               ("track_suit", "Track Suit", "a green and white track suit"),
+               ("beach_shirt", "Beach Shirt", "a short-sleeved turquoise beach shirt with soft yellow pattern and shorts"),
+               ("carnival_shirt", "Carnival Shirt", "a short-sleeved yellow and green carnival shirt with festive pattern"),
+               ("andes_poncho", "Andes Poncho", "a red and cream woven Andean-style poncho over dark trousers"),
+               ("festival_print", "Festival Print", "an orange and blue bold festival print tunic with matching trousers")]
+for oid, name, d in NEW_OUTFITS:
+    add("Outfits (world)", f"outfit_{oid}.png", "768x1024", "PNG (transparent)", f"Wardrobe + shop card for '{name}'", "High",
+        "Show the outfit on a faceless neutral mannequin so it works for every character.",
+        f"{d} displayed on an elegant faceless wooden tailor's mannequin, front view, isolated on transparent background, {STYLE}", NEG_ICON)
+FESTIVALS = [("uttarayan", "Makar Sankranti kite days: crowded rooftops at sunrise, thousands of small fighter kites"),
+             ("basant", "Basant spring festival: yellow-clad families on old city rooftops, yellow and green kites"),
+             ("clean_monday", "Clean Monday in Greece: families on a green hill above the sea flying colourful kites"),
+             ("good_friday", "Good Friday kites in Bermuda: hexagonal tissue kites with long tails over a pastel shore"),
+             ("kodomo", "Children's Day in Japan: carp streamers and rokkaku kites above a riverside town"),
+             ("beach", "summer beach kite festival: giant show kites above a sunny beach"),
+             ("bali", "Bali kite festival: giant traditional kites carried by teams over rice fields"),
+             ("fiestas_patrias", "Chilean Fiestas Patrias: volantines over a park, festive bunting"),
+             ("barriletes", "Guatemala giant kites day: enormous round paper kites with intricate patterns on a hillside"),
+             ("pipas", "Brazilian summer: pipas over hillside rooftops at golden hour")]
+for fid, d in FESTIVALS:
+    add("Festival banners (world)", f"festival_{fid}.jpg", "1600x400", "JPG (quality 85)", "Home screen World Kite Calendar banner while the festival runs", "Medium",
+        "Wide, calm banner – the festival name is added by the game UI. Respectful, joyful, no flags or religious symbols.",
+        f"Wide panoramic banner of {d}, {SCENE}, {STYLE}")
+
 wb = Workbook()
 hdr_fill = PatternFill("solid", fgColor="3A2A6B")
 hdr_font = Font(bold=True, color="FFFFFF", size=11)
@@ -313,6 +391,7 @@ guide = [
     ("Export & import in Unity", "Put files in Assets/Art/<Category>/. Icons: Texture Type = Sprite (2D and UI), Max Size 512, compression ASTC 6x6. Backgrounds: Max Size 2048, ASTC 8x8. Kite skins: Texture Type = Default, Max Size 1024, mipmaps ON."),
     ("Suggested tools", "Midjourney / Leonardo / Stable Diffusion XL / Firefly / DALL·E. Midjourney tip: add '--ar 16:9' for backgrounds, '--ar 1:1' for icons, '--style raw --s 250'. Then upscale and clean up in Photoshop/Krita."),
     ("Different file names?", "No problem. In Unity open Kitefall > Art > Image Mapper. Drag each image onto its slot, or press Auto-match. Or type your own file name in the last column of 'Image List', save this sheet as CSV and press 'Import CSV' in the mapper. Files named only with the # number (e.g. 45.png) can be matched with 'Match by # number'."),
+    ("International update", "Rows from FIRST_UPDATE_ROW onward (categories ending in '(world)') are the international additions: 3 kites, 6 arenas, 9 characters, 7 outfits, festival banners. The first 278 rows keep their # numbers, so images you already made stay valid. Regional items show their own culture respectfully; menus and branding stay globally neutral."),
     ("Licence check", "Use an AI tool whose terms allow commercial use, and keep the prompt + date for every final image (record it in the 'Status / notes' column)."),
 ]
 r = 3

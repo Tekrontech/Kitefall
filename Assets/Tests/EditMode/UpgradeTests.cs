@@ -599,8 +599,8 @@ namespace Kitefall.Tests
                 Assert.IsTrue(c.type == CosmeticType.Character || c.type == CosmeticType.Outfit || c.type == CosmeticType.Accessory || c.type == CosmeticType.Emote);
                 Assert.That(c.height, Is.InRange(0.9f, 1.1f));
             }
-            Assert.AreEqual(10, CharacterCatalog.Characters.Count);
-            Assert.AreEqual(12, CharacterCatalog.Outfits.Count);
+            Assert.AreEqual(19, CharacterCatalog.Characters.Count);
+            Assert.AreEqual(19, CharacterCatalog.Outfits.Count);
         }
 
         [Test]

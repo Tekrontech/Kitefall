@@ -18,7 +18,7 @@ namespace Kitefall.UI.Screens
             PlayerProfile p = Game.Profile;
             RectTransform tabsHost = UiKit.Rect("Tabs", content);
             tabsHost.Band(new Vector2(0, 1), new Vector2(0.62f, 1), new Vector2(0, -76), Vector2.zero);
-            UiKit.Tabs(tabsHost, new[] { "Kite", "Dum", "Dor", "Charkhi", "Stack" }, _tab, i => { _tab = i; Refresh(); }).ForEach(b => b.Size(-1, 70, 1));
+            UiKit.Tabs(tabsHost, new[] { "Kite", Terms.Tail, Terms.Line, Terms.Spool, "Stack" }, _tab, i => { _tab = i; Refresh(); }).ForEach(b => b.Size(-1, 70, 1));
 
             RectTransform listHost = UiKit.Rect("List", content);
             listHost.Band(new Vector2(0, 0), new Vector2(0.62f, 1), new Vector2(0, 0), new Vector2(0, -90));
@@ -55,7 +55,7 @@ namespace Kitefall.UI.Screens
             UiKit.Label(col,
                 $"Turn rate {s.TurnRate:0}°/s · Sweet zone {s.SweetZone}\n" +
                 $"Strength {s.Strength} · Class ×{s.ClassBase:0.00}\n" +
-                $"Dor cut ×{s.DorCut:0.00} · Dor speed ×{s.DorSpeed:0.00}\n" +
+                $"{Terms.Line} cut ×{s.DorCut:0.00} · {Terms.Line} speed ×{s.DorSpeed:0.00}\n" +
                 $"Capacity {s.CapacityMeters} m · Reel {s.ReelSpeed:0.#} · Release {s.ReleaseSpeed:0.#} m/s", 24, Theme.TextDim).Size(-1, 150);
             string err = EconomyService.ValidateLoadout(p, l, Game.Economy);
             UiKit.Label(col, err == null ? "<color=#3BB273>Ready to fly</color>" : $"<color=#E5484D>{err}</color>", 24).Size(-1, 70);
@@ -224,7 +224,7 @@ namespace Kitefall.UI.Screens
                 case "tez_dhaar": return " · tension +15 % faster, wears 30 % faster";
                 case "mazboot": return " · survives the red longer, agility −8 %";
                 case "lambi": return " · angle bonus 1.15 beyond 500 m";
-                case "lachakdaar": return " · sweet zone +4, Dheel counter 1.20";
+                case "lachakdaar": return " · sweet zone +4, " + Terms.Release + " counter 1.20";
                 default: return " · no weakness, free daily refill";
             }
         }
@@ -247,8 +247,8 @@ namespace Kitefall.UI.Screens
             {
                 case "speed": return " · tension falls 20 % faster on release";
                 case "bari": return " · long reach, launch 1 s slower";
-                case "brake": return " · Dheel Cut tension never below 55";
-                case "gear": return " · Kheench ×1.05, pull tension +15 % faster";
+                case "brake": return " · " + Terms.Release + " cut tension never below 55";
+                case "gear": return " · " + Terms.Pull + " ×1.05, pull tension +15 % faster";
                 default: return "";
             }
         }

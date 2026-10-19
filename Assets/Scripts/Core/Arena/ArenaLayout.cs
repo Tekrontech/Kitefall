@@ -11,7 +11,14 @@ namespace Kitefall.Core
         RiverFestival,
         RoyalField,
         MountainValley,
-        StormArchipelago
+        StormArchipelago,
+        // International update (D57) – appended so saved / networked values of the first six never change.
+        RioHillside,
+        SantiagoRooftops,
+        MediterraneanHarbour,
+        AtlanticBeach,
+        CaribbeanShore,
+        BaliTerraces
     }
 
     public enum BlockKind { House, Tower, Cliff, Tree, Pole, Stall }
@@ -78,9 +85,36 @@ namespace Kitefall.Core
                 case ArenaType.RiverFestival: return "River Festival";
                 case ArenaType.RoyalField: return "Royal Field";
                 case ArenaType.MountainValley: return "Mountain Valley";
+                case ArenaType.RioHillside: return "Rio Hillside";
+                case ArenaType.SantiagoRooftops: return "Santiago Rooftops";
+                case ArenaType.MediterraneanHarbour: return "Mediterranean Harbour";
+                case ArenaType.AtlanticBeach: return "Atlantic Beach Festival";
+                case ArenaType.CaribbeanShore: return "Caribbean Shore";
+                case ArenaType.BaliTerraces: return "Bali Rice Terraces";
                 default: return "Storm Archipelago";
             }
         }
+
+        /// <summary>The kite tradition each arena celebrates (shown on the arena card).</summary>
+        public static string Region(ArenaType type)
+        {
+            switch (type)
+            {
+                case ArenaType.OldCityRooftops: return "South Asia · Basant rooftops";
+                case ArenaType.RiverFestival: return "Riverside spring festival";
+                case ArenaType.RioHillside: return "Brazil · pipas over the hills";
+                case ArenaType.SantiagoRooftops: return "Chile · September volantines";
+                case ArenaType.MediterraneanHarbour: return "Greece · Clean Monday kites";
+                case ArenaType.AtlanticBeach: return "Europe · beach kite festival";
+                case ArenaType.CaribbeanShore: return "Caribbean · Good Friday kites";
+                case ArenaType.BaliTerraces: return "Indonesia · Bali kite festival";
+                default: return "World kite festival";
+            }
+        }
+
+        /// <summary>Cliff ledges instead of houses under the rooftops.</summary>
+        public static bool CliffRoofs(ArenaType type) =>
+            type == ArenaType.CoastalCliffs || type == ArenaType.MountainValley || type == ArenaType.BaliTerraces;
 
         public static ArenaLayout Generate(ArenaType type, int seed, int playerCount) => Generate(type, seed, playerCount, false, false, null);
 
@@ -100,6 +134,12 @@ namespace Kitefall.Core
                 case ArenaType.RoyalField: roofHeight = 3f; a.WindStrength = 1f; a.WindVariation = 0.8f; break;
                 case ArenaType.RiverFestival: roofHeight = 6f; a.WindStrength = 1f; a.WindVariation = 1f; break;
                 case ArenaType.StormArchipelago: roofHeight = 8f; a.WindStrength = 1.2f; a.WindVariation = 1.2f; break;
+                case ArenaType.RioHillside: roofHeight = 14f; a.WindStrength = 1.1f; a.WindVariation = 1.2f; break;
+                case ArenaType.SantiagoRooftops: roofHeight = 9f; a.WindStrength = 1f; a.WindVariation = 1.1f; break;
+                case ArenaType.MediterraneanHarbour: roofHeight = 8f; a.WindStrength = 1.15f; a.WindVariation = 0.7f; break;
+                case ArenaType.AtlanticBeach: roofHeight = 3f; a.WindStrength = 1.25f; a.WindVariation = 0.6f; break;
+                case ArenaType.CaribbeanShore: roofHeight = 5f; a.WindStrength = 1.15f; a.WindVariation = 0.8f; break;
+                case ArenaType.BaliTerraces: roofHeight = 18f; a.WindStrength = 1f; a.WindVariation = 1.1f; break;
                 default: roofHeight = 10f; a.WindStrength = 1f; a.WindVariation = 1.3f; break;
             }
             a.BaseWindDirection = 0f;
@@ -111,7 +151,7 @@ namespace Kitefall.Core
                 a.Roofs = RoofGraph.Generate(type, seed, playerCount, mirror, roofSettings);
                 foreach (RoofNode r in a.Roofs.Roofs)
                 {
-                    var kind = type == ArenaType.CoastalCliffs || type == ArenaType.MountainValley ? BlockKind.Cliff : BlockKind.House;
+                    var kind = CliffRoofs(type) ? BlockKind.Cliff : BlockKind.House;
                     a.Blocks.Add(Box(new Vector3(r.Center.X, r.Height * 0.5f, r.Center.Z), new Vector3(r.SizeX, r.Height, r.SizeZ), kind, rng.Range(0, 4)));
                 }
                 // Default anchors (spread out); the match replaces them after roof selection.
@@ -130,10 +170,10 @@ namespace Kitefall.Core
                     float x = (col - (inRow - 1) * 0.5f) * spacing;
                     float z = -row * 30f;
                     float h = roofHeight + rng.Range(-1.5f, 1.5f);
-                    if (type == ArenaType.RoyalField) h = roofHeight;
+                    if (type == ArenaType.RoyalField || type == ArenaType.AtlanticBeach) h = roofHeight;
                     a.Anchors.Add(new Vector3(x, h + 1.35f, z));
                     // The flyer's own building / platform.
-                    a.Blocks.Add(Box(new Vector3(x, h * 0.5f, z), new Vector3(9f, h, 9f), type == ArenaType.CoastalCliffs ? BlockKind.Cliff : BlockKind.House, rng.Range(0, 4)));
+                    a.Blocks.Add(Box(new Vector3(x, h * 0.5f, z), new Vector3(9f, h, 9f), CliffRoofs(type) ? BlockKind.Cliff : BlockKind.House, rng.Range(0, 4)));
                 }
 
             }
@@ -147,6 +187,9 @@ namespace Kitefall.Core
                 case ArenaType.OldCityRooftops:
                 case ArenaType.RiverFestival:
                 case ArenaType.StormArchipelago:
+                case ArenaType.RioHillside:
+                case ArenaType.SantiagoRooftops:
+                case ArenaType.MediterraneanHarbour:
                     for (float x = -width * 0.6f; x <= width * 0.6f; x += 12f)
                         for (float z = -60f; z <= -14f; z += 12f)
                         {
@@ -173,19 +216,40 @@ namespace Kitefall.Core
                     for (int i = 0; i < 24; i++)
                         a.Blocks.Add(Box(new Vector3(rng.Range(-width, width), 4f, rng.Range(-80f, -20f)), new Vector3(3f, 8f, 3f), BlockKind.Tree, 0));
                     break;
+                case ArenaType.AtlanticBeach:
+                case ArenaType.CaribbeanShore:
+                    // Beach huts and palms behind the flyers.
+                    for (int i = 0; i < 20; i++)
+                    {
+                        bool palm = type == ArenaType.CaribbeanShore ? i % 2 == 0 : i % 4 == 0;
+                        float x = rng.Range(-width, width), z = rng.Range(-80f, -18f);
+                        if (NearAnchor(a, x, z, 9f)) continue;
+                        if (palm) a.Blocks.Add(Box(new Vector3(x, 5f, z), new Vector3(2.5f, 10f, 2.5f), BlockKind.Tree, 1));
+                        else a.Blocks.Add(Box(new Vector3(x, 2f, z), new Vector3(5f, 4f, 5f), BlockKind.Stall, rng.Range(0, 8)));
+                    }
+                    break;
+                case ArenaType.BaliTerraces:
+                    // Stepped rice terraces rising behind the flyers.
+                    for (int step = 0; step < 4; step++)
+                    {
+                        float h = cliffTop + step * 6f;
+                        a.Blocks.Add(Box(new Vector3(0f, h * 0.5f, -36f - step * 22f), new Vector3(width + 80f, h, 22f), BlockKind.Cliff, 2));
+                    }
+                    break;
             }
 
             // ---- Downwind obstacles: low enough to fly over, high enough to crash into when you get careless.
-            int downwindCount = type == ArenaType.RoyalField ? 6 : type == ArenaType.CoastalCliffs ? 0 : 28;
+            bool open = type == ArenaType.RoyalField || type == ArenaType.AtlanticBeach;
+            int downwindCount = open ? 6 : type == ArenaType.CoastalCliffs || type == ArenaType.BaliTerraces ? 0 : type == ArenaType.CaribbeanShore ? 12 : 28;
             for (int i = 0; i < downwindCount; i++)
             {
                 float z = rng.Range(60f, 420f);
                 float x = rng.Range(-width * 0.8f, width * 0.8f);
-                float h = type == ArenaType.RoyalField ? rng.Range(4f, 7f) : rng.Range(5f, 13f);
-                var kind = type == ArenaType.RoyalField ? BlockKind.Stall : BlockKind.House;
+                float h = open ? rng.Range(4f, 7f) : rng.Range(5f, 13f);
+                var kind = open ? BlockKind.Stall : BlockKind.House;
                 a.Blocks.Add(Box(new Vector3(x, h * 0.5f, z), new Vector3(rng.Range(8f, 14f), h, rng.Range(8f, 14f)), kind, rng.Range(0, 4)));
             }
-            if (type == ArenaType.OldCityRooftops)
+            if (type == ArenaType.OldCityRooftops || type == ArenaType.SantiagoRooftops)
             {
                 // Power-cable poles between roofs (spec 11).
                 for (int i = 0; i < 8; i++)

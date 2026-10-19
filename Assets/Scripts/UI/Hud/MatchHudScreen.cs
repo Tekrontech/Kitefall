@@ -260,7 +260,7 @@ namespace Kitefall.UI.Hud
                     break;
                 case MatchPhase.LoadoutBreak:
                     big = $"Loadout break {snap.PhaseTimeLeft:0}";
-                    small = "Change your dum or charkhi";
+                    small = $"Change your {Terms.TailLower} or {Terms.SpoolLower}";
                     break;
                 case MatchPhase.Round:
                     if (k.Status == KiteStatus.Waiting && k.RespawnIn > 0f) big = $"Next kite in {k.RespawnIn:0}";
@@ -361,7 +361,7 @@ namespace Kitefall.UI.Hud
             panel.rectTransform.Place(new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1180, 330));
             RectTransform col = UiKit.Column(panel.transform, 14, 24);
             col.Stretch();
-            UiKit.Label(col, "Dum (tail)", Theme.BodySize, Theme.TextDim).Size(-1, 34);
+            UiKit.Label(col, Terms.SouthAsian ? "Dum (tail)" : "Tail", Theme.BodySize, Theme.TextDim).Size(-1, 34);
             RectTransform tails = UiKit.Row(col, 10);
             tails.Size(-1, 70);
             foreach (var t in SpecDefaults.Tails)
@@ -369,7 +369,7 @@ namespace Kitefall.UI.Hud
                 string id = t.Key;
                 UiKit.Button(tails, SpecDefaults.NameOf(id), () => Change(id, null), Theme.PanelLight, 22).Size(-1, 64, 1);
             }
-            UiKit.Label(col, "Charkhi", Theme.BodySize, Theme.TextDim).Size(-1, 34);
+            UiKit.Label(col, Terms.Spool, Theme.BodySize, Theme.TextDim).Size(-1, 34);
             RectTransform ch = UiKit.Row(col, 10);
             ch.Size(-1, 70);
             PlayerProfile p = Game.Profile;

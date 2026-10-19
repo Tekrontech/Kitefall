@@ -76,7 +76,7 @@ namespace Kitefall.App
             {
                 case Step.Launch: Set("1 · Launch", "Hold PULL (Space) and let go while the bar is in the GOLD zone for a higher start."); break;
                 case Step.Steer: Set("2 · Steer", "Use the joystick (WASD) to fly UP, LEFT and RIGHT. The kite flies where its nose points."); break;
-                case Step.PullRelease: Set("2 · Pull & release", "Hold PULL to raise tension and speed. Let go to DHEEL: tension falls and line goes out. REEL (Shift) stops it."); break;
+                case Step.PullRelease: Set("2 · Pull & release", $"Hold {Terms.PullUpper} to raise tension and speed. Let go to {Terms.ReleaseUpper}: tension falls and line goes out. REEL (Shift) stops it."); break;
                 case Step.Wind: Set("3 · Read the wind", "The arrow under the score shows where the wind blows. Fly with it for power – and watch for GUST warnings."); break;
                 case Step.Cut: Set("4 · Cut the dummy", "Fly across the dummy's line. When they touch, keep your tension marker inside the BLUE sweet zone to cut it!"); break;
             }

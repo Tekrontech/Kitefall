@@ -30,6 +30,10 @@ namespace Kitefall.Core
             K("gudiparan", "Gudiparan", 2, 2, 4, 1.08f, 130, 16, "Afghanistan", "Long contests", false),
             K("chula", "Chula", 1, 1, 5, 1.10f, 100, 18, "Thailand", "Tank", false),
             K("wau", "Wau", 3, 3, 4, 1.00f, 180, 16, "Malaysia", "Fast stall recovery", false),
+            // International update (D57): kite traditions from outside Asia, balanced inside the same stat ranges.
+            K("delta", "Delta", 4, 3, 4, 1.00f, 200, 15, "USA / Europe sport kite", "Fast and steady", false),
+            K("box", "Box Kite", 2, 2, 5, 1.08f, 120, 17, "Australia / UK", "Heavy, holds in strong wind", false),
+            K("volantin", "Volantín", 4, 5, 2, 0.94f, 260, 13, "Chile fighter", "Quick turns, short contests", false),
         };
 
         public static readonly List<KeyValuePair<string, TailStats>> Tails = new List<KeyValuePair<string, TailStats>>
@@ -113,7 +117,7 @@ namespace Kitefall.Core
         public static CharkhiStats Charkhi(string id) => Find(Charkhis, id, Charkhis[0].Value);
         public static TuningStats Tuning(string id) => Find(Tunings, id, default);
 
-        public static string NameOf(string id) => id != null && Names.TryGetValue(id, out string n) ? n : id;
+        public static string NameOf(string id) => Terms.NameOf(id, id != null && Names.TryGetValue(id, out string n) ? n : id);
 
         /// <summary>Builds a full match loadout from ids.</summary>
         public static ParticipantLoadout Loadout(string kite, string tail, string dor, string charkhi, float durability = 100f, float dorStock = 600f, string[] tunings = null)

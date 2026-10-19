@@ -44,6 +44,7 @@ namespace Kitefall.EditorTools
             GameDatabase db = AssetDatabase.LoadAssetAtPath<GameDatabase>(DatabasePath);
             if (db == null) db = EnsureDatabase();
             if (db == null) { Debug.LogError("[Kitefall] Could not create " + DatabasePath + ". Check the Console for earlier errors."); return false; }
+            AddMissingArenas(db);
 
             GameApp app = Object.FindAnyObjectByType<GameApp>();
             if (app == null) app = new GameObject("GameApp").AddComponent<GameApp>();
@@ -169,7 +170,42 @@ namespace Kitefall.EditorTools
             list.Add(Arena(ArenaType.RoyalField, "Open field, big vs small kites.", false, Hex("#7FA35A"), false, MusicStyle.Royal, Wind("Wind_RoyalField", 6.5f, 10f)));
             list.Add(Arena(ArenaType.MountainValley, "Updrafts and sudden gusts.", false, Hex("#7D7466"), false, MusicStyle.Mountain, Wind("Wind_Mountain", 7f, 25f)));
             list.Add(Arena(ArenaType.StormArchipelago, "Big Last Kite Flying map with a storm zone.", false, Hex("#2A6F9E"), true, MusicStyle.Island, Wind("Wind_Archipelago", 7.5f, 18f)));
+            list.AddRange(InternationalArenas());
             return list;
+        }
+
+        /// <summary>International update (D57). Look comes from Match.ArenaLook so the editor asset and the runtime fallback agree.</summary>
+        private static List<ArenaData> InternationalArenas()
+        {
+            var list = new List<ArenaData>
+            {
+                Arena(ArenaType.RioHillside, "Brazil: pipas over bright hillside houses. Gusty, rising wind.", true, default, false, MusicStyle.OldCity, Wind("Wind_Rio", 7f, 16f)),
+                Arena(ArenaType.SantiagoRooftops, "Chile: volantines over terracotta roofs, cables between houses.", true, default, false, MusicStyle.OldCity, Wind("Wind_Santiago", 6.5f, 13f)),
+                Arena(ArenaType.MediterraneanHarbour, "Greece: white harbour houses, steady sea breeze.", true, default, false, MusicStyle.Coastal, Wind("Wind_Harbour", 7.5f, 8f)),
+                Arena(ArenaType.AtlanticBeach, "Europe: open beach festival, strong steady wind.", false, default, false, MusicStyle.Coastal, Wind("Wind_Beach", 8.5f, 6f)),
+                Arena(ArenaType.CaribbeanShore, "Caribbean: Good Friday kites over turquoise water.", false, default, false, MusicStyle.Island, Wind("Wind_Caribbean", 7.5f, 9f)),
+                Arena(ArenaType.BaliTerraces, "Indonesia: giant kite festival above green rice terraces.", false, default, false, MusicStyle.Mountain, Wind("Wind_Bali", 6.5f, 14f)),
+            };
+            foreach (ArenaData a in list)
+            {
+                Kitefall.Match.ArenaLook look = Kitefall.Match.ArenaLook.For(a.type);
+                if (a.groundColor == default(Color))
+                {
+                    // Freshly created: copy the built-in look.
+                    a.groundColor = look.Ground; a.buildingColors = look.Buildings; a.farColor = look.Far; a.waterColor = look.WaterColor; a.water = false;
+                    EditorUtility.SetDirty(a);
+                }
+            }
+            return list;
+        }
+
+        /// <summary>Adds arenas from updates to an existing GameDatabase (projects made before the update).</summary>
+        public static void AddMissingArenas(GameDatabase db)
+        {
+            bool changed = false;
+            foreach (ArenaData a in InternationalArenas())
+                if (db.Arena(a.type) == null) { db.arenas.Add(a); changed = true; }
+            if (changed) { EditorUtility.SetDirty(db); AssetDatabase.SaveAssets(); Debug.Log("[Kitefall] Added the new international arenas to the GameDatabase."); }
         }
 
         private static WindConfig Wind(string name, float speed, float variation)

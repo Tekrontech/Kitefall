@@ -28,12 +28,16 @@ namespace Kitefall.Match
 
         public CharacterView Character => _character;
 
+        /// <summary>Settings ▸ Home scene: world harbour (default, international) or the South Asian old city rooftops.</summary>
+        public static ArenaType HomeArena => Game.Settings != null && Game.Settings.Data.homeTheme == 1 ? ArenaType.OldCityRooftops : ArenaType.MediterraneanHarbour;
+
         public void Show(Camera cam, string kiteId, string skinId, string tailId, string dorId) =>
             Show(cam, kiteId, skinId, tailId, dorId, _characterId, _outfitId, _accessories, _charkhiId);
 
         public void Show(Camera cam, string kiteId, string skinId, string tailId, string dorId, string characterId, string outfitId, string[] accessories, string charkhiId)
         {
-            string key = kiteId + skinId + tailId + dorId;
+            ArenaType theme = HomeArena;
+            string key = kiteId + skinId + tailId + dorId + theme;
             _kiteId = kiteId; _skinId = skinId; _charkhiId = string.IsNullOrEmpty(charkhiId) ? "lakri" : charkhiId;
             if (_world != null && key == _key)
             {
@@ -45,8 +49,8 @@ namespace Kitefall.Match
             Hide();
             _key = key;
             _world = new GameObject("Showroom");
-            ArenaLayout layout = ArenaLayout.Generate(ArenaType.OldCityRooftops, 7, 1);
-            ArenaBuilder.Build(layout, Game.Db != null ? Game.Db.Arena(ArenaType.OldCityRooftops) : null, 0.78f, _world.transform);
+            ArenaLayout layout = ArenaLayout.Generate(theme, 7, 1);
+            ArenaBuilder.Build(layout, Game.Db != null ? Game.Db.Arena(theme) : null, 0.78f, _world.transform);
             _anchor = ArenaBuilder.ToUnity(layout.Anchors[0]);
 
             var loadout = SpecDefaults.Loadout(kiteId, tailId, dorId, "lakri");

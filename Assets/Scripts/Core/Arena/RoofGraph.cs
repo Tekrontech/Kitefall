@@ -134,6 +134,12 @@ namespace Kitefall.Core
                 case ArenaType.RoyalField: min = 2f; max = 7f; break;
                 case ArenaType.RiverFestival: min = 4f; max = 11f; break;
                 case ArenaType.StormArchipelago: min = 5f; max = 13f; break;
+                case ArenaType.RioHillside: min = 8f; max = 22f; break;
+                case ArenaType.SantiagoRooftops: min = 6f; max = 14f; break;
+                case ArenaType.MediterraneanHarbour: min = 4f; max = 12f; break;
+                case ArenaType.AtlanticBeach: min = 2f; max = 6f; break;
+                case ArenaType.CaribbeanShore: min = 3f; max = 9f; break;
+                case ArenaType.BaliTerraces: min = 12f; max = 26f; break;
                 default: min = 6f; max = 17f; break;
             }
         }
@@ -303,7 +309,7 @@ namespace Kitefall.Core
                 foreach (RoofNode o in g.Roofs)
                     if (o != r && Vector2.Distance(new Vector2(o.Center.X, o.Center.Z), new Vector2(r.Center.X, r.Center.Z)) <= 24f && o.Height > r.Height + 2f) taller++;
                 if (taller >= 3 && (t & RoofTrait.High) == 0) t |= RoofTrait.Sheltered;
-                if (type == ArenaType.OldCityRooftops && rng.Chance(0.2f)) t |= RoofTrait.Cables;
+                if ((type == ArenaType.OldCityRooftops || type == ArenaType.SantiagoRooftops) && rng.Chance(0.2f)) t |= RoofTrait.Cables;
                 r.Traits = Limit(t);
                 if (r.TraitCount < 2) crateCandidates.Add(r.Id);
             }

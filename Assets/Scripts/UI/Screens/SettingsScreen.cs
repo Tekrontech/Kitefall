@@ -54,6 +54,10 @@ namespace Kitefall.UI.Screens
                     UiKit.Toggle(col, "Haptics", d.haptics, v => { d.haptics = v; Save(); });
                     break;
                 case 4:
+                    UiKit.Choice(col, "Kite words", new[] { "International (Release · Pull · Line · Spool)", "South Asian (Dheel · Kheench · Dor · Charkhi)" }, d.kiteWords,
+                        i => { d.kiteWords = i; Save(); Refresh(); });
+                    UiKit.Choice(col, "Home scene", new[] { "World harbour", "Old city rooftops" }, d.homeTheme, i => { d.homeTheme = i; Save(); });
+                    UiKit.Label(col, "Only words and scenery change – gameplay is the same for everyone.", 22, Theme.TextDim).Size(-1, 36);
                     UiKit.Choice(col, "Contest meter", new[] { "Bar", "Bar + numbers" }, d.contestMeterStyle, i => { d.contestMeterStyle = i; Save(); });
                     UiKit.Toggle(col, "Sweet-zone highlight", d.sweetZoneHighlight, v => { d.sweetZoneHighlight = v; Save(); });
                     UiKit.Toggle(col, "Colour-blind mode", d.colorBlind, v => { d.colorBlind = v; Save(); });

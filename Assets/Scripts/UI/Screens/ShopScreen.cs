@@ -13,7 +13,7 @@ namespace Kitefall.UI.Screens
     {
         public override string Title => "Shop";
         private static int _tab;
-        private static readonly string[] Tabs = { "Featured", "Outfits", "Kite skins", "Dum effects", "Cut effects", "Dor skins", "Charkhi skins", "Gems & No-ads" };
+        private static string[] Tabs => new[] { "Featured", "Outfits", "Kite skins", Terms.Tail + " effects", "Cut effects", Terms.Line + " skins", Terms.Spool + " skins", "Gems & No-ads" };
 
         protected override void BuildContent(RectTransform content)
         {

@@ -27,6 +27,16 @@ namespace Kitefall.Core
             Char("farid", "Farid", "Kabul", "#D4A07A", "#2B1D12", 6, 1.02f, 1.04f, 1, 400, "mountain_parka"),
             Char("siti", "Siti", "Kuala Lumpur", "#C99569", "#1A1412", 7, 0.96f, 0.94f, 1, 400, "storm_runner"),
             Char("arjun", "Arjun", "Ahmedabad", "#A9744C", "#121010", 0, 1.01f, 1.03f, 1, 400, "royal_sherwani"),
+            // International update (D57): flyers from every kite culture.
+            Char("mateus", "Mateus", "Rio de Janeiro", "#B5835A", "#1A1410", 2, 1.02f, 1.02f, 1, 400, "carnival_shirt"),
+            Char("valentina", "Valentina", "Santiago", "#E8BE9A", "#3B2316", 3, 0.96f, 0.95f, 1, 400, "andes_poncho"),
+            Char("diego", "Diego", "Guatemala City", "#C99569", "#151311", 0, 1.00f, 1.03f, 1, 400, "track_suit"),
+            Char("emma", "Emma", "Dieppe", "#F3D3B8", "#C08A3E", 5, 0.97f, 0.94f, 1, 400, "windbreaker"),
+            Char("jack", "Jack", "California", "#E9C3A0", "#6B4A2B", 1, 1.04f, 1.05f, 1, 400, "denim_jacket"),
+            Char("amara", "Amara", "Lagos", "#7B4A2E", "#0F0C0A", 4, 0.97f, 0.95f, 1, 400, "festival_print"),
+            Char("youssef", "Youssef", "Marrakesh", "#B98258", "#1E1712", 6, 1.01f, 1.00f, 1, 400, "coastal_linen"),
+            Char("elif", "Elif", "Istanbul", "#E3B48E", "#2A1C14", 7, 0.96f, 0.94f, 1, 400, "windbreaker"),
+            Char("nikos", "Nikos", "Athens", "#DDA97F", "#241A14", 0, 1.03f, 1.04f, 1, 400, "beach_shirt"),
         };
 
         public static readonly List<CosmeticItem> Outfits = new List<CosmeticItem>
@@ -43,6 +53,14 @@ namespace Kitefall.Core
             Outfit("storm_runner", "Storm Runner", Rarity.Epic, 2, "#1F8F5F", "#D9F2B4", 360, 0),
             Outfit("night_bazaar", "Night Bazaar", Rarity.Legendary, 4, "#3A2A6B", "#FF8C1A", 700, 0),
             Outfit("champion_kit", "Champion Kit", Rarity.Legendary, 5, "#FFD84A", "#141414", 0, 0, passOnly: true),
+            // International update (D57): everyday and festival wear from around the world.
+            Outfit("denim_jacket", "Denim Jacket", Rarity.Rare, 1, "#3B5B8C", "#E8E2D4", 220, 0),
+            Outfit("windbreaker", "Windbreaker", Rarity.Common, 1, "#F25A3C", "#2F6FDB", 120, 3000),
+            Outfit("track_suit", "Track Suit", Rarity.Common, 2, "#1F8F5F", "#F4F1E8", 120, 3000),
+            Outfit("beach_shirt", "Beach Shirt", Rarity.Rare, 5, "#21A6A6", "#FFE08A", 200, 0),
+            Outfit("carnival_shirt", "Carnival Shirt", Rarity.Epic, 5, "#F5C400", "#3BA55C", 360, 0),
+            Outfit("andes_poncho", "Andes Poncho", Rarity.Epic, 4, "#B22222", "#F5DEB3", 380, 0),
+            Outfit("festival_print", "Festival Print", Rarity.Epic, 4, "#FF8C1A", "#2F6FDB", 380, 0),
         };
 
         public static readonly List<CosmeticItem> Accessories = new List<CosmeticItem>
