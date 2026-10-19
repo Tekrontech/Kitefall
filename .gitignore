@@ -60,3 +60,4 @@ Thumbs.db
 # Raw artist images before the Image Mapper installs them (large files)
 /Assets/Art/Incoming/
 /Assets/Art/Incoming.meta
+/ArtDuplicates/

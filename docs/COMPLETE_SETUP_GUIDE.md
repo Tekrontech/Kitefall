@@ -488,7 +488,9 @@ Images ki list, sizes aur AI prompts: **[`Kitefall_Image_Assets.xlsx`](Kitefall_
 
 1. Pehle images chhoti karein (backgrounds JPG quality 85, Excel wale size par resize). Poora set ~60–100 MB ho.
 2. Unity menu **Kitefall ▸ Art ▸ Open Incoming Folder** → saari images `Assets/Art/Incoming` mein copy karein (sub-folders bhi chalenge, jaise `Incoming/Characters/Zara.png`).
-3. **Bas.** Unity images import karte hi khud **AUTO** chalata hai: naam (aur folder ke naam) se match, phir sirf-number wale naam (`45.png`) Excel # se, phir install.
+3. **Bas.** Unity images import karte hi khud **AUTO** chalata hai: duplicate copies ("- Copy", "(1)") project se bahar `ArtDuplicates/` mein, phir naam (aur folder) se match,
+   phir sirf-number wale naam (`45.png`) Excel # se, phir **naam jo tasveer batata hai** ("Golden Tailor's Chamber" → wardrobe background) Excel ke prompt se, phir bachi hui chauri tasveerein loading screens par – aur install.
+   Check: **Only installed** tick karein; jo tasveer galat jagah lagi us par **Wrong** dabayein (wapas Incoming mein, dobara us jagah nahi lagegi).
    Image Mapper window khud khul jati hai aur batati hai kitni lagi. Dobara chalana ho: **Kitefall ▸ Art ▸ Auto Install All Images**.
 4. Jo images ka naam kuch nahi batata (jaise `mj_83749.png`) wo **"Not recognised"** list mein rehti hain. Un ke liye:
    - naam Excel ke "File name" jaisa kar dein (AUTO khud dobara chalega), ya
