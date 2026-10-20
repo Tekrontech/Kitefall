@@ -251,6 +251,9 @@ namespace Kitefall.UI.Hud
             _roofMapArea.Place(new Vector2(0.42f, 0.45f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1180, 700));
             Image info = UiKit.Panel(_roofOverlay, Theme.Panel, "RoofInfo", false);
             info.rectTransform.Place(new Vector2(1, 0.45f), new Vector2(1, 0.5f), new Vector2(-30, 0), new Vector2(520, 520));
+            // Roof hopping illustration (onboard_04_roof), heavily shaded behind the roof info text, when installed.
+            Sprite roofArt = Art.Sprite("onboard_04_roof");
+            if (roofArt != null) Screens.MenuScreen.ArtFill(info.transform, roofArt, 4f, 0.7f, info.sprite);
             _roofInfo = UiKit.Label(info.transform, "", 26, Color.white, TextAnchor.UpperLeft);
             _roofInfo.rectTransform.Stretch(22, 22, 22, 22);
             _roofOverlay.gameObject.SetActive(false);
@@ -273,6 +276,16 @@ namespace Kitefall.UI.Hud
                 rt.anchoredPosition = (a + b) * 0.5f;
                 rt.sizeDelta = new Vector2(Mathf.Max(6f, (b - a).magnitude), 6f);
                 rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg);
+                // Path marker at the middle of the link (only with the painted icons; the plain line stays otherwise).
+                Sprite kindArt = Art.ForLink(l.Kind);
+                if (kindArt != null)
+                {
+                    Image mark = UiKit.Image(area, Color.white, kindArt, "LinkIcon");
+                    mark.preserveAspect = true;
+                    mark.rectTransform.anchorMin = mark.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                    mark.rectTransform.anchoredPosition = (a + b) * 0.5f;
+                    mark.rectTransform.sizeDelta = new Vector2(30f, 30f);
+                }
             }
             foreach (RoofNode r in g.Roofs)
             {
@@ -449,7 +462,11 @@ namespace Kitefall.UI.Hud
                 Image arrow = UiKit.Image(row, Color.white, Icons.Get("arrow_up"), "Dir");
                 arrow.Size(40, 40);
                 arrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -yaw);
-                UiKit.Image(row, Theme.Coin, Icons.Get(KindIcon(link.Kind)), "Kind").Size(40, 40);
+                // Painted path icon (link_plank …) when installed; the gold code-drawn glyph otherwise.
+                Sprite kindArt = Art.ForLink(link.Kind);
+                Image kind = UiKit.Image(row, kindArt != null ? Color.white : Theme.Coin, kindArt ?? Icons.Get(KindIcon(link.Kind)), "Kind");
+                kind.preserveAspect = true;
+                kind.Size(40, 40);
                 UiKit.Label(row, $"{link.TravelTime:0}s", 24, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Size(70, 40);
                 _linkButtons.Add((b, dest));
             }

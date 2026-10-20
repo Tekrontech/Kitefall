@@ -28,6 +28,9 @@ namespace Kitefall.UI.Screens
             ModeRules rules = ModeRules.For(_req.Mode);
             Image panel = UiKit.Panel(content, Theme.Panel);
             panel.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100, 560));
+            // The mode's card painting behind the search text when the art exists.
+            Sprite card = Art.ForMode(_req.Mode);
+            if (card != null) ArtFill(panel.transform, card, 4f, 0.55f, panel.sprite);
             RectTransform col = UiKit.Column(panel.transform, 18, 40);
             col.Stretch();
             UiKit.Label(col, rules.displayName, Theme.TitleSize, Theme.Accent, TextAnchor.MiddleCenter, FontStyle.Bold).Size(-1, 80);
@@ -146,6 +149,10 @@ namespace Kitefall.UI.Screens
         private readonly IMatchSession _session;
         private OpResult _reward;
         private string _title = "Results";
+        private bool _won;
+
+        // Painted win / lose backdrop (bg_results_win / bg_results_lose); draws and quits use the calm "lose" picture.
+        protected override Sprite BackgroundArt => Art.Sprite(_won ? "bg_results_win" : "bg_results_lose");
 
         public ResultsScreen(IMatchSession session, OpResult reward)
         {
@@ -156,6 +163,7 @@ namespace Kitefall.UI.Screens
             {
                 ParticipantResult me = r.Participants[session.LocalIndex];
                 _title = r.Draw ? "Draw" : me.Won ? "Victory!" : me.Quit ? "You quit" : "Defeat";
+                _won = !r.Draw && me.Won;
             }
         }
 

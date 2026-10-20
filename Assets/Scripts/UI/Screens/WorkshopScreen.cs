@@ -110,7 +110,8 @@ namespace Kitefall.UI.Screens
                     {
                         if (t.Value.target != target) continue;
                         string tid = t.Key;
-                        UiKit.Button(row, SpecDefaults.NameOf(tid), () => Run(EconomyCommands.ApplyTuning, id, tid, s.ToString()), tid == current ? Theme.Good : Theme.PanelLight, 20).Size(-1, 56, 1);
+                        UiKit.Button(row, SpecDefaults.NameOf(tid), () => Run(EconomyCommands.ApplyTuning, id, tid, s.ToString()), tid == current ? Theme.Good : Theme.PanelLight, 20)
+                            .WithIcon(Art.ForTuning(tid), 44).Size(-1, 56, 1);
                     }
                     if (!string.IsNullOrEmpty(current)) UiKit.Button(row, "Clear", () => Run(EconomyCommands.ClearTuning, id, s.ToString()), Theme.Bad, 20).Size(100, 56);
                 }

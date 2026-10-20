@@ -198,7 +198,11 @@ namespace Kitefall.UI.Screens
             RectTransform row = UiKit.Row(Root, 24, 0, TextAnchor.MiddleCenter);
             row.Place(new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200, 110));
             UiKit.Button(row, "Retry", () => _ = Game.Flow.BootAsync(), Theme.Accent).Size(360, 100);
-            UiKit.Button(row, "Tutorial", () => Game.Flow.StartTutorial(), Theme.PanelLight).Size(360, 100);
+            Button tutorial = UiKit.Button(row, "Tutorial", () => Game.Flow.StartTutorial(), Theme.PanelLight);
+            tutorial.Size(360, 100);
+            // Tutorial mode card behind the label when the art is installed.
+            Sprite card = Art.ForMode(GameMode.Tutorial);
+            if (card != null) MenuScreen.ArtFill(tutorial.transform, card, 3f, 0.35f, tutorial.GetComponent<Image>().sprite);
             UiKit.Button(row, "Hangar", () => UI.Push(new HangarScreen()), Theme.PanelLight).Size(360, 100);
         }
     }

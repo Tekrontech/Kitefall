@@ -249,12 +249,21 @@ namespace Kitefall.UI.Screens
                 if (t == null || shown++ >= 3) continue;
                 RectTransform row = UiKit.Rect("Mission", col);
                 row.Size(-1, 62);
-                UiKit.Label(row, t.text, 24, Color.white, TextAnchor.UpperLeft).rectTransform.Band(new Vector2(0, 0.5f), new Vector2(0.72f, 1), Vector2.zero, Vector2.zero);
+                // Round mission badge (mission_play3 …) on the left when the art is installed; text-only row otherwise.
+                Sprite badge = Art.ForMission(t.id);
+                float ix = badge != null ? 64f : 0f;
+                if (badge != null)
+                {
+                    Image ic = UiKit.Image(row, Color.white, badge, "Badge");
+                    ic.preserveAspect = true;
+                    ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(56, 56));
+                }
+                UiKit.Label(row, t.text, 24, Color.white, TextAnchor.UpperLeft).rectTransform.Band(new Vector2(0, 0.5f), new Vector2(0.72f, 1), new Vector2(ix, 0), Vector2.zero);
                 float value = m.progress / (float)Math.Max(1, t.target);
                 Image bar = Glossy.Bar(row, value);
                 Transform fill = bar.transform.Find("Fill");
                 if (_playingIntro && fill != null && fill.gameObject.activeSelf) { var bf = fill.gameObject.AddComponent<BarFill>(); bf.Target = Mathf.Clamp01(value); bf.Delay = 0.5f + shown * 0.12f; }
-                bar.rectTransform.Band(new Vector2(0, 0.12f), new Vector2(0.6f, 0.36f), Vector2.zero, Vector2.zero);
+                bar.rectTransform.Band(new Vector2(0, 0.12f), new Vector2(0.6f, 0.36f), new Vector2(ix, 0), Vector2.zero);
                 UiKit.Label(row, $"{Math.Min(m.progress, t.target)}/{t.target}", 22, new Color(1, 1, 1, 0.9f), TextAnchor.MiddleCenter)
                     .rectTransform.Band(new Vector2(0.6f, 0), new Vector2(0.74f, 0.5f), Vector2.zero, Vector2.zero);
                 bool done = m.progress >= t.target && !m.claimed;
@@ -306,6 +315,9 @@ namespace Kitefall.UI.Screens
                 Button b = Glossy.Button(grid, ModeRules.For(m).displayName, Icons.Get(locked ? "lock" : ModeIcon(m)), () => { _mode = mode; Refresh(); },
                     style, 26, sub: locked ? "(Locked)" : null, iconColor: locked ? new Color(1, 1, 1, 0.7f) : Color.white);
                 if (locked) b.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 0.75f);
+                // Mode card painting behind the icon and name (Image Mapper); the plain glossy button until it exists.
+                Sprite card = Art.ForMode(m);
+                if (card != null) MenuScreen.ArtFill(b.transform, card, m == _mode ? 5f : 3f, locked ? 0.6f : m == _mode ? 0.15f : 0.35f, Glossy.Sprite(style));
                 if (m == _mode) Shine.Add((RectTransform)b.transform);
             }
         }

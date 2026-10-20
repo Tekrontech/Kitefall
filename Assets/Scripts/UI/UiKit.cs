@@ -195,6 +195,19 @@ namespace Kitefall.UI
 
         public static Text ButtonLabel(this Button b) => b.GetComponentInChildren<Text>();
 
+        /// <summary>Item picture (Image Mapper art) at the left of a plain button; a null icon keeps the text-only button.</summary>
+        public static Button WithIcon(this Button b, Sprite icon, float size = 46f)
+        {
+            if (icon == null) return b;
+            Image ic = Image(b.transform, Color.white, icon, "Icon");
+            ic.type = UnityEngine.UI.Image.Type.Simple;
+            ic.preserveAspect = true;
+            ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(8, 0), new Vector2(size, size));
+            Text label = b.ButtonLabel();
+            if (label != null) label.rectTransform.Stretch(size + 12, 4, 8, 4);
+            return b;
+        }
+
         public static Button Interactable(this Button b, bool on)
         {
             b.interactable = on;

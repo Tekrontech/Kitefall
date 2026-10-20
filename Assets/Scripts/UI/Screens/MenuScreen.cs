@@ -15,7 +15,7 @@ namespace Kitefall.UI.Screens
 
         protected sealed override void Build()
         {
-            Sprite art = Art.ForScreen(GetType().Name);
+            Sprite art = BackgroundArt;
             if (art != null) ArtBackground(Root, art);
             Image bg = UiKit.Image(Root, new Color(0.04f, 0.07f, 0.12f, art != null ? Mathf.Min(BackgroundAlpha, 0.35f) : BackgroundAlpha), Sprites.White, "Dim", true);
             bg.rectTransform.Stretch();
@@ -34,6 +34,42 @@ namespace Kitefall.UI.Screens
         }
 
         protected abstract void BuildContent(RectTransform content);
+
+        /// <summary>Painted full-screen background (Image Mapper), or null to keep the 3D scene behind the dim.</summary>
+        protected virtual Sprite BackgroundArt => Art.ForScreen(GetType().Name);
+
+        /// <summary>
+        /// Picture filling a button / panel / banner without stretching (crops the edges), clipped to the parent's rounded
+        /// shape and drawn behind its icon and label. Optional dark shade keeps the text readable. Not part of any layout.
+        /// </summary>
+        public static Image ArtFill(Transform parent, Sprite art, float inset = 0f, float shade = 0f, Sprite clipShape = null)
+        {
+            RectTransform clip;
+            if (clipShape != null)
+            {
+                // Rounded skins (glossy buttons, panels): stencil mask in the same 9-sliced shape.
+                Image shape = UiKit.Image(parent, Color.white, clipShape, "ArtClip");
+                shape.type = Image.Type.Sliced;
+                shape.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+                clip = shape.rectTransform;
+            }
+            else
+            {
+                clip = UiKit.Rect("ArtClip", parent);
+                clip.gameObject.AddComponent<RectMask2D>();
+            }
+            clip.Stretch(inset, inset, inset, inset);
+            clip.SetAsFirstSibling();
+            clip.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            Image img = UiKit.Image(clip, Color.white, art, "Art");
+            img.type = Image.Type.Simple;
+            img.rectTransform.Stretch();
+            var fit = img.gameObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fit.aspectRatio = art.rect.width / Mathf.Max(1f, art.rect.height);
+            if (shade > 0f) UiKit.Image(clip, new Color(0.02f, 0.05f, 0.12f, shade), Sprites.White, "Shade").rectTransform.Stretch();
+            return img;
+        }
 
         /// <summary>Full-screen painted background that fills the screen without stretching (crops the edges).</summary>
         public static Image ArtBackground(RectTransform parent, Sprite art)

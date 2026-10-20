@@ -22,6 +22,7 @@ namespace Kitefall.App
         private bool _up, _left, _right, _pulled, _released;
         private Text _title, _body;
         private Image[] _dots;
+        private Image _picture;
         private GameObject _panel;
 
         public void Begin()
@@ -56,11 +57,20 @@ namespace Kitefall.App
         {
             Image panel = UiKit.Panel(root, new Color(0.05f, 0.08f, 0.14f, 0.92f), "Tutorial", false);
             _panel = panel.gameObject;
-            panel.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -290), new Vector2(1100, 200));
+            // Onboarding illustrations (onboard_01_welcome …) on the left of the panel when installed; text-only otherwise.
+            bool art = Art.Has("onboard_01_welcome") || Art.Has("onboard_02_fly") || Art.Has("onboard_03_cut");
+            float pic = art ? 320f : 0f;
+            panel.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -290), new Vector2(1100 + pic, 200));
+            if (art)
+            {
+                _picture = UiKit.Image(panel.transform, Color.white, null, "Picture");
+                _picture.preserveAspect = true;
+                _picture.rectTransform.Band(new Vector2(0, 0), new Vector2(0, 1), new Vector2(12, 12), new Vector2(pic, -12));
+            }
             _title = UiKit.Label(panel.transform, "", 36, Theme.Accent, TextAnchor.UpperCenter, FontStyle.Bold);
-            _title.rectTransform.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(20, -60), new Vector2(-20, -12));
+            _title.rectTransform.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(20 + pic, -60), new Vector2(-20, -12));
             _body = UiKit.Label(panel.transform, "", 28, Color.white, TextAnchor.UpperCenter);
-            _body.rectTransform.Band(new Vector2(0, 0), new Vector2(1, 1), new Vector2(30, 40), new Vector2(-30, -66));
+            _body.rectTransform.Band(new Vector2(0, 0), new Vector2(1, 1), new Vector2(30 + pic, 40), new Vector2(-30, -66));
             RectTransform dots = UiKit.Row(panel.transform, 12, 0, TextAnchor.MiddleCenter);
             dots.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 10), new Vector2(300, 24));
             _dots = new Image[4];
@@ -79,6 +89,13 @@ namespace Kitefall.App
                 case Step.PullRelease: Set("2 · Pull & release", $"Hold {Terms.PullUpper} to raise tension and speed. Let go to {Terms.ReleaseUpper}: tension falls and line goes out. REEL (Shift) stops it."); break;
                 case Step.Wind: Set("3 · Read the wind", "The arrow under the score shows where the wind blows. Fly with it for power – and watch for GUST warnings."); break;
                 case Step.Cut: Set("4 · Cut the dummy", "Fly across the dummy's line. When they touch, keep your tension marker inside the BLUE sweet zone to cut it!"); break;
+            }
+            if (_picture != null)
+            {
+                string key = _step == Step.Launch ? "onboard_01_welcome" : _step == Step.Cut ? "onboard_03_cut" : "onboard_02_fly";
+                Sprite s = Art.Sprite(key) ?? Art.Sprite("onboard_02_fly") ?? Art.Sprite("onboard_01_welcome") ?? Art.Sprite("onboard_03_cut");
+                _picture.sprite = s;
+                _picture.enabled = s != null;
             }
             for (int i = 0; i < _dots.Length; i++)
             {

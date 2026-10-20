@@ -122,6 +122,58 @@ namespace Kitefall.UI
             }
         }
 
+        /// <summary>Mode card picture (mode_quick_duel_card …), or null.</summary>
+        public static Sprite ForMode(GameMode mode)
+        {
+            switch (mode)
+            {
+                case GameMode.QuickDuel: return Sprite("mode_quick_duel_card");
+                case GameMode.RankedDuel: return Sprite("mode_ranked_duel_card");
+                case GameMode.FreeForAll: return Sprite("mode_ffa_card");
+                case GameMode.PrivateRoom: return Sprite("mode_private_room_card");
+                case GameMode.TeamBattle: return Sprite("mode_team_battle_card");
+                case GameMode.LastKiteFlying: return Sprite("mode_last_kite_flying_card");
+                case GameMode.Training: return Sprite("mode_training_card");
+                case GameMode.Tutorial: return Sprite("mode_tutorial_card");
+                default: return null;
+            }
+        }
+
+        /// <summary>Daily mission badge: Catalog mission id "play3" → mission_play3.</summary>
+        public static Sprite ForMission(string missionId) => string.IsNullOrEmpty(missionId) ? null : Sprite("mission_" + missionId);
+
+        /// <summary>Tuning medallion: SpecDefaults tuning id "waxed_coat" → tuning_waxed_coat.</summary>
+        public static Sprite ForTuning(string tuningId) => string.IsNullOrEmpty(tuningId) ? null : Sprite("tuning_" + tuningId);
+
+        /// <summary>Gem pack / No ads / Premium pass store tile.</summary>
+        public static Sprite ForProduct(StoreProduct product)
+        {
+            if (product == null) return null;
+            if (product.noAds) return Sprite("shop_no_ads");
+            if (product.premiumPass) return Sprite("shop_premium_pass");
+            switch (product.productId)
+            {
+                case "kitefall.gems.small": return Sprite("shop_gems_small");
+                case "kitefall.gems.medium": return Sprite("shop_gems_medium");
+                case "kitefall.gems.large": return Sprite("shop_gems_large");
+                // Packs added later: pick by size.
+                default: return product.gems <= 0 ? null : Sprite(product.gems < 200 ? "shop_gems_small" : product.gems < 800 ? "shop_gems_medium" : "shop_gems_large");
+            }
+        }
+
+        /// <summary>Roof hopping path icon (link_plank …); jumps have no picture.</summary>
+        public static Sprite ForLink(RoofLinkKind kind)
+        {
+            switch (kind)
+            {
+                case RoofLinkKind.Plank: return Sprite("link_plank");
+                case RoofLinkKind.RopeBridge: return Sprite("link_rope_bridge");
+                case RoofLinkKind.Ladder: return Sprite("link_ladder");
+                case RoofLinkKind.Stairs: return Sprite("link_stairs");
+                default: return null;
+            }
+        }
+
         public static Sprite Rank(RankTier tier) => Sprite(tier == RankTier.SkyLegend ? "rank_sky_legend" : "rank_" + tier.ToString().ToLowerInvariant());
 
         /// <summary>Full-screen background for a menu screen class name (null = keep the 3D scene / colour).</summary>

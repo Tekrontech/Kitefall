@@ -224,8 +224,16 @@ namespace Kitefall.UI.Screens
             if (party == null) return;
             if (!party.InParty)
             {
+                // Squad illustration (onboard_05_squad) above the buttons when the art is installed.
+                Sprite squad = Art.Sprite("onboard_05_squad");
                 RectTransform col = UiKit.Column(content, 18, 0, TextAnchor.UpperCenter);
-                col.Place(new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(820, 520));
+                col.Place(new Vector2(0.5f, squad != null ? 0.5f : 0.6f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(820, squad != null ? 840 : 520));
+                if (squad != null)
+                {
+                    Image pic = UiKit.Image(col, Color.white, squad, "SquadArt");
+                    pic.preserveAspect = true;
+                    pic.Size(-1, 300);
+                }
                 UiKit.Label(col, "Play with friends: make a party, share the code, queue together.", 30, Color.white, TextAnchor.MiddleCenter).Size(-1, 90);
                 UiKit.Button(col, "Create party", async () => { OpResult r = await party.CreateAsync(); UI.ToastResult(r); }, Theme.Good, 34).Size(-1, 100);
                 UiKit.Input(col, "Party code (6 letters)", _code, 32, v => _code = v).Size(-1, 90);
@@ -314,6 +322,14 @@ namespace Kitefall.UI.Screens
         protected override void BuildContent(RectTransform content)
         {
             UiKit.Scroll(content, out RectTransform list).GetComponent<RectTransform>().Stretch();
+            // Training mode card as a header banner when the art is installed.
+            Sprite card = Art.ForMode(GameMode.Training);
+            if (card != null)
+            {
+                RectTransform banner = UiKit.Rect("Banner", list);
+                banner.Size(-1, 220);
+                ArtFill(banner, card);
+            }
             UiKit.Label(list, "Try anything – nothing in your inventory changes.", 26, Theme.TextDim).Size(-1, 44);
             UiKit.Label(list, "Kite", 28, Theme.Accent, TextAnchor.MiddleLeft, FontStyle.Bold).Size(-1, 44);
             RectTransform kites = UiKit.Grid(list, new Vector2(240, 64), new Vector2(10, 10), 5);
@@ -336,7 +352,7 @@ namespace Kitefall.UI.Screens
                     if (Req.Tunings.Contains(id)) Req.Tunings.Remove(id);
                     else if (Req.Tunings.Count < 2) Req.Tunings.Add(id);
                     Refresh();
-                }, on ? Theme.Accent : Theme.PanelLight, 20);
+                }, on ? Theme.Accent : Theme.PanelLight, 20).WithIcon(Art.ForTuning(id), 52);
             }
             UiKit.Toggle(list, "Target dummies (static · slow · fast)", Req.Dummies, v => Req.Dummies = v);
             UiKit.Stepper(list, "Sparring bots", Req.Bots.ToString(), () => { Req.Bots = Mathf.Max(0, Req.Bots - 1); Refresh(); }, () => { Req.Bots = Mathf.Min(4, Req.Bots + 1); Refresh(); });

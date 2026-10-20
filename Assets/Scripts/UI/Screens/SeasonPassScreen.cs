@@ -18,7 +18,15 @@ namespace Kitefall.UI.Screens
             int level = EconomyService.PassLevel(p, c);
             float progress = level >= c.passLevels ? 1f : (p.passXp % c.passXpPerLevel) / (float)c.passXpPerLevel;
 
-            RectTransform head = UiKit.Row(content, 16);
+            // Season banner (pass_banner) behind the header row when installed.
+            Sprite banner = Art.Sprite("pass_banner");
+            if (banner != null)
+            {
+                RectTransform strip = UiKit.Rect("Banner", content);
+                strip.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -108), new Vector2(0, 4));
+                ArtFill(strip, banner, 0f, 0.4f, Sprites.Rounded);
+            }
+            RectTransform head = UiKit.Row(content, 16, banner != null ? 6 : 0);
             head.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -100), Vector2.zero);
             RectTransform info = UiKit.Column(head, 6);
             info.Size(-1, 96, 1);
@@ -42,7 +50,16 @@ namespace Kitefall.UI.Screens
                 card.Size(230, -1);
                 RectTransform col = UiKit.Column(card.transform, 10, 12);
                 col.Stretch();
-                UiKit.Label(col, $"Level {lvl}", 28, lvl <= level ? Theme.Accent : Theme.TextDim, TextAnchor.MiddleCenter, FontStyle.Bold).Size(-1, 40);
+                Text title = UiKit.Label(col, $"Level {lvl}", 28, lvl <= level ? Theme.Accent : Theme.TextDim, TextAnchor.MiddleCenter, FontStyle.Bold);
+                title.Size(-1, 40);
+                // Level token (pass_level_node) beside the number; faded until the level is reached.
+                Sprite node = Art.Sprite("pass_level_node");
+                if (node != null)
+                {
+                    Image tok = UiKit.Image(title.transform, lvl <= level ? Color.white : new Color(1, 1, 1, 0.45f), node, "Node");
+                    tok.preserveAspect = true;
+                    tok.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(38, 38));
+                }
                 Reward(col, p, lvl, false, level);
                 Reward(col, p, lvl, true, level);
             }
@@ -57,6 +74,14 @@ namespace Kitefall.UI.Screens
             box.Size(-1, 210);
             RectTransform inner = UiKit.Column(box.transform, 6, 10);
             inner.Stretch();
+            // Track medallion (pass_free_track / pass_premium_track) in the box corner when installed.
+            Sprite track = Art.Sprite(premium ? "pass_premium_track" : "pass_free_track");
+            if (track != null)
+            {
+                Image medal = UiKit.Image(box.transform, Color.white, track, "Track");
+                medal.preserveAspect = true;
+                medal.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(6, -6), new Vector2(44, 44));
+            }
             UiKit.Label(inner, (premium ? "<color=#FFD24D>PREMIUM</color>\n" : "FREE\n") + text, 22, Color.white, TextAnchor.MiddleCenter).Size(-1, 120);
             bool claimed = premium ? p.passClaimedPremium.Contains(lvl) : p.passClaimedFree.Contains(lvl);
             bool can = lvl <= level && !claimed && (!premium || p.passPremium);

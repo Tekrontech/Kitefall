@@ -92,6 +92,14 @@ namespace Kitefall.UI.Screens
                 card.Size(-1, 110);
                 RectTransform row = UiKit.Row(card.transform, 16, 16);
                 row.Stretch();
+                // Store tile picture (shop_gems_small … shop_no_ads, shop_premium_pass) when installed.
+                Sprite art = Art.ForProduct(prod);
+                if (art != null)
+                {
+                    Image pic = UiKit.Image(row, Color.white, art, "Art");
+                    pic.preserveAspect = true;
+                    pic.Size(90, 90);
+                }
                 bool owned = prod.noAds && p.noAds || prod.premiumPass && p.passPremium;
                 string desc = prod.gems > 0 ? $"{prod.gems} gems" : prod.noAds ? "Removes interstitial ads. Rewarded ad buttons stay." : "Premium track of the Season Pass + no interstitials.";
                 UiKit.Label(row, $"<b>{prod.name}</b>\n<size=22>{desc}</size>", 28).Size(-1, 90, 1);
