@@ -542,6 +542,10 @@ Preview: `docs/design/home_preview.jpg`.
 19 characters `.glb` files (`rookie_f` = Sana, `rookie_m`, `zara` … `nikos`) project mein `Assets/Art/Characters/` mein hain.
 Har file mein Mixamo rig + 11 animations hain: idle, walk, run, fly_hold, jump, climb, victory, clap, wave, dance, sad.
 
+**Ab sab automatic:** Unity kholte hi (aur Play dabane se pehle) game khud glTFast install karta hai, `.glb` files dobara import
+karta hai aur character list banata hai. Agar phir bhi purana character aaye to Console mein `[Kitefall] Character` wali line dekhein –
+us mein wajah likhi hoti hai.
+
 **Tareeqa A – GLB (aasaan):**
 1. Unity kholein → menu **Kitefall ▸ Characters ▸ Setup Models**.
 2. Agar glTFast package nahi hai to dialog "Install glTFast" poochega → dabayein. Install ke baad setup khud chalega.

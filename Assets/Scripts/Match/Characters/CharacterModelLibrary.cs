@@ -32,7 +32,7 @@ namespace Kitefall.Match
         {
             get
             {
-                if (!_tried || _loaded == null && !Application.isPlaying)
+                if (!_tried || _loaded == null)
                 {
                     _tried = true;
                     _loaded = Resources.Load<CharacterModelLibrary>(ResourcePath);

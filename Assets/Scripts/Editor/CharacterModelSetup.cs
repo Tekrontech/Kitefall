@@ -213,6 +213,72 @@ namespace Kitefall.EditorTools
             catch (Exception e) { Debug.LogWarning("[Kitefall] Characters: could not set glTF animation import for " + path + ": " + e.Message); }
         }
 
+        /// <summary>glTFast (the .glb importer) is part of the project, either loaded or listed in Packages/manifest.json.</summary>
+        public static bool GltfInstalled()
+        {
+            if (AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name.StartsWith("glTFast", StringComparison.OrdinalIgnoreCase))) return true;
+            try { return File.Exists("Packages/manifest.json") && File.ReadAllText("Packages/manifest.json").Contains(GltfPackage); }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Fully automatic: when the editor opens (and again just before Play) the models are checked. glTFast is installed by itself
+        /// when .glb characters exist, .glb files imported before glTFast was there are re-imported, and the library is rebuilt
+        /// whenever it is missing or out of date – no menu click needed.
+        /// </summary>
+        [InitializeOnLoad]
+        private static class AutoSetup
+        {
+            private const string AskedKey = "Kitefall.Characters.GltfRequested";
+
+            static AutoSetup()
+            {
+                if (Application.isBatchMode) return;
+                EditorApplication.delayCall += Check;
+                EditorApplication.playModeStateChanged += s => { if (s == PlayModeStateChange.ExitingEditMode) Check(); };
+            }
+
+            private static void Check()
+            {
+                if (_running || !AssetDatabase.IsValidFolder(Folder)) return;
+                List<string> files = AllFiles().ToList();
+                if (files.Count == 0) return;
+                bool anyGlb = files.Any(f => !f.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase));
+                if (anyGlb && !GltfInstalled())
+                {
+                    if (SessionState.GetBool(AskedKey, false)) return;
+                    SessionState.SetBool(AskedKey, true);
+                    Debug.Log("[Kitefall] Characters: installing glTFast so Unity can open the .glb character files …");
+                    UnityEditor.PackageManager.Client.Add(GltfPackage);
+                    return;
+                }
+                // .glb files imported before glTFast existed are plain files: import them again now.
+                bool reimported = false;
+                foreach (string f in files)
+                    if (!f.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase) && !(AssetDatabase.LoadMainAssetAtPath(f) is GameObject))
+                    {
+                        AssetDatabase.ImportAsset(f, ImportAssetOptions.ForceUpdate);
+                        reimported = true;
+                    }
+                if (reimported || Stale(files))
+                {
+                    string report = Setup(out int found, out _);
+                    if (found == 0) Debug.LogWarning("[Kitefall] Characters: " + report);
+                }
+            }
+
+            /// <summary>Library missing, or a model file has no entry.</summary>
+            private static bool Stale(List<string> files)
+            {
+                var lib = AssetDatabase.LoadAssetAtPath<CharacterModelLibrary>(LibraryPath);
+                if (lib == null) return true;
+                var ids = new HashSet<string>(lib.entries.Where(e => e != null && e.model != null).Select(e => e.id), StringComparer.OrdinalIgnoreCase);
+                return files.Select(f => Path.GetFileNameWithoutExtension(f))
+                    .Where(n => !n.StartsWith("anim_", StringComparison.OrdinalIgnoreCase))
+                    .Any(n => !ids.Contains(n));
+            }
+        }
+
         /// <summary>New or changed files in the characters folder → set up again automatically.</summary>
         private sealed class Watcher : AssetPostprocessor
         {

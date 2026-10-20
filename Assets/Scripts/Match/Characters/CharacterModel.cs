@@ -31,10 +31,29 @@ namespace Kitefall.Match
         public static CharacterModel TryCreate(string characterId, Transform parent, float scaleHint)
         {
             CharacterModelLibrary.Entry e = CharacterModelLibrary.Find(characterId);
-            if (e == null) return null;
+            if (e == null)
+            {
+                Explain(characterId, CharacterModelLibrary.Instance == null
+                    ? "no character library yet – in Unity run Kitefall ▸ Characters ▸ Setup Models (installs glTFast for .glb files)"
+                    : "no model file for this id in Assets/Art/Characters (name it " + characterId + ".glb or .fbx, then run Setup Models)");
+                return null;
+            }
             var m = new CharacterModel();
-            if (!m.Build(e, parent, scaleHint)) { m.Destroy(); return null; }
+            if (!m.Build(e, parent, scaleHint))
+            {
+                m.Destroy();
+                Explain(characterId, "the model has no Mixamo-style 'Hips' bone or no mesh");
+                return null;
+            }
             return m;
+        }
+
+        private static readonly HashSet<string> Explained = new HashSet<string>();
+
+        /// <summary>Says once per character why the generated body is shown instead of the 3D model.</summary>
+        private static void Explain(string id, string why)
+        {
+            if (Explained.Add(id)) Debug.LogWarning($"[Kitefall] Character '{id}': using the generated body – {why}.");
         }
 
         private bool Build(CharacterModelLibrary.Entry e, Transform parent, float scaleHint)
