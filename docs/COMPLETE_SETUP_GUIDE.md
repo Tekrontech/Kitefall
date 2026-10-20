@@ -536,3 +536,23 @@ sooraj ki roshni saans leti hai; buttons baayein/daayein/upar/neeche se slide ho
 bounce, coins count-up, mission bars bharti hain.
 **Settings ▸ Gameplay ▸ Home scene:** Painted design (default) · 3D world harbour · 3D old city rooftops.
 Preview: `docs/design/home_preview.jpg`.
+
+## 25. Asli 3D characters (Assets/Art/Characters)
+
+19 characters `.glb` files (`rookie_f` = Sana, `rookie_m`, `zara` … `nikos`) project mein `Assets/Art/Characters/` mein hain.
+Har file mein Mixamo rig + 11 animations hain: idle, walk, run, fly_hold, jump, climb, victory, clap, wave, dance, sad.
+
+**Tareeqa A – GLB (aasaan):**
+1. Unity kholein → menu **Kitefall ▸ Characters ▸ Setup Models**.
+2. Agar glTFast package nahi hai to dialog "Install glTFast" poochega → dabayein. Install ke baad setup khud chalega.
+3. Wardrobe mein character Equip karein → Home, Wardrobe aur match teeno mein wohi 3D model nazar aayega.
+
+**Tareeqa B – FBX (Blender se):** `Tools/Characters/convert_to_fbx_blender.py` chalayein, `<id>.fbx` aur `Anim/anim_*.fbx`
+`Assets/Art/Characters/` mein daalein. Setup Models FBX ko khud **Generic** rig + loop settings de deta hai (Humanoid zaroori nahi).
+FBX aur GLB dono hon to FBX use hoti hai.
+
+Kaise kaam karta hai: game ka purana (code wala) character andar chhupa chalta rehta hai aur haath/charkhi/dor ki jagah batata hai;
+3D model apni animation chalata hai aur IK se left haath dor par, right haath charkhi par rakhta hai, sar patang ki taraf.
+Jis character ka model na ho, wo purane code wale jism mein hi dikhta hai – game kabhi nahi tootta.
+Nai file folder mein daalne par setup khud chal jaata hai. Model ke kapre file ke andar hain, isliye Outfit/Accessory ka rang
+3D model par nahi badalta (sirf code wale character par).

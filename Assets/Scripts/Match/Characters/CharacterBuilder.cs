@@ -34,6 +34,8 @@ namespace Kitefall.Match
             public string[] Accessories;
             public string CharkhiId;
             public string KiteId, KiteSkin;
+            /// <summary>Character id for the real 3D model (<see cref="CharacterModelLibrary"/>); empty = always the generated body.</summary>
+            public string CharacterId;
         }
 
         public static Look LookFor(string characterId, string outfitId, string[] accessories, string charkhiId, string kiteId = "guddi", string kiteSkin = "")
@@ -57,7 +59,8 @@ namespace Kitefall.Match
                 Accessories = accessories ?? new string[4],
                 CharkhiId = string.IsNullOrEmpty(charkhiId) ? "lakri" : charkhiId,
                 KiteId = kiteId,
-                KiteSkin = kiteSkin
+                KiteSkin = kiteSkin,
+                CharacterId = ch.id
             };
         }
 

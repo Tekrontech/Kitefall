@@ -37,7 +37,7 @@ namespace Kitefall.Match
     /// every launch-ritual step, roof-hopping traversal (plank, rope bridge, ladder, stairs, jump), emotes and reactions.
     /// The kite line starts at <see cref="LineAnchor"/> (left hand). Visual only – the server never reads it.
     /// </summary>
-    public sealed class CharacterView : MonoBehaviour
+    public sealed partial class CharacterView : MonoBehaviour
     {
         public CharacterRig Rig { get; private set; }
         public Transform LineAnchor => Rig?.LineAnchor;
@@ -119,6 +119,7 @@ namespace Kitefall.Match
             _prepLine.enabled = false;
             _prepKite = KiteVisualFactory.Build(look.KiteId ?? "guddi", look.KiteSkin ?? "", transform).transform;
             _prepKite.gameObject.SetActive(false);
+            InitModel(look);
         }
 
         private static TextMesh Text(Transform parent, string text, Color color, Vector3 offset)
@@ -216,6 +217,7 @@ namespace Kitefall.Match
             _crank += spin * dt;
             if (Rig.CharkhiSpool != null) Rig.CharkhiSpool.localRotation = Quaternion.Euler(0f, _crank, 0f);
 
+            if (_model != null) DriveModel(f, p, dt);
             PlaceHeldKite(f, p);
             UpdatePrepKite(f, dt);
             FaceCamera(dt);

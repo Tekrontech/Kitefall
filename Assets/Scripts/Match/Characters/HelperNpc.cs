@@ -22,6 +22,7 @@ namespace Kitefall.Match
             var npc = new GameObject("Helper").AddComponent<HelperNpc>();
             npc.transform.SetParent(parent, false);
             CharacterBuilder.Look look = CharacterBuilder.LookFor("rookie_m", "festival_lights", new[] { "acc_turban", "", "", "" }, "lakri", kiteId, skinId);
+            look.CharacterId = ""; // the helper keeps the generated body, so it never looks like the player
             npc.View = new GameObject("HelperView").AddComponent<CharacterView>();
             npc.View.transform.SetParent(npc.transform, false);
             npc.View.Init(look, "", new Color(1f, 0.85f, 0.4f), false, false);
