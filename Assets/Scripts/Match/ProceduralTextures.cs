@@ -63,6 +63,19 @@ namespace Kitefall.Match
             return t;
         }
 
+        /// <summary>True for an artist texture (named by its Image Mapper slot), false for a generated one.</summary>
+        public static bool IsArt(Texture t) => t != null && t.name.StartsWith("tex_");
+
+        /// <summary>
+        /// Artist textures are detailed paintings, not 256 px patterns: show one repeat every <paramref name="meters"/> instead of
+        /// every metre so the floor or wall does not look busy. Generated textures keep their scale.
+        /// </summary>
+        public static Material ArtScale(Material m, float meters)
+        {
+            if (m != null && IsArt(m.mainTexture)) m.mainTextureScale = Vector2.one / Mathf.Max(0.1f, meters);
+            return m;
+        }
+
         /// <summary>A soft round glow (sun disc, lamps, particles).</summary>
         public static Texture2D Glow() => Get("glow", () =>
         {

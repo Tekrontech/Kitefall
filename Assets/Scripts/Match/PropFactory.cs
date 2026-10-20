@@ -31,7 +31,7 @@ namespace Kitefall.Match
             var walls = MeshKit.Part(root.transform, "Walls", MeshKit.Box(size), wallMat, c);
             ScaleUv(walls.GetComponent<MeshFilter>(), size, 4f);
             // Roof slab + coping
-            Material slab = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_roof_floor", ProceduralTextures.Concrete(new Color(0.72f, 0.7f, 0.66f))), "roofslab");
+            Material slab = ProceduralTextures.ArtScale(Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_roof_floor", ProceduralTextures.Concrete(new Color(0.72f, 0.7f, 0.66f))), "roofslab"), 3f);
             MeshKit.Part(root.transform, "Roof", MeshKit.Box(new Vector3(size.x + 0.3f, 0.2f, size.z + 0.3f)), slab, new Vector3(c.x, b.Max.Y + 0.1f, c.z));
             if (!detailed) return root;
 

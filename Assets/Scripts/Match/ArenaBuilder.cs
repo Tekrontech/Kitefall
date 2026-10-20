@@ -169,14 +169,30 @@ namespace Kitefall.Match
             return root;
         }
 
+        /// <summary>Flat 2.6 × 1.7 m rug facing up, UVs 0..1 (the picture shows once).</summary>
+        private static Mesh RugMesh()
+        {
+            const float w = 1.3f, d = 0.85f;
+            var m = new Mesh { name = "rug" };
+            m.vertices = new[] { new Vector3(-w, 0f, -d), new Vector3(-w, 0f, d), new Vector3(w, 0f, d), new Vector3(w, 0f, -d) };
+            m.uv = new[] { new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(1f, 0f) };
+            m.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
         /// <summary>The rooftop network (upgrade 10.1): parapets with gaps at links, lived-in clutter, trait hints and the links.</summary>
         private static void BuildRoofs(ArenaLayout layout, Transform parent)
         {
             RoofGraph g = layout.Roofs;
             var root = new GameObject("Rooftops").transform;
             root.SetParent(parent, false);
-            Material parapet = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_plaster_wall", ProceduralTextures.Plaster(new Color(0.86f, 0.82f, 0.74f))), "parapet");
-            Material floor = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_roof_floor", ProceduralTextures.Tiles(new Color(0.78f, 0.72f, 0.64f))), "rooftiles");
+            Material parapet = ProceduralTextures.ArtScale(Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_plaster_wall", ProceduralTextures.Plaster(new Color(0.86f, 0.82f, 0.74f))), "parapet"), 2f);
+            Material floor = ProceduralTextures.ArtScale(Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_roof_floor", ProceduralTextures.Tiles(new Color(0.78f, 0.72f, 0.64f))), "rooftiles"), 3f);
+            // The woven rug (Image Mapper tex_fabric_rug) is a small rug laid on some roofs, never the whole floor.
+            Texture2D rugTex = Kitefall.UI.Art.Texture("tex_fabric_rug");
+            Material rug = rugTex != null ? Materials.Lit(Color.white, 0.02f, rugTex, "fabricrug") : null;
             foreach (RoofNode r in g.Roofs)
             {
                 var gaps = new System.Collections.Generic.List<Vector3>();
@@ -188,6 +204,12 @@ namespace Kitefall.Match
                 Vector3 c = ToUnity(r.Center);
                 MeshKit.Part(root, "RoofFloor", MeshKit.Box(new Vector3(r.SizeX - 0.3f, 0.06f, r.SizeZ - 0.3f)), floor, c + Vector3.up * 0.23f);
                 PropFactory.Parapets(root, r, gaps, parapet);
+                if (rug != null && r.Id % 2 == 0 && r.SizeX > 5f && r.SizeZ > 5f)
+                {
+                    // One rug in a corner, away from the launch spot in the middle; UVs 0..1 so the whole rug picture shows once.
+                    GameObject rugGo = MeshKit.Part(root, "Rug", MeshKit.Cached("rugquad", RugMesh), rug, c + new Vector3(-r.SizeX * 0.25f, 0.27f, r.SizeZ * 0.25f)).gameObject;
+                    rugGo.transform.localRotation = Quaternion.Euler(0f, (r.Id * 37) % 4 * 90f, 0f);
+                }
                 PropFactory.RoofClutter(root, c, r.SizeX, r.SizeZ, r.Height + 0.25f, r.Id * 31 + layout.Seed, true);
                 if (r.Has(RoofTrait.High)) PropFactory.Flag(root, c + new Vector3(r.SizeX * 0.5f - 0.6f, 0.25f, r.SizeZ * 0.5f - 0.6f), new Color(0.95f, 0.75f, 0.2f));
                 if (r.Has(RoofTrait.CrateSpot))
@@ -209,8 +231,8 @@ namespace Kitefall.Match
             var root = new GameObject("WaitingPlaza");
             root.transform.SetParent(parent, false);
             var rng = new DeterministicRandom(17);
-            Material deck = Materials.Lit(Color.white, 0.15f, ProceduralTextures.Art("tex_wood_balcony", ProceduralTextures.Wood(new Color(0.62f, 0.44f, 0.28f))), "deck");
-            Material walls = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_plaster_wall", ProceduralTextures.Plaster(new Color(0.92f, 0.86f, 0.74f))), "plazawall");
+            Material deck = ProceduralTextures.ArtScale(Materials.Lit(Color.white, 0.15f, ProceduralTextures.Art("tex_wood_balcony", ProceduralTextures.Wood(new Color(0.62f, 0.44f, 0.28f))), "deck"), 2f);
+            Material walls = ProceduralTextures.ArtScale(Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_plaster_wall", ProceduralTextures.Plaster(new Color(0.92f, 0.86f, 0.74f))), "plazawall"), 2f);
             foreach (WalkRect r in area.Surfaces)
             {
                 Vector3 c = ToUnity(r.Center);
