@@ -30,7 +30,10 @@ namespace Kitefall.Match
             GameObject g = Prim(PrimitiveType.Plane, root.transform, "Ground");
             g.transform.localScale = new Vector3(260f, 1f, 260f);
             g.transform.position = new Vector3(0f, 0f, 400f);
-            g.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(water ? waterColor : ground, water ? 0.75f : 0.05f);
+            Material groundMat = water ? Materials.Lit(waterColor, 0.75f)
+                : Materials.Lit(Color.white, 0.05f, ProceduralTextures.Concrete(ground), "ground" + ColorUtility.ToHtmlStringRGB(ground));
+            if (!water) groundMat.mainTextureScale = new Vector2(325f, 325f); // ~8 m paving slabs over the 2.6 km plane
+            g.GetComponent<MeshRenderer>().sharedMaterial = groundMat;
             if (look.SeaDownwind)
             {
                 // Beach / harbour: sand or quay where the flyers stand, open sea where the kites fly.
@@ -144,10 +147,14 @@ namespace Kitefall.Match
                 }
             }
 
-            // ---- Distant silhouettes
+            // ---- The town around the arena (houses with windows, tanks, alleys) and a hazy skyline instead of grey boxes.
+            CityFiller.Build(root.transform, layout, look, houses, far);
+            bool town = root.transform.Find("Town") != null;
+
+            // ---- Distant silhouettes (arenas without a town: fields, cliffs, mountains, islands)
             var silRng = new DeterministicRandom(layout.Seed + 9);
             Material farMat = Materials.Lit(far, 0f);
-            for (int i = 0; i < 56; i++)
+            for (int i = 0; i < (town ? 0 : 56); i++)
             {
                 float a = i / 56f * Mathf.PI * 2f;
                 float d = silRng.Range(700f, 1000f);
@@ -302,8 +309,8 @@ namespace Kitefall.Match
             RenderSettings.ambientMode = AmbientMode.Skybox;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = 250f;
-            RenderSettings.fogEndDistance = 1400f;
+            RenderSettings.fogStartDistance = 160f;
+            RenderSettings.fogEndDistance = 1150f;
             RenderSettings.fogColor = Color.Lerp(fog, new Color(0.85f, 0.8f, 0.75f), 0.5f);
 
             Light sun = RenderSettings.sun;

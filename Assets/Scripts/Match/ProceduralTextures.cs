@@ -76,6 +76,64 @@ namespace Kitefall.Match
             return m;
         }
 
+        /// <summary>
+        /// Town house facade: 4 bays × 4 storeys (one tile = 12 × 12 m) of plaster with windows – glass with a sky reflection,
+        /// light frames and sills, some shutters closed, some small balconies and AC boxes – and a ledge between storeys.
+        /// Near-white so the material colour gives each house its paint.
+        /// </summary>
+        public static Texture2D Facade() => Get("facade", () =>
+        {
+            const int size = 512, cell = 128;
+            var t = new Texture2D(size, size, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
+            var px = new Color[size * size];
+            Color wall = new Color(0.93f, 0.91f, 0.87f);
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    int bx = x / cell, fy = y / cell, lx = x % cell, ly = y % cell;
+                    float v = Hash(bx * 7 + 3, fy * 13 + 5);
+                    float stain = Mathf.Clamp01((Fbm(x * 0.5f + 11f, y * 0.22f) - 0.6f) * 2.5f) * 0.12f;
+                    Color c = Shade(wall, Fbm(x * 2f, y * 2f) * 0.08f - 0.04f - stain);
+                    if (ly < 7) c = Shade(wall, -0.12f + Noise(x, y, 3) * 0.04f);            // storey ledge
+                    else if (ly < 9) c = Shade(wall, -0.3f);                                    // ledge shadow
+                    bool inWin = lx >= 36 && lx < 92 && ly >= 30 && ly < 104;
+                    bool frame = lx >= 32 && lx < 96 && ly >= 26 && ly < 108 && !inWin;
+                    if (frame) c = new Color(0.97f, 0.96f, 0.94f);
+                    if (ly >= 20 && ly < 26 && lx >= 28 && lx < 100) c = new Color(0.82f, 0.8f, 0.77f); // sill
+                    if (inWin)
+                    {
+                        if (v < 0.22f)
+                        {
+                            // Closed wooden shutters (louvres).
+                            bool slat = (ly / 5) % 2 == 0;
+                            c = new Color(0.55f, 0.5f, 0.45f) * (slat ? 1f : 0.82f);
+                            if (lx == 63 || lx == 64) c *= 0.6f;
+                        }
+                        else
+                        {
+                            // Glass: dark room, a soft sky reflection toward the top, a centre mullion.
+                            float k = (ly - 30) / 74f;
+                            c = Color.Lerp(new Color(0.12f, 0.15f, 0.2f), new Color(0.42f, 0.52f, 0.62f), k * k * 0.9f);
+                            if (Mathf.Abs(lx - 63.5f) < 2f || Mathf.Abs(ly - 72f) < 1.5f) c = new Color(0.9f, 0.89f, 0.86f);
+                            if (v > 0.8f && ly < 70) c = Color.Lerp(c, new Color(0.92f, 0.86f, 0.7f), 0.55f); // curtain
+                        }
+                    }
+                    // Small balcony railing on some windows.
+                    if (v > 0.55f && v < 0.72f && ly >= 18 && ly < 52 && lx >= 24 && lx < 104 && fy > 0)
+                    {
+                        bool rail = ly >= 48 || ly < 22 || (lx - 24) % 8 < 2;
+                        if (rail) c = new Color(0.22f, 0.22f, 0.24f);
+                    }
+                    // AC unit beside some windows.
+                    if (v > 0.38f && v < 0.48f && lx >= 100 && lx < 122 && ly >= 40 && ly < 58)
+                        c = lx < 102 || ly < 42 ? new Color(0.6f, 0.6f, 0.6f) : new Color(0.84f, 0.84f, 0.82f) * ((lx / 3) % 2 == 0 ? 0.9f : 1f);
+                    px[y * size + x] = c;
+                }
+            t.SetPixels(px);
+            t.Apply(true);
+            return t;
+        });
+
         /// <summary>A soft round glow (sun disc, lamps, particles).</summary>
         public static Texture2D Glow() => Get("glow", () =>
         {
