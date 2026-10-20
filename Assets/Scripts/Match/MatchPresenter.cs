@@ -48,6 +48,7 @@ namespace Kitefall.Match
         {
             Session = session;
             MatchSetup setup = session.Setup;
+            _crates.Clear();
             _world = new GameObject("MatchWorld");
             ArenaBuilder.Build(session.Arena, arena, setup.TimeOfDay01, _world.transform);
             if (session.Arena.Roofs != null && setup.WarmupTime > 0f && setup.Rules.warmup)
@@ -191,6 +192,7 @@ namespace Kitefall.Match
             if (_world != null) Destroy(_world);
             _world = null;
             _helpers.Clear();
+            _crates.Clear(); // their objects went with the world – a stale list would break the next match
             Session = null;
             Game.Audio?.SetAmbience(0.2f, 0f, 0f);
         }
@@ -337,7 +339,8 @@ namespace Kitefall.Match
             foreach (CrateSnap c in cur.Crates)
             {
                 alive.Add(c.Id);
-                if (_crates.ContainsKey(c.Id)) continue;
+                // A view destroyed elsewhere is Unity "fake null": build it again instead of keeping a dead entry.
+                if (_crates.TryGetValue(c.Id, out CrateView have) && have != null) continue;
                 var cv = new GameObject("Crate_" + c.Id).AddComponent<CrateView>();
                 cv.transform.SetParent(_world.transform, false);
                 cv.Init(c);
@@ -345,7 +348,12 @@ namespace Kitefall.Match
             }
             var remove = new List<int>();
             foreach (var kv in _crates) if (!alive.Contains(kv.Key)) remove.Add(kv.Key);
-            foreach (int id in remove) { Destroy(_crates[id].gameObject); _crates.Remove(id); }
+            foreach (int id in remove)
+            {
+                CrateView v = _crates[id];
+                _crates.Remove(id);
+                if (v != null) Destroy(v.gameObject);
+            }
         }
 
         // ---- Camera (upgrade W2) -----------------------------------------------------
