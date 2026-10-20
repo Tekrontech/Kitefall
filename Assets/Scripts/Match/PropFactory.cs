@@ -24,12 +24,14 @@ namespace Kitefall.Match
             Vector3 c = new Vector3(b.Center.X, b.Center.Y, b.Center.Z);
             Vector3 size = new Vector3(b.Size.X, b.Size.Y, b.Size.Z);
             bool brick = variant % 3 == 1;
-            Texture2D tex = brick ? ProceduralTextures.Brick(Color.Lerp(wall, new Color(0.72f, 0.38f, 0.28f), 0.6f)) : ProceduralTextures.Plaster(wall);
-            Material wallMat = Materials.Lit(Color.white, 0.05f, tex, "wall_" + tex.name);
+            Texture2D tex = brick ? ProceduralTextures.Art("tex_brick_wall", ProceduralTextures.Brick(Color.Lerp(wall, new Color(0.72f, 0.38f, 0.28f), 0.6f))) : ProceduralTextures.Art("tex_plaster_wall", ProceduralTextures.Plaster(wall));
+            // An artist plaster texture is lightly tinted with the house colour so the street keeps its variety.
+            Color tint = !brick && tex.name.StartsWith("tex_") ? Color.Lerp(Color.white, wall, 0.4f) : Color.white;
+            Material wallMat = Materials.Lit(tint, 0.05f, tex, "wall_" + tex.name + ColorUtility.ToHtmlStringRGB(tint));
             var walls = MeshKit.Part(root.transform, "Walls", MeshKit.Box(size), wallMat, c);
             ScaleUv(walls.GetComponent<MeshFilter>(), size, 4f);
             // Roof slab + coping
-            Material slab = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Concrete(new Color(0.72f, 0.7f, 0.66f)), "roofslab");
+            Material slab = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_roof_floor", ProceduralTextures.Concrete(new Color(0.72f, 0.7f, 0.66f))), "roofslab");
             MeshKit.Part(root.transform, "Roof", MeshKit.Box(new Vector3(size.x + 0.3f, 0.2f, size.z + 0.3f)), slab, new Vector3(c.x, b.Max.Y + 0.1f, c.z));
             if (!detailed) return root;
 
@@ -249,7 +251,7 @@ namespace Kitefall.Match
         {
             Vector3 a = new Vector3(link.PointA.X, link.PointA.Y, link.PointA.Z);
             Vector3 b = new Vector3(link.PointB.X, link.PointB.Y, link.PointB.Z);
-            Material wood = Materials.Lit(Color.white, 0.2f, ProceduralTextures.Wood(Wood), "linkwood");
+            Material wood = Materials.Lit(Color.white, 0.2f, ProceduralTextures.Art("tex_wood_balcony", ProceduralTextures.Wood(Wood)), "linkwood");
             Material rope = Materials.Lit(new Color(0.78f, 0.68f, 0.48f), 0.1f);
             Material steel = Materials.Lit(Metal, 0.55f);
             Vector3 d = b - a;

@@ -51,6 +51,18 @@ namespace Kitefall.Match
             return line ? baseColor * 0.7f : Shade(baseColor, Hash(x / 32, y / 32) * 0.1f - 0.05f + Noise(x, y, 4) * 0.04f);
         }));
 
+        /// <summary>
+        /// The artist's surface texture (Image Mapper slot tex_brick_wall, tex_plaster_wall, tex_roof_floor, tex_wood_balcony …)
+        /// when installed, otherwise the generated one.
+        /// </summary>
+        public static Texture2D Art(string slot, Texture2D generated)
+        {
+            Texture2D t = Kitefall.UI.Art.Texture(slot);
+            if (t == null) return generated;
+            t.wrapMode = TextureWrapMode.Repeat;
+            return t;
+        }
+
         /// <summary>A soft round glow (sun disc, lamps, particles).</summary>
         public static Texture2D Glow() => Get("glow", () =>
         {

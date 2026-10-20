@@ -126,7 +126,7 @@ namespace Kitefall.UI.Hud
             stick.controlPath = KiteInputReader.SteerStickPath;
             knob.gameObject.SetActive(true);
 
-            Button(Control("PULL", new Vector2(1, 0), new Vector2(-220, 210), 230 * bs, Sprites.Circle, new Color(0.95f, 0.55f, 0.15f, 0.85f), left), "PULL", 44 * bs, KiteInputReader.PullButtonPath);
+            Button(Control("PULL", new Vector2(1, 0), new Vector2(-220, 210), 230 * bs, Sprites.Circle, new Color(0.95f, 0.55f, 0.15f, 0.85f), left), "PULL", 44 * bs, KiteInputReader.PullButtonPath, "hud_kheench");
             Button(Control("DIVE", new Vector2(1, 0), new Vector2(-470, 150), 150 * bs, Sprites.Circle, new Color(0.85f, 0.25f, 0.3f, 0.85f), left), "DIVE", 30 * bs, KiteInputReader.DiveButtonPath);
             Button(Control("REEL", new Vector2(1, 0), new Vector2(-220, 440), 150 * bs, Sprites.Circle, new Color(0.25f, 0.55f, 0.95f, 0.85f), left), "REEL", 30 * bs, KiteInputReader.ReelButtonPath);
         }
@@ -151,10 +151,20 @@ namespace Kitefall.UI.Hud
             return img.rectTransform;
         }
 
-        private static void Button(RectTransform rt, string label, float fontSize, string path)
+        private static void Button(RectTransform rt, string label, float fontSize, string path, string artKey = null)
         {
+            // The artist's button icon (Image Mapper hud_* slot) above a smaller label, when installed.
+            Sprite art = artKey != null ? Art.Sprite(artKey) : null;
+            if (art != null)
+            {
+                Image ic = UiKit.Image(rt, Color.white, art, "Icon");
+                ic.preserveAspect = true;
+                ic.rectTransform.Band(new Vector2(0.2f, 0.34f), new Vector2(0.8f, 0.86f), Vector2.zero, Vector2.zero);
+                fontSize *= 0.55f;
+            }
             Text t = UiKit.Label(rt, label, Mathf.RoundToInt(fontSize), Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
-            t.rectTransform.Stretch();
+            if (art != null) t.rectTransform.Band(new Vector2(0f, 0.08f), new Vector2(1f, 0.36f), Vector2.zero, Vector2.zero);
+            else t.rectTransform.Stretch();
             rt.gameObject.SetActive(false); // set controlPath before OnEnable
             var b = rt.gameObject.AddComponent<OnScreenButton>();
             b.controlPath = path;

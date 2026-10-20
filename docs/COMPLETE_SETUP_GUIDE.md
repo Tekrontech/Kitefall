@@ -560,3 +560,13 @@ Kaise kaam karta hai: game ka purana (code wala) character andar chhupa chalta r
 Jis character ka model na ho, wo purane code wale jism mein hi dikhta hai – game kabhi nahi tootta.
 Nai file folder mein daalne par setup khud chal jaata hai. Model ke kapre file ke andar hain, isliye Outfit/Accessory ka rang
 3D model par nahi badalta (sirf code wale character par).
+
+## 26. Kaun si image kahan nazar aati hai
+
+Image Mapper images ko `Resources/KitefallArt` mein rakh deta hai; game unhein yahan dikhata hai (image na ho to code wala look):
+- **Match ki duniya:** `tex_roof_floor` (chhat ka farsh), `tex_plaster_wall` / `tex_brick_wall` (deewarein, parapet), `tex_wood_balcony` (lakri ke pul, deck).
+- **Match shuru hote waqt:** `loading_*` – arena ki loading tasveer 1.5 second full screen.
+- **HUD:** `hud_kheench` PULL button par; `hud_emote`, `hud_mic`, `hud_snap_warning` waghera icons mein.
+- **Home:** `home_background`, `home_kite`, currency, daily chest, festival ribbon, mode cards (`mode_*_card`), missions (`mission_*`).
+- **Shop / Season pass / Workshop / Results / Onboarding:** `shop_*`, `pass_*`, `tuning_*`, `bg_results_win/lose`, `onboard_*`.
+- **Store listing** (`store_screenshot_frame_*`, `play_feature_graphic`, `app_icon`) game ke andar nahi aatin – ye Play Store ke liye hain.

@@ -175,8 +175,8 @@ namespace Kitefall.Match
             RoofGraph g = layout.Roofs;
             var root = new GameObject("Rooftops").transform;
             root.SetParent(parent, false);
-            Material parapet = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Plaster(new Color(0.86f, 0.82f, 0.74f)), "parapet");
-            Material floor = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Tiles(new Color(0.78f, 0.72f, 0.64f)), "rooftiles");
+            Material parapet = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_plaster_wall", ProceduralTextures.Plaster(new Color(0.86f, 0.82f, 0.74f))), "parapet");
+            Material floor = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_roof_floor", ProceduralTextures.Tiles(new Color(0.78f, 0.72f, 0.64f))), "rooftiles");
             foreach (RoofNode r in g.Roofs)
             {
                 var gaps = new System.Collections.Generic.List<Vector3>();
@@ -209,8 +209,8 @@ namespace Kitefall.Match
             var root = new GameObject("WaitingPlaza");
             root.transform.SetParent(parent, false);
             var rng = new DeterministicRandom(17);
-            Material deck = Materials.Lit(Color.white, 0.15f, ProceduralTextures.Wood(new Color(0.62f, 0.44f, 0.28f)), "deck");
-            Material walls = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Plaster(new Color(0.92f, 0.86f, 0.74f)), "plazawall");
+            Material deck = Materials.Lit(Color.white, 0.15f, ProceduralTextures.Art("tex_wood_balcony", ProceduralTextures.Wood(new Color(0.62f, 0.44f, 0.28f))), "deck");
+            Material walls = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Art("tex_plaster_wall", ProceduralTextures.Plaster(new Color(0.92f, 0.86f, 0.74f))), "plazawall");
             foreach (WalkRect r in area.Surfaces)
             {
                 Vector3 c = ToUnity(r.Center);

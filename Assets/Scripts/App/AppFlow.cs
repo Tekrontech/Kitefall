@@ -161,6 +161,7 @@ namespace Kitefall.App
             Game.UI.CloseAllPopups();
             Game.Matches.StartOffline(setup, local, OnMatchFinished);
             Hud = Game.UI.Show(new MatchHudScreen());
+            LoadingCurtain.Show(Game.UI, setup.Arena, ArenaLayout.DisplayName(setup.Arena));
             Game.Matches.Presenter.EventRaised -= OnMatchEvent;
             Game.Matches.Presenter.EventRaised += OnMatchEvent;
         }
@@ -172,6 +173,7 @@ namespace Kitefall.App
             _coinsBefore = Game.Profile != null ? Game.Profile.coins : 0;
             Game.Matches.StartSession(session, OnMatchFinished);
             Hud = Game.UI.Show(new MatchHudScreen());
+            if (session.Arena != null) LoadingCurtain.Show(Game.UI, session.Arena.Type, ArenaLayout.DisplayName(session.Arena.Type));
             Game.Matches.Presenter.EventRaised -= OnMatchEvent;
             Game.Matches.Presenter.EventRaised += OnMatchEvent;
         }
