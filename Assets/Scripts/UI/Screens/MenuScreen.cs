@@ -23,10 +23,10 @@ namespace Kitefall.UI.Screens
             top.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(24, -110), new Vector2(-24, -16));
             if (ShowBack)
             {
-                UiKit.Button(top, "‹ Back", () => UI.Pop(), Theme.PanelLight, 28).GetComponent<RectTransform>()
-                    .Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(170, 80));
+                Glossy.Button(top, "Back", Icons.Get("chevron_left"), () => UI.Pop(), Glossy.Style.Menu, 28).GetComponent<RectTransform>()
+                    .Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(180, 80));
             }
-            Text title = UiKit.Label(top, Title, Theme.TitleSize, Theme.Text, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed();
+            Text title = UiKit.Label(top, Title, Theme.TitleSize, Glossy.Gold, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed();
             title.rectTransform.Band(new Vector2(0, 0), new Vector2(0.6f, 1), new Vector2(ShowBack ? 200 : 0, 0), Vector2.zero);
             Currencies(top);
             Content = UiKit.Rect("Content", Root).Stretch(24, 130, 24, 24);
@@ -52,10 +52,23 @@ namespace Kitefall.UI.Screens
             if (p == null) return;
             int parts = 0;
             foreach (ItemCount c in p.parts) parts += c.count;
-            Image bg = UiKit.Panel(top, new Color(0, 0, 0, 0.45f), "Currencies", false);
-            bg.rectTransform.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(620, 76));
-            Text t = UiKit.Label(bg.transform, $"{UiKit.Coins(p.coins)}     {UiKit.Gems(p.gems)}     <color=#9FD8FF>■</color> {parts} parts", 30, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
-            t.rectTransform.Stretch(10, 0, 10, 0);
+            // Same glossy currency bar as the home screen (icons from the Image Mapper when installed).
+            Image bg = Glossy.Panel(top, Glossy.Style.Panel, "Currencies", false);
+            bg.rectTransform.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(560, 76));
+            CurrencyCell(bg.transform, 0, Art.Sprite("currency_coins") ?? Icons.Get("coin"), Glossy.Gold, p.coins.ToString("N0"));
+            CurrencyCell(bg.transform, 1, Art.Sprite("currency_gems") ?? Icons.Get("gem"), Theme.Hex("#4FA8FF"), p.gems.ToString("N0"));
+            CurrencyCell(bg.transform, 2, Art.Sprite("currency_parts") ?? Icons.Get("parts"), Theme.Gem, parts + " parts");
+        }
+
+        private static void CurrencyCell(Transform bar, int slot, Sprite icon, Color tint, string value)
+        {
+            RectTransform cell = UiKit.Rect("Cur" + slot, bar);
+            cell.Band(new Vector2(slot / 3f, 0), new Vector2((slot + 1) / 3f, 1), new Vector2(12, 8), new Vector2(-6, -8));
+            bool art = icon != null && icon.texture != null && icon.texture.width > 96;
+            Image ic = UiKit.Image(cell, art ? Color.white : tint, icon, "Icon");
+            ic.preserveAspect = true;
+            ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(48, 48));
+            UiKit.Label(cell, value, 26, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed().rectTransform.Stretch(54, 0, 0, 0);
         }
 
         /// <summary>Runs a backend op, shows the result, refreshes the screen.</summary>

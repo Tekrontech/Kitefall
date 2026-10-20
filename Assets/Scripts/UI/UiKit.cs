@@ -13,15 +13,30 @@ namespace Kitefall.UI
     public static class UiKit
     {
         public static Action ClickSound;
-        private static Font _font;
+        private static Font _font, _bold;
 
+        /// <summary>
+        /// One font family everywhere: Inter (SIL Open Font License, Assets/Resources/Fonts) – SemiBold for text, ExtraBold for
+        /// titles and buttons. Falls back to Unity's built-in font if the files are missing.
+        /// </summary>
         public static Font Font
         {
             get
             {
+                if (_font == null) _font = Resources.Load<Font>("Fonts/Inter-SemiBold");
                 if (_font == null) _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 if (_font == null) _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
                 return _font;
+            }
+        }
+
+        /// <summary>The heavy cut of the same family (used for FontStyle.Bold instead of a synthetic bold).</summary>
+        public static Font BoldFont
+        {
+            get
+            {
+                if (_bold == null) _bold = Resources.Load<Font>("Fonts/Inter-ExtraBold");
+                return _bold != null ? _bold : Font;
             }
         }
 
@@ -124,12 +139,13 @@ namespace Kitefall.UI
         {
             RectTransform rt = Rect(name, parent);
             var t = rt.gameObject.AddComponent<Text>();
-            t.font = Font;
+            bool realBold = style == FontStyle.Bold && BoldFont != Font;
+            t.font = realBold ? BoldFont : Font;
             t.text = text;
             t.fontSize = size;
             t.color = color ?? Theme.Text;
             t.alignment = align;
-            t.fontStyle = style;
+            t.fontStyle = realBold ? FontStyle.Normal : style;
             t.supportRichText = true;
             t.raycastTarget = false;
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -156,10 +172,11 @@ namespace Kitefall.UI
             cb.normalColor = Color.white;
             cb.highlightedColor = new Color(1.08f, 1.08f, 1.08f);
             cb.pressedColor = new Color(0.8f, 0.8f, 0.8f);
-            cb.disabledColor = new Color(0.55f, 0.55f, 0.55f, 0.8f);
+            cb.disabledColor = Color.white; // DisabledSkin swaps to the grey "locked" skin instead of darkening (orange went brown)
             cb.fadeDuration = 0.08f;
             b.colors = cb;
             b.targetGraphic = img;
+            img.gameObject.AddComponent<DisabledSkin>();
             if (!string.IsNullOrEmpty(text))
             {
                 Text label = Label(img.transform, text, fontSize, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);

@@ -16,6 +16,7 @@ namespace Kitefall.UI.Screens
 
         private static readonly GameMode[] Modes = { GameMode.QuickDuel, GameMode.RankedDuel, GameMode.FreeForAll, GameMode.PrivateRoom, GameMode.TeamBattle, GameMode.LastKiteFlying };
         private static GameMode _mode = GameMode.QuickDuel;
+        private static bool _modeRestored;
         private static ArenaType _arena = KiteCalendar.Current(DateTime.Now)?.Arena ?? ArenaType.MediterraneanHarbour;
 
         // Layout follows the owner's home-screen design (1920×1080 reference): profile top-left, Settings/Inbox top-centre,
@@ -26,7 +27,13 @@ namespace Kitefall.UI.Screens
         {
             PlayerProfile p = Game.Profile;
             if (p == null) return;
-            if (Enum.TryParse(p.lastMode, out GameMode last) && Array.IndexOf(Modes, last) >= 0 && _mode == GameMode.QuickDuel) _mode = last;
+            // Restore the last played mode once per session. (Before: it ran on every rebuild, so tapping Quick Duel snapped back
+            // to the last mode and Quick Duel could never be picked.)
+            if (!_modeRestored)
+            {
+                _modeRestored = true;
+                if (Enum.TryParse(p.lastMode, out GameMode last) && Array.IndexOf(Modes, last) >= 0) _mode = last;
+            }
 
             bool intro = !_built;
             _built = true;

@@ -127,7 +127,7 @@ namespace Kitefall.Match
             go.transform.SetParent(parent, false);
             go.transform.localPosition = offset;
             var tm = go.AddComponent<TextMesh>();
-            tm.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            tm.font = Kitefall.UI.UiKit.BoldFont;
             if (tm.font != null) go.GetComponent<MeshRenderer>().sharedMaterial = tm.font.material;
             tm.text = text;
             tm.fontSize = 64;

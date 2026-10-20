@@ -102,6 +102,10 @@ namespace Kitefall.UI
             Image bg = Panel(parent, style, "Btn_" + text);
             var btn = bg.gameObject.AddComponent<Button>();
             UiMotion.Bounce(btn);
+            ColorBlock disabled = btn.colors;
+            disabled.disabledColor = Color.white;
+            btn.colors = disabled;
+            bg.gameObject.AddComponent<DisabledSkin>();
             ColorBlock cb = btn.colors;
             cb.pressedColor = new Color(0.8f, 0.85f, 0.95f);
             cb.highlightedColor = new Color(1.05f, 1.05f, 1.1f);
