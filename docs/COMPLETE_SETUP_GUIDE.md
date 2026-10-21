@@ -570,3 +570,15 @@ Image Mapper images ko `Resources/KitefallArt` mein rakh deta hai; game unhein y
 - **Home:** `home_background`, `home_kite`, currency, daily chest, festival ribbon, mode cards (`mode_*_card`), missions (`mission_*`).
 - **Shop / Season pass / Workshop / Results / Onboarding:** `shop_*`, `pass_*`, `tuning_*`, `bg_results_win/lose`, `onboard_*`.
 - **Store listing** (`store_screenshot_frame_*`, `play_feature_graphic`, `app_icon`) game ke andar nahi aatin – ye Play Store ke liye hain.
+
+## 27. APK doosre phones par install nahi hota ("App not installed")
+
+Build ab **64-bit + 32-bit (ARM64 + ARMv7)** dono ke liye banta hai, aur har build ka version code khud barh jata hai.
+Phir bhi "App not installed" aaye to:
+1. **Purana Kitefall uninstall karein** – agar phone mein kisi aur key (debug / doosre computer) se bana version hai to naya install nahi hota.
+2. Hamesha **APK** bhejein (AAB phone par install nahi hota). File ka naam `.apk` par khatam ho (WhatsApp kabhi `.apk.1` bana deta hai).
+3. Phone par **Install unknown apps** ki ijazat dein (jis app se file khol rahe hain – WhatsApp / Files / Chrome).
+4. **Play Protect** "unknown app" kahe to *More details ▸ Install anyway*.
+5. Phone mein **jagah** ho (kam az kam APK se 2–3 guna).
+6. Phone **Android 7.0** ya naya ho (minimum API 24).
+Sab testers ko hamesha usi keystore se bana APK dein; Unity ke har restart ke baad Publishing Settings mein dono password dobara likhein.

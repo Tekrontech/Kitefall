@@ -53,6 +53,7 @@ namespace Kitefall.EditorTools
                     "Create one in Project Settings ▸ Player ▸ Android ▸ Publishing Settings ▸ Keystore Manager (save it OUTSIDE the project and never share the password).\n\n" +
                     "Build anyway (debug-signed, for checking only)?", "Build anyway", "Cancel"))
                 return;
+            if (!SigningReady()) return;
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android &&
@@ -89,7 +90,10 @@ namespace Kitefall.EditorTools
                 double mb = summary.totalSize / (1024.0 * 1024.0);
                 Debug.Log($"[Kitefall] Build succeeded: {Path.GetFullPath(path)} ({mb:0.0} MB, {summary.totalTime:mm\\:ss}).");
                 if (!runOnPhone) EditorUtility.RevealInFinder(Path.GetFullPath(path));
-                if (appBundle) PlayerSettings.Android.bundleVersionCode++; // next Play upload needs a higher code
+                // Every build gets a higher version code: Play needs it, and a phone refuses ("App not installed") an APK whose
+                // code is lower than the one already installed.
+                PlayerSettings.Android.bundleVersionCode++;
+                AssetDatabase.SaveAssets();
             }
             else
             {
@@ -114,8 +118,29 @@ namespace Kitefall.EditorTools
 
             if ((int)PlayerSettings.Android.minSdkVersion < 24) PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)24;
             PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
-            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            // 64-bit AND 32-bit: many budget phones (Android Go, older Tecno / Infinix / itel / Samsung A) run a 32-bit system and
+            // show "App not installed" for an ARM64-only APK. Google Play needs ARM64; with an AAB each phone gets only its own part.
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>
+        /// Unity never saves keystore passwords, so after every restart they are empty and Gradle fails at the very end with
+        /// "keystore password was incorrect". Check before the long build and open the right settings page instead.
+        /// </summary>
+        private static bool SigningReady()
+        {
+            if (!PlayerSettings.Android.useCustomKeystore) return true;
+            bool missingFile = string.IsNullOrEmpty(PlayerSettings.Android.keystoreName) || !File.Exists(PlayerSettings.Android.keystoreName);
+            bool missingPass = string.IsNullOrEmpty(PlayerSettings.Android.keystorePass) || string.IsNullOrEmpty(PlayerSettings.Android.keyaliasPass);
+            if (!missingFile && !missingPass) return true;
+            EditorUtility.DisplayDialog("Keystore password needed",
+                (missingFile ? "The keystore file was not found: " + PlayerSettings.Android.keystoreName + "\n\n" : "") +
+                "Unity forgets keystore passwords every time it restarts.\n\n" +
+                "Player ▸ Android ▸ Publishing Settings will open now: type the Keystore password and the Project Key (alias) password, " +
+                "then build again. Never put the password in code or chat.", "Open settings");
+            SettingsService.OpenProjectSettings("Project/Player");
+            return false;
         }
     }
 }
