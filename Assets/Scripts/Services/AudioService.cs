@@ -153,6 +153,7 @@ namespace Kitefall.Services
         /// <summary>Matches: a random music_match_N track (+ the dhol layer), else the arena's code-built loop.</summary>
         public void PlayMatchMusic(int style)
         {
+            Play(Sfx.Confirm, 0.8f); // "go!" as the match world appears
             var tracks = new List<AudioClip>();
             foreach (string n in MusicMatch)
             {

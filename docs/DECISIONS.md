@@ -87,3 +87,13 @@ Spec rule 17.7: *"If something is unclear, contradictory or risky, say so and as
 5. **D45** – Are code-generated characters OK for now, or do you want me to switch to the Starter Assets humanoid once you import it?
 6. **D48 / D50** – Should party matches also accept strangers (public quick-join), and should the online warmup start while the room fills (needs late join)?
 7. **D51** – Upwind roofs are still weak (≈ 38 %). Prefer a bigger wind bonus, or a different benefit?
+
+## Audit v7 (21 Oct 2026)
+| # | Topic | Decision |
+|---|---|---|
+| D58 | Scope freeze | Launch content is an allow-list in `Core/Meta/LaunchContent`: arenas Old City Rooftops + River Festival (Storm Archipelago stays for Last Kite Flying), kites guddi / rokkaku / pipa, characters rookie_f / rookie_m / zara / rafay. Everything else is hidden, not deleted; owned items in old saves keep working. Change the lists there when content is ready. |
+| D59 | Sooti | Unlimited (not used up) in all modes except Ranked Duel and Last Kite Flying; free 300 m given automatically on the first launch of the day; low stock never blocks a match. Server uses the same Core rule. |
+| D60 | Characters | Artist FBX characters are imported as **Humanoid** so one set of Mixamo clips moves everyone. GLBs written by the old code builder are skipped; those characters use the in-code body until an artist model arrives (replaces D45 once models exist). |
+| D61 | Real assets | Sounds (`Resources/KitefallAudio`), world models (`Assets/Art/World`) and character animations (`Assets/Art/Characters/Anim`) are loaded when present, with the generated version as fallback. Lists: `AUDIO_LIST.md`, `WORLD_ASSET_LIST.md`. Use CC0 / owned assets only. |
+| D62 | HUD layout | Kill feed top-left; emote / chat / mic in a row under the radar; tension bar on the right edge; big announcements and the spectate bar share one centre slot and never overlap. |
+

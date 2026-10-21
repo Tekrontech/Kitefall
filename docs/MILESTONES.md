@@ -51,6 +51,26 @@ Verification levels used below:
 - Upwind roof balance (D51), online warmup during room fill (D48), practice kite in warmup (D49), teamwork XP (D54).
 - Performance targets (≤ 150 draw calls, 60 FPS mid-range, 30 FPS on 3 GB) need the Unity Profiler on a device.
 
+## Audit v7 fixes (21 Oct 2026, `KITEFALL_AUDIT_v7.md` section 6)
+No new content was added; everything below fixes or prepares existing content.
+
+| Item | What changed | Where | Status |
+|---|---|---|---|
+| A1 | Main-scene link always refreshes the GameDatabase (sky / kite-paper materials in APKs) | `Editor/GameSceneBuilder.LinkMainScene` | Done (editor) |
+| B1 | Sooti only used in Ranked / Last Kite Flying; automatic daily 300 m; low stock offers a one-tap refill, never blocks; 30-match new-profile test | `Core/Economy/EconomyService`, `App/AppFlow`, `Assets/Tests/EditMode` | Tested |
+| E1/E2 | Own-kite marker + off-screen edge arrow, rival/teammate markers (colour-blind aware), kite drawn bigger with distance (≤ ×3, visual only), line ≥ ~2 px | `UI/Hud/MatchHudScreen.Markers`, `Match/KiteView` | Compiled – needs screenshots |
+| F1 | "Line was cut" 2 s + fade before the spectate bar; HUD zones re-laid (kill feed top-left, buttons under radar, tension bar right edge); white text on tinted rows | `UI/Hud/*`, `App/AppFlow` | Compiled – check 16:9 / 19.5:9 / 20:9 |
+| C1 | Neck + head clamp (35° pitch, 45° yaw); whole-body kneel in the kanni step | `Match/Characters/CharacterView` | Compiled |
+| D1 | Grey cube silhouettes removed; non-town arenas get hills / ridges / tree lines in the fog | `Match/ArenaBuilder` | Compiled |
+| R4 | Character FBX imported as Humanoid; animation files copy rookie_f's avatar | `Editor/CharacterModelSetup` | Compiled (needs FBX files) |
+| R2/R3 | Shared clips in `Assets/Art/Characters/Anim/` incl. pull, release, reel, tie, toss, tug; Humanoid clips play through a manual PlayableGraph; fly_hold + IK when a clip is missing | `Match/Characters/CharacterModel`, `CharacterView.Model` | Compiled (needs Mixamo files) |
+| R1 | Code-built GLBs are skipped by Setup Models (in-code body used); rookie_f kept. The 18 files are still in the folder – move them out only when you agree | `Editor/CharacterModelSetup.IsCodeBuiltGlb` | Done |
+| R6 | Sounds / music load from `Resources/KitefallAudio/<name>`, generated sound only as fallback; home + match music | `Services/AudioService`, `docs/AUDIO_LIST.md` | Compiled (needs audio files) |
+| R5 | World models from `Assets/Art/World/` (houses, parapet, tank, charpai, railing, ladder, plank, stairwell …) with generated fallback | `Match/WorldAssetLibrary`, `Editor/WorldAssetSetup`, `docs/WORLD_ASSET_LIST.md` | Compiled (needs models) |
+| R9 | One clear error + red DEV banner on Home when URP is not the active pipeline | `Services/KitefallGraphics`, `UI/Screens/HomeScreen` | Compiled |
+| R7 | Launch scope: 2 arenas (Old City Rooftops, River Festival), 3 kites (guddi, rokkaku, pipa), 4 characters (rookie_f, rookie_m, zara, rafay); the rest hidden, not deleted (Settings ▸ Developer ▸ Coming soon) | `Core/Meta/LaunchContent` | Tested |
+| O3 | Silent fallbacks now log a warning with the reason | `MatchPresenter`, `CharacterModel`, `HapticsService`, `OnlinePartyService` | Done |
+
 ## What still needs you (cannot be done from code alone)
 1. Open the project in Unity 6 and fix anything the real editor reports (see SETUP.md).
 2. Play-test with real people (spec gate before milestone 10, balance targets 7.6).
