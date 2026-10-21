@@ -41,8 +41,8 @@ namespace Kitefall.EditorTools
         {
             if (!File.Exists(MainScenePath)) Build();
             Scene scene = EditorSceneManager.OpenScene(MainScenePath);
-            GameDatabase db = AssetDatabase.LoadAssetAtPath<GameDatabase>(DatabasePath);
-            if (db == null) db = EnsureDatabase();
+            // Always refresh the database: an existing one may miss materials / lists added since (sky, kite paper – audit A1).
+            GameDatabase db = EnsureDatabase();
             if (db == null) { Debug.LogError("[Kitefall] Could not create " + DatabasePath + ". Check the Console for earlier errors."); return false; }
             AddMissingArenas(db);
 

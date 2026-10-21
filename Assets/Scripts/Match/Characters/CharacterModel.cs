@@ -1,14 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 namespace Kitefall.Match
 {
     /// <summary>
     /// One real 3D character model (from <see cref="CharacterModelLibrary"/>) worn by a <see cref="CharacterView"/>.
-    /// The model's own clips (idle, walk, fly_hold …) are sampled directly with a short cross-fade – no Animator controller
-    /// needed, and it works for glTF (legacy or Mecanim clips) and generic FBX alike. On top of the clip, two-bone IK puts the
-    /// hands where the game wants them (left hand on the line, right hand on the spool) and the head turns toward the kite.
-    /// Bones are found by Mixamo names (mixamorig:LeftHand …), with or without the prefix.
+    /// Humanoid models (FBX imported as Humanoid – Mixamo clips retarget to every character) play their clips through a small
+    /// manually evaluated PlayableGraph; generic models (glTF, legacy clips) are sampled directly. Both cross-fade and need no
+    /// Animator controller. On top of the clip, two-bone IK puts the hands where the game wants them (left hand on the line,
+    /// right hand on the spool) and the head turns toward the kite. Bones come from the avatar (Humanoid) or Mixamo names.
     /// </summary>
     public sealed class CharacterModel
     {
@@ -27,6 +29,13 @@ namespace Kitefall.Match
         private AnimationClip _cur, _prev;
         private float _tCur, _tPrev, _fade = 1f;
         private float _wL, _wR, _wLook;
+
+        // Humanoid playback (null for generic models).
+        private Animator _animator;
+        private PlayableGraph _graph;
+        private AnimationMixerPlayable _mixer;
+        private AnimationClipPlayable _curPlayable, _prevPlayable;
+        public bool Humanoid => _animator != null;
 
         public static CharacterModel TryCreate(string characterId, Transform parent, float scaleHint)
         {
@@ -64,8 +73,23 @@ namespace Kitefall.Match
             _instance.name = e.id;
             _instance.transform.localPosition = Vector3.zero;
             _instance.transform.localRotation = Quaternion.identity;
-            // Clips are sampled by hand: an imported Animator / Animation must not fight them.
-            foreach (Animator a in _instance.GetComponentsInChildren<Animator>(true)) { a.enabled = false; Object.Destroy(a); }
+            // Humanoid FBX: keep its Animator (the avatar retargets Mixamo clips) but drive it ourselves; anything else is sampled
+            // by hand, so an imported Animator / Animation must not fight the clips.
+            Animator rootAnimator = _instance.GetComponent<Animator>();
+            if (rootAnimator != null && rootAnimator.avatar != null && rootAnimator.avatar.isHuman && rootAnimator.avatar.isValid)
+            {
+                _animator = rootAnimator;
+                _animator.runtimeAnimatorController = null;
+                _animator.applyRootMotion = false;
+                _animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                _graph = PlayableGraph.Create("Kitefall_" + e.id);
+                _graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+                _mixer = AnimationMixerPlayable.Create(_graph, 2);
+                AnimationPlayableOutput.Create(_graph, "Body", _animator).SetSourcePlayable(_mixer);
+                _graph.Play();
+            }
+            foreach (Animator a in _instance.GetComponentsInChildren<Animator>(true))
+                if (a != _animator) { a.enabled = false; Object.Destroy(a); }
             foreach (Animation a in _instance.GetComponentsInChildren<Animation>(true)) { a.enabled = false; Object.Destroy(a); }
 
             for (int i = 0; i < e.clips.Length && i < e.names.Length; i++)
@@ -92,6 +116,22 @@ namespace Kitefall.Match
                     case "leftupleg": upLegL = t; break;
                     case "rightupleg": upLegR = t; break;
                 }
+            }
+            if (_animator != null)
+            {
+                // The avatar knows the bones whatever the artist named them.
+                _hips = Bone(HumanBodyBones.Hips, _hips);
+                _head = Bone(HumanBodyBones.Head, _head);
+                _armL = Bone(HumanBodyBones.LeftUpperArm, _armL);
+                _foreL = Bone(HumanBodyBones.LeftLowerArm, _foreL);
+                _handL = Bone(HumanBodyBones.LeftHand, _handL);
+                _armR = Bone(HumanBodyBones.RightUpperArm, _armR);
+                _foreR = Bone(HumanBodyBones.RightLowerArm, _foreR);
+                _handR = Bone(HumanBodyBones.RightHand, _handR);
+                _midL = Bone(HumanBodyBones.LeftMiddleProximal, _midL);
+                _midR = Bone(HumanBodyBones.RightMiddleProximal, _midR);
+                upLegL = Bone(HumanBodyBones.LeftUpperLeg, upLegL);
+                upLegR = Bone(HumanBodyBones.RightUpperLeg, upLegR);
             }
             if (_hips == null) return false;
             _hipsRest = _hips.localPosition;
@@ -130,6 +170,13 @@ namespace Kitefall.Match
             return true;
         }
 
+        /// <summary>Avatar bone, or the name-matched one when the avatar has no mapping (explicit null check: Unity fake null).</summary>
+        private Transform Bone(HumanBodyBones bone, Transform fallback)
+        {
+            Transform t = _animator.GetBoneTransform(bone);
+            return t != null ? t : fallback;
+        }
+
         private bool WorldBounds(out Bounds b)
         {
             b = default;
@@ -162,6 +209,19 @@ namespace Kitefall.Match
             else { _prev = null; _fade = 1f; }
             _cur = c;
             _tCur = 0f;
+            if (_animator == null) return;
+
+            // Humanoid: input 0 = current clip, input 1 = the clip fading out.
+            if (_prevPlayable.IsValid()) { _graph.Disconnect(_mixer, 1); _prevPlayable.Destroy(); }
+            if (_curPlayable.IsValid())
+            {
+                _graph.Disconnect(_mixer, 0);
+                if (_prev != null) { _prevPlayable = _curPlayable; _graph.Connect(_prevPlayable, 0, _mixer, 1); }
+                else _curPlayable.Destroy();
+            }
+            _curPlayable = AnimationClipPlayable.Create(_graph, c);
+            _curPlayable.SetApplyFootIK(true);
+            _graph.Connect(_curPlayable, 0, _mixer, 0);
         }
 
         /// <summary>
@@ -175,7 +235,16 @@ namespace Kitefall.Match
             _tPrev += dt * speed;
             _fade = Mathf.MoveTowards(_fade, 1f, dt / 0.25f);
 
-            if (_prev != null && _fade < 1f)
+            if (_animator != null)
+            {
+                float w = _prev != null && _fade < 1f ? Mathf.SmoothStep(0f, 1f, _fade) : 1f;
+                if (w >= 1f && _prevPlayable.IsValid()) { _graph.Disconnect(_mixer, 1); _prevPlayable.Destroy(); _prev = null; }
+                _curPlayable.SetTime(Wrap(_cur, _tCur));
+                _mixer.SetInputWeight(0, w);
+                if (_prevPlayable.IsValid()) { _prevPlayable.SetTime(Wrap(_prev, _tPrev)); _mixer.SetInputWeight(1, 1f - w); }
+                _graph.Evaluate(0f); // writes the pose to the bones now, so the IK below works on it
+            }
+            else if (_prev != null && _fade < 1f)
             {
                 _prev.SampleAnimation(_instance, Wrap(_prev, _tPrev));
                 for (int i = 0; i < _all.Length; i++) { _bufPos[i] = _all[i].localPosition; _bufRot[i] = _all[i].localRotation; }
@@ -226,7 +295,8 @@ namespace Kitefall.Match
         private static bool IsLoopName(string n)
         {
             n = n.ToLowerInvariant();
-            return n.Contains("idle") || n.Contains("walk") || n.Contains("run") || n.Contains("fly") || n.Contains("climb") || n.Contains("dance") || n.Contains("clap") || n.Contains("wave");
+            return n.Contains("idle") || n.Contains("walk") || n.Contains("run") || n.Contains("fly") || n.Contains("climb") || n.Contains("dance") || n.Contains("clap") || n.Contains("wave")
+                || n.Contains("pull") || n.Contains("release") || n.Contains("reel") || n.Contains("tie") || n.Contains("tug");
         }
 
         /// <summary>Palm centre of a hand (a bit past the wrist bone), where the line or spool is held.</summary>
@@ -279,6 +349,7 @@ namespace Kitefall.Match
 
         public void Destroy()
         {
+            if (_graph.IsValid()) _graph.Destroy();
             if (Root != null) Object.Destroy(Root.gameObject);
             Root = null;
             _instance = null;

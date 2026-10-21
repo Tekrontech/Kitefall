@@ -10,6 +10,7 @@ namespace Kitefall.Services
 #if UNITY_ANDROID && !UNITY_EDITOR
         private AndroidJavaObject _vibrator;
         private int _sdk;
+        private bool _warned;
 #endif
 
         public HapticsService(SettingsService settings)
@@ -55,7 +56,7 @@ namespace Kitefall.Services
                 }
                 else _vibrator.Call("vibrate", ms);
             }
-            catch (System.Exception) { }
+            catch (System.Exception e) { if (!_warned) { _warned = true; Debug.LogWarning("[Haptics] Vibration failed, haptics off for this session: " + e.Message); } }
 #elif UNITY_IOS && !UNITY_EDITOR
             if (ms >= 40) Handheld.Vibrate();
 #endif

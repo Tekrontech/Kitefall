@@ -186,7 +186,8 @@ namespace Kitefall.Online
                 PartyMember m = null;
                 if (pl.Properties != null && pl.Properties.TryGetValue(PropLook, out PlayerProperty look) && !string.IsNullOrEmpty(look.Value))
                 {
-                    try { m = JsonUtility.FromJson<PartyMember>(look.Value); } catch { m = null; }
+                    try { m = JsonUtility.FromJson<PartyMember>(look.Value); }
+                    catch (Exception e) { m = null; Debug.LogWarning("[Party] Member look unreadable, showing a default card: " + e.Message); }
                 }
                 m = m ?? new PartyMember { playerId = pl.Id, name = "Player" };
                 m.playerId = pl.Id;

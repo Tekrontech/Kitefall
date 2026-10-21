@@ -39,6 +39,7 @@ namespace Kitefall.Match
             string clip = "idle";
             float speed = 1f;
             bool ik = false;
+            float ikWeight = 1f;
             float look = 0f;
             Vector3 lookAt = transform.position + transform.forward * 10f + Vector3.up * 3f;
 
@@ -46,16 +47,27 @@ namespace Kitefall.Match
             {
                 case FlyerState.Flying:
                 case FlyerState.PackingUp:
-                    clip = "fly_hold";
+                {
+                    // Kite body language: pull / release / reel clips when the artist supplied them, else fly_hold + IK.
+                    string action = f.State == FlyerState.PackingUp || f.Action == LineAction.Reel ? "reel"
+                        : f.Action == LineAction.Pull ? "pull" : f.Action == LineAction.Dheel ? "release" : null;
+                    clip = action != null && _model.HasClip(action) ? action : "fly_hold";
                     ik = true;
+                    if (clip != "fly_hold") ikWeight = 0.6f; // let the clip move the arms; the hands stay near the line
                     if (f.KiteValid) { lookAt = f.KitePosition; look = 1f; }
                     break;
+                }
                 case FlyerState.Prep:
+                {
                     bool kiteUp = f.PrepStep == PrepStep.Tunke || f.PrepStep == PrepStep.Climb || f.PrepStep == PrepStep.Untangle;
-                    clip = kiteUp ? "fly_hold" : "idle";
+                    string step = f.PrepStep == PrepStep.TieKanni || f.PrepStep == PrepStep.TieLine ? "tie"
+                        : f.PrepStep == PrepStep.Toss ? "toss" : f.PrepStep == PrepStep.Tunke ? "tug" : null;
+                    clip = step != null && _model.HasClip(step) ? step : kiteUp ? "fly_hold" : "idle";
                     ik = true;
+                    if (clip == step) ikWeight = 0.5f;
                     if (kiteUp && _prepKite != null) { lookAt = _prepKite.position; look = 1f; }
                     break;
+                }
                 case FlyerState.Grounded:
                     clip = p.WalkSpeed > 0.15f ? (p.Run ? "run" : "walk") : "idle";
                     ik = p.WalkSpeed <= 0.15f;
@@ -85,8 +97,8 @@ namespace Kitefall.Match
 
             _model.Play(clip);
             _model.Tick(dt, speed,
-                Rig.HandL.position, ik ? 1f : 0f, transform.TransformDirection(_poleL),
-                Rig.HandR.position, ik ? 1f : 0f, transform.TransformDirection(_poleR),
+                Rig.HandL.position, ik ? ikWeight : 0f, transform.TransformDirection(_poleL),
+                Rig.HandR.position, ik ? ikWeight : 0f, transform.TransformDirection(_poleR),
                 lookAt, look);
 
             // The line and the charkhi follow the model's real hands.
