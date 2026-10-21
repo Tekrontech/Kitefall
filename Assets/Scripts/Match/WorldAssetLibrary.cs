@@ -93,7 +93,9 @@ namespace Kitefall.Match
             Box,
         }
 
-        private static readonly Dictionary<int, Material> Fixed = new Dictionary<int, Material>();
+        // Keyed by the original material itself (Unity 6.6 made GetInstanceID obsolete); null = a renderer with no material.
+        private static readonly Dictionary<Material, Material> Fixed = new Dictionary<Material, Material>();
+        private static Material _fixedNone;
 
         /// <summary>
         /// Places a copy of the named model so its renderer bounds' bottom-centre sits at <paramref name="bottomCentre"/>, turned by
@@ -183,13 +185,14 @@ namespace Kitefall.Match
             {
                 Material m = mats[i];
                 if (m != null && m.shader != null && m.shader.isSupported && !(Materials.Urp && m.shader.name == "Standard")) continue;
-                int key = m != null ? m.GetInstanceID() : 0;
-                if (!Fixed.TryGetValue(key, out Material repl) || repl == null)
+                Material repl = m != null ? (Fixed.TryGetValue(m, out Material known) ? known : null) : _fixedNone;
+                if (repl == null)
                 {
                     Color c = m != null && m.HasProperty("_Color") ? m.GetColor("_Color") : m != null && m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : Color.white;
                     Texture tex = m != null && m.HasProperty("_MainTex") ? m.GetTexture("_MainTex") : m != null && m.HasProperty("_BaseMap") ? m.GetTexture("_BaseMap") : null;
-                    repl = Materials.Lit(c, 0.1f, tex, "world_" + (m != null ? m.name + key : "none"));
-                    Fixed[key] = repl;
+                    repl = Materials.Lit(c, 0.1f, tex, "world_" + (m != null ? m.name + "_" + Fixed.Count : "none"));
+                    if (m != null) Fixed[m] = repl;
+                    else _fixedNone = repl;
                 }
                 mats[i] = repl;
                 changed = true;
