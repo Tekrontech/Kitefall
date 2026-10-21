@@ -17,7 +17,8 @@ namespace Kitefall.UI.Screens
         private static readonly GameMode[] Modes = { GameMode.QuickDuel, GameMode.RankedDuel, GameMode.FreeForAll, GameMode.PrivateRoom, GameMode.TeamBattle, GameMode.LastKiteFlying };
         private static GameMode _mode = GameMode.QuickDuel;
         private static bool _modeRestored;
-        private static ArenaType _arena = KiteCalendar.Current(DateTime.Now)?.Arena ?? ArenaType.MediterraneanHarbour;
+        // Scope freeze (R7): a festival arena outside the launch set falls back to a launch arena.
+        private static ArenaType _arena = LaunchContent.ArenaOrDefault(KiteCalendar.Current(DateTime.Now)?.Arena ?? LaunchContent.Arenas[0]);
 
         // Layout follows the owner's home-screen design (1920×1080 reference): profile top-left, Settings/Inbox top-centre,
         // currencies top-right, glossy menu column left, Daily Missions right, mode grid + arena picker + PLAY bottom-right,
@@ -63,8 +64,21 @@ namespace Kitefall.UI.Screens
             BuildPlayButton();
             BuildLoadoutBar(p);
             BuildFestival();
+            BuildDevPipelineWarning();
             if (intro)
                 foreach (var (c, offset, delay) in _intro) UiMotion.SlideIn(c, offset, delay);
+        }
+
+        /// <summary>Developer-only red banner when URP is not the active render pipeline (Editor / development builds only).</summary>
+        private void BuildDevPipelineWarning()
+        {
+            if (!Debug.isDebugBuild) return;
+            string problem = KitefallGraphics.PipelineProblem;
+            if (problem == null) return;
+            Image band = UiKit.Image(Root, new Color(0.6f, 0.05f, 0.05f, 0.92f), Sprites.White, "DevPipelineWarning");
+            band.rectTransform.Band(new Vector2(0.23f, 0.64f), new Vector2(0.77f, 0.84f), Vector2.zero, Vector2.zero);
+            UiKit.Label(band.transform, "DEV: Render pipeline is not URP – see the Console error.\n<size=17>" + problem + "</size>", 20, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold)
+                .rectTransform.Stretch(12, 4, 12, 4);
         }
 
         private bool _built, _playingIntro;
@@ -346,7 +360,8 @@ namespace Kitefall.UI.Screens
             ArenaData data = Game.Db != null ? Game.Db.Arena(_arena) : null;
             Image shade = UiKit.Image(thumb.transform, new Color(0, 0, 0, 0.35f), Sprites.VerticalFade, "Shade");
             shade.rectTransform.Stretch();
-            Text t = UiKit.Label(thumb.transform, ArenaLayout.DisplayName(_arena) + (data != null && !data.availableAtLaunch ? " *" : "") +
+            string soon = LaunchContent.IsLaunchArena(_arena) ? "" : $"  <size=18><color=#FFC93C>({LaunchContent.ComingSoonLabel})</color></size>";
+            Text t = UiKit.Label(thumb.transform, ArenaLayout.DisplayName(_arena) + (data != null && !data.availableAtLaunch ? " *" : "") + soon +
                                                   $"\n<size=17><color=#FFFFFFCC>{ArenaLayout.Region(_arena)}</color></size>", 26, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
             t.rectTransform.Stretch(6, 2, 6, 2);
         }
@@ -422,14 +437,15 @@ namespace Kitefall.UI.Screens
 
         private static void CycleArena(int dir)
         {
-            var values = (ArenaType[])Enum.GetValues(typeof(ArenaType));
-            int i = Array.IndexOf(values, _arena);
-            _arena = values[(i + dir + values.Length) % values.Length];
+            var values = LaunchContent.PickerArenas(); // launch arenas (+ locked "Coming soon" ones when enabled)
+            int i = values.IndexOf(_arena);
+            _arena = values[(i + dir + values.Count) % values.Count];
             Game.UI.RefreshCurrent();
         }
 
         private void Play()
         {
+            if (!LaunchContent.IsLaunchArena(_arena) && _mode != GameMode.LastKiteFlying) { UI.Toast(LaunchContent.ComingSoonLabel, Theme.Warn); return; }
             if (_mode == GameMode.PrivateRoom) { UI.Push(new PrivateRoomScreen(_arena)); return; }
             Game.Flow.StartMatch(new MatchRequest { Mode = _mode, Arena = _arena });
         }

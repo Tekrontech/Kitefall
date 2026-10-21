@@ -9,6 +9,8 @@ namespace Kitefall.Match
     /// <summary>
     /// Turns a deterministic Core.ArenaLayout into scene objects (placeholder art, original).
     /// Nearby roofs get detail; distant city is silhouettes; the sky is ~70 % of the screen (spec 15).
+    /// Artist models from Assets/Art/World replace the generated houses / props by name (<see cref="WorldAssetLibrary"/>);
+    /// arenas without a town get soft hills, ridges or tree lines in the haze instead of boxes.
     /// </summary>
     public static class ArenaBuilder
     {
@@ -69,6 +71,12 @@ namespace Kitefall.Match
             {
                 switch (b.Kind)
                 {
+                    case BlockKind.Tree when b.Variant == 1 && WorldAssetLibrary.Has(WorldAssetLibrary.PalmTree):
+                    case BlockKind.Tree when b.Variant != 1 && WorldAssetLibrary.Has(WorldAssetLibrary.Tree):
+                        WorldAssetLibrary.Place(b.Variant == 1 ? WorldAssetLibrary.PalmTree : WorldAssetLibrary.Tree, root.transform,
+                            new Vector3(b.Center.X, b.Min.Y, b.Center.Z), Quaternion.Euler(0f, (b.Center.X * 37f + b.Center.Z * 11f) % 360f, 0f),
+                            new Vector3(0f, b.Size.Y, 0f), WorldAssetLibrary.Fit.Uniform);
+                        break;
                     case BlockKind.Tree when b.Variant == 1:
                     {
                         // Palm: tall thin trunk, flat fan of leaves.
@@ -100,10 +108,14 @@ namespace Kitefall.Match
                     }
                     case BlockKind.Pole:
                     {
-                        GameObject pole = Prim(PrimitiveType.Cylinder, root.transform, "Pole");
-                        pole.transform.position = ToUnity(b.Center);
-                        pole.transform.localScale = new Vector3(0.35f, b.Size.Y * 0.5f, 0.35f);
-                        pole.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(new Color(0.25f, 0.25f, 0.28f));
+                        if (WorldAssetLibrary.Place(WorldAssetLibrary.CablePole, root.transform, new Vector3(b.Center.X, b.Min.Y, b.Center.Z), Quaternion.identity,
+                                new Vector3(0f, b.Size.Y, 0f), WorldAssetLibrary.Fit.Uniform) == null)
+                        {
+                            GameObject pole = Prim(PrimitiveType.Cylinder, root.transform, "Pole");
+                            pole.transform.position = ToUnity(b.Center);
+                            pole.transform.localScale = new Vector3(0.35f, b.Size.Y * 0.5f, 0.35f);
+                            pole.GetComponent<MeshRenderer>().sharedMaterial = Materials.Lit(new Color(0.25f, 0.25f, 0.28f));
+                        }
                         Vector3 top = new Vector3(b.Center.X, b.Max.Y, b.Center.Z);
                         if (hasPole) Cable(root.transform, lastPole, top);
                         lastPole = top;
@@ -124,6 +136,10 @@ namespace Kitefall.Match
                         }
                         break;
                     }
+                    case BlockKind.Stall when WorldAssetLibrary.Has(WorldAssetLibrary.MarketStall):
+                        WorldAssetLibrary.Place(WorldAssetLibrary.MarketStall, root.transform, new Vector3(b.Center.X, b.Min.Y, b.Center.Z), Quaternion.identity,
+                            ToUnity(b.Size), WorldAssetLibrary.Fit.Box);
+                        break;
                     default:
                     {
                         GameObject box = Prim(PrimitiveType.Cube, root.transform, b.Kind.ToString());
@@ -151,26 +167,14 @@ namespace Kitefall.Match
             CityFiller.Build(root.transform, layout, look, houses, far);
             bool town = root.transform.Find("Town") != null;
 
-            // ---- Distant silhouettes (arenas without a town: fields, cliffs, mountains, islands)
-            var silRng = new DeterministicRandom(layout.Seed + 9);
-            Material farMat = Materials.Lit(far, 0f);
-            for (int i = 0; i < (town ? 0 : 56); i++)
-            {
-                float a = i / 56f * Mathf.PI * 2f;
-                float d = silRng.Range(700f, 1000f);
-                float h = layout.Type == ArenaType.MountainValley ? silRng.Range(120f, 320f) : silRng.Range(20f, 70f);
-                float w = silRng.Range(40f, 90f);
-                GameObject s = Prim(PrimitiveType.Cube, root.transform, "Far");
-                s.transform.position = new Vector3(Mathf.Sin(a) * d, h * 0.5f, 300f + Mathf.Cos(a) * d);
-                s.transform.localScale = new Vector3(w, h, w);
-                MeshRenderer mr = s.GetComponent<MeshRenderer>();
-                mr.sharedMaterial = farMat;
-                mr.shadowCastingMode = ShadowCastingMode.Off;
-            }
+            // ---- Arenas without a town (fields, cliffs, mountains, islands): soft hills / ridges / tree lines lost in the haze.
+            if (!town) Landscape(root.transform, layout, ground, far);
 
             if (layout.Roofs != null) BuildRoofs(layout, root.transform);
 
             SetupSky(timeOfDay01, far);
+            // Islands: nothing on the horizon but sea – a closer fog hides the edge of the water plane.
+            if (layout.Type == ArenaType.StormArchipelago) RenderSettings.fogEndDistance = 900f;
             // Everything here is static: combine for static batching (upgrade 12: ≤ 150 draw calls on Medium).
             StaticBatchingUtility.Combine(root);
             return root;
@@ -226,7 +230,8 @@ namespace Kitefall.Match
                     Vector3 a = c + new Vector3(-r.SizeX * 0.6f, 4.2f, -r.SizeZ * 0.3f), b = c + new Vector3(r.SizeX * 0.6f, 4.6f, r.SizeZ * 0.4f);
                     Cable(root, a, b);
                     Cable(root, a + Vector3.up * 0.4f, b + Vector3.up * 0.3f);
-                    MeshKit.Part(root, "CablePole", MeshKit.Cached("cablepole", () => MeshKit.Cylinder(0.12f, 5f, 8)), Materials.Lit(new Color(0.3f, 0.3f, 0.32f), 0.4f), a - Vector3.up * 2.2f);
+                    if (WorldAssetLibrary.Place(WorldAssetLibrary.CablePole, root, a - Vector3.up * 4.7f, Quaternion.identity, new Vector3(0f, 5f, 0f), WorldAssetLibrary.Fit.Uniform) == null)
+                        MeshKit.Part(root, "CablePole", MeshKit.Cached("cablepole", () => MeshKit.Cylinder(0.12f, 5f, 8)), Materials.Lit(new Color(0.3f, 0.3f, 0.32f), 0.4f), a - Vector3.up * 2.2f);
                 }
             }
             foreach (RoofLink link in g.Links) PropFactory.Link(root, link, g);
@@ -278,10 +283,96 @@ namespace Kitefall.Match
 
         private static void Wall(Transform parent, Vector3 pos, Vector3 scale, Material m)
         {
+            bool alongX = scale.x >= scale.z;
+            if (PropFactory.ParapetModel(parent, pos - Vector3.up * scale.y * 0.5f, alongX ? Vector3.right : Vector3.forward,
+                    alongX ? scale.x : scale.z, scale.y, alongX ? scale.z : scale.x) != null) return;
             GameObject w = Prim(PrimitiveType.Cube, parent, "Parapet");
             w.transform.position = pos;
             w.transform.localScale = scale;
             w.GetComponent<MeshRenderer>().sharedMaterial = m;
+        }
+
+        // ---- Landscape for arenas without a town (audit D1: replaces the 56 grey cube silhouettes) ----------------------
+
+        private static void Landscape(Transform parent, ArenaLayout layout, Color ground, Color far)
+        {
+            var root = new GameObject("Landscape").transform;
+            root.SetParent(parent, false);
+            var centre = new Vector2(0f, 300f);
+            int seed = layout.Seed + 9;
+            Color grass = Color.Lerp(ground, new Color(0.36f, 0.5f, 0.3f), 0.5f);
+            Color rock = new Color(0.5f, 0.5f, 0.52f);
+            Color leaves = new Color(0.2f, 0.36f, 0.22f);
+            switch (layout.Type)
+            {
+                case ArenaType.StormArchipelago:
+                    return; // open sea all round, the fog does the rest
+                case ArenaType.MountainValley:
+                    Ridge(root, "RidgeNear", centre, 620f, 260f, 70f, 190f, 0.25f, seed, Color.Lerp(Color.Lerp(grass, rock, 0.5f), far, 0.35f));
+                    Ridge(root, "RidgeFar", centre, 920f, 380f, 170f, 360f, 0.15f, seed + 1, Color.Lerp(rock, far, 0.65f));
+                    break;
+                case ArenaType.CoastalCliffs:
+                    Ridge(root, "Hills", centre, 560f, 220f, 14f, 45f, 0.2f, seed, Color.Lerp(grass, far, 0.35f));
+                    Ridge(root, "Ridge", centre, 860f, 320f, 45f, 120f, 0.2f, seed + 1, Color.Lerp(Color.Lerp(grass, rock, 0.4f), far, 0.6f));
+                    break;
+                default: // open fields (Royal Field) and anything new: a tree line, then gentle hills
+                    Ridge(root, "TreeLine", centre, 430f, 40f, 7f, 15f, 1f, seed, Color.Lerp(leaves, far, 0.25f));
+                    Ridge(root, "Hills", centre, 780f, 280f, 18f, 65f, 0.15f, seed + 1, Color.Lerp(grass, far, 0.55f));
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// One smooth ring of terrain round <paramref name="centre"/>: each slice rises from the front foot to a crest and falls
+        /// away behind it. Heights wander with a few slow waves (+ fast bumps when <paramref name="lumpy"/> is high – tree crowns).
+        /// A single small mesh (~800 vertices), no shadows, one material.
+        /// </summary>
+        private static void Ridge(Transform parent, string name, Vector2 centre, float radius, float depth, float minH, float maxH, float lumpy, int seed, Color color)
+        {
+            const int seg = 144, rows = 6;
+            var rng = new DeterministicRandom(seed);
+            float[] freq = { 2f, 3f, 5f, 8f, 31f, 57f };
+            float[] amp = { 1f, 0.7f, 0.45f, 0.3f, lumpy * 0.5f, lumpy * 0.35f };
+            var phase = new float[freq.Length];
+            for (int k = 0; k < phase.Length; k++) phase[k] = rng.Range(0f, Mathf.PI * 2f);
+            float ampSum = 0f;
+            foreach (float a in amp) ampSum += a;
+            float wobble = rng.Range(0f, Mathf.PI * 2f);
+
+            var v = new System.Collections.Generic.List<Vector3>();
+            var uv = new System.Collections.Generic.List<Vector2>();
+            var t = new System.Collections.Generic.List<int>();
+            for (int i = 0; i <= seg; i++)
+            {
+                float a = i / (float)seg * Mathf.PI * 2f;
+                float n = 0f;
+                for (int k = 0; k < freq.Length; k++) n += amp[k] * (0.5f + 0.5f * Mathf.Sin(freq[k] * a + phase[k]));
+                float h = Mathf.Lerp(minH, maxH, Mathf.Pow(n / ampSum, 1.4f));
+                float r0 = radius + depth * 0.25f * Mathf.Sin(3f * a + wobble);
+                for (int j = 0; j <= rows; j++)
+                {
+                    float f = j / (float)rows;
+                    float r = r0 + depth * (f - 0.5f);
+                    // Crest a little in front of the middle, rounded shoulders, sunk 1 m so the foot never floats.
+                    float profile = Mathf.Pow(Mathf.Sin(Mathf.PI * Mathf.Pow(f, 0.8f)), 1.2f);
+                    v.Add(new Vector3(centre.x + Mathf.Sin(a) * r, h * profile - 1f, centre.y + Mathf.Cos(a) * r));
+                    uv.Add(new Vector2(i / (float)seg, f));
+                }
+            }
+            int stride = rows + 1;
+            for (int i = 0; i < seg; i++)
+                for (int j = 0; j < rows; j++)
+                {
+                    int p00 = i * stride + j, p01 = p00 + 1, p10 = p00 + stride, p11 = p10 + 1;
+                    t.Add(p00); t.Add(p01); t.Add(p10);
+                    t.Add(p10); t.Add(p01); t.Add(p11);
+                }
+            Mesh mesh = MeshKit.Finish(v, uv, t);
+            mesh.name = "landscape_" + name;
+            Transform part = MeshKit.Part(parent, name, mesh, Materials.Lit(color, 0f, null, "landscape" + ColorUtility.ToHtmlStringRGB(color)));
+            MeshRenderer mr = part.GetComponent<MeshRenderer>();
+            mr.shadowCastingMode = ShadowCastingMode.Off;
+            mr.receiveShadows = false;
         }
 
         private static void Cable(Transform parent, Vector3 a, Vector3 b)

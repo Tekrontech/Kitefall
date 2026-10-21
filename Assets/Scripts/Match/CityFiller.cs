@@ -11,10 +11,15 @@ namespace Kitefall.Match
     /// narrow alleys, roof parapets, water tanks and stair huts, fading into the haze. Visual only – the server never sees it,
     /// and it keeps clear of the flyers' roofs, the sea / river and the low airspace right downwind of the launch roofs.
     /// Everything is merged into a few big meshes (one per material and distance band) so it stays cheap to draw.
+    /// When artist houses exist (house_01…house_08 in Assets/Art/World, see <see cref="WorldAssetLibrary"/>) the near band uses
+    /// them instead – capped at a few hundred instances – and the far band stays merged generated meshes. The arena root is
+    /// static-batched afterwards (ArenaBuilder).
     /// </summary>
     public static class CityFiller
     {
         private const float Cell = 18f, Alley = 3f, Floor = 3f;
+        /// <summary>Most artist models (houses + their roof props) placed in the near band; the rest stay generated.</summary>
+        public const int MaxNearModels = 300, MaxNearModelsMobile = 180;
 
         private sealed class Bucket
         {
@@ -103,6 +108,13 @@ namespace Kitefall.Match
             var rng = new System.Random(layout.Seed * 7919 + (int)layout.Type);
             float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
 
+            // Artist houses / props for the near band (instances, capped); created under the Town root below.
+            var root = new GameObject("Town").transform;
+            root.SetParent(parent, false);
+            int modelBudget = WorldAssetLibrary.HouseCount > 0 ? (mobile ? MaxNearModelsMobile : MaxNearModels) : 0;
+            GameObject tankModel = WorldAssetLibrary.Get(WorldAssetLibrary.WaterTank);
+            GameObject hutModel = WorldAssetLibrary.Get(WorldAssetLibrary.Stairwell);
+
             for (float cx = -radius; cx <= radius; cx += Cell)
                 for (float cz = -radius; cz <= radius; cz += Cell)
                 {
@@ -134,8 +146,15 @@ namespace Kitefall.Match
                         bool near = d < nearBand;
                         Vector3 min = new Vector3(rect.x0, 0f, rect.z0), max = new Vector3(rect.x1, h, rect.z1);
                         float uOff = (float)rng.Next(4) * 3f;
-                        AddWalls(near ? facadeNear[ci] : facadeFar[ci], min, max, 12f, 12f, uOff);
-                        AddTop(near ? roofNear : roofFar, min, max, 8f);
+                        int variant = rng.Next(1000); // which house model (drawn for every lot, so lots further on do not shift)
+                        bool modelled = near && modelBudget > 0 &&
+                                        PropFactory.PlaceHouse(WorldAssetLibrary.HouseFor(variant), root, new Vector3((min.x + max.x) * 0.5f, 0f, (min.z + max.z) * 0.5f), max - min, variant) != null;
+                        if (modelled) modelBudget--;
+                        else
+                        {
+                            AddWalls(near ? facadeNear[ci] : facadeFar[ci], min, max, 12f, 12f, uOff);
+                            AddTop(near ? roofNear : roofFar, min, max, 8f);
+                        }
                         if (!near) continue;
 
                         // Roof life: parapet lip, water tank, stair hut.
@@ -148,14 +167,28 @@ namespace Kitefall.Match
                         if (rng.NextDouble() < 0.45)
                         {
                             Vector3 p = new Vector3(R(min.x + 1.5f, max.x - 1.5f), h, R(min.z + 1.5f, max.z - 1.5f));
-                            AddCylinder(rng.NextDouble() < 0.6 ? tankBlue : tankDark, p + Vector3.up * 0.9f, R(0.55f, 0.85f), R(1.1f, 1.6f), 10);
-                            AddBox(tankDark, p + new Vector3(-0.6f, 0f, -0.6f), p + new Vector3(0.6f, 0.9f, 0.6f), 4f);
+                            bool blue = rng.NextDouble() < 0.6;
+                            float tr0 = R(0.55f, 0.85f), th = R(1.1f, 1.6f);
+                            if (tankModel != null && modelBudget > 0 && WorldAssetLibrary.Place(tankModel, "WaterTank", root, p, Quaternion.Euler(0f, R(0f, 360f), 0f),
+                                    new Vector3(0f, th + 0.9f, 0f), WorldAssetLibrary.Fit.Uniform) != null)
+                                modelBudget--;
+                            else
+                            {
+                                AddCylinder(blue ? tankBlue : tankDark, p + Vector3.up * 0.9f, tr0, th, 10);
+                                AddBox(tankDark, p + new Vector3(-0.6f, 0f, -0.6f), p + new Vector3(0.6f, 0.9f, 0.6f), 4f);
+                            }
                         }
                         if (rng.NextDouble() < 0.3)
                         {
                             Vector3 p = new Vector3(rng.NextDouble() < 0.5 ? min.x + 0.4f : max.x - 2.6f, h, rng.NextDouble() < 0.5 ? min.z + 0.4f : max.z - 2.9f);
-                            AddBox(tr, p, p + new Vector3(2.2f, 2.4f, 2.5f), 4f);
-                            AddTop(roofNear, p, p + new Vector3(2.2f, 2.4f, 2.5f), 8f);
+                            if (hutModel != null && modelBudget > 0 && WorldAssetLibrary.Place(hutModel, "StairHut", root, p + new Vector3(1.1f, 0f, 1.25f), Quaternion.identity,
+                                    new Vector3(0f, 2.5f, 0f), WorldAssetLibrary.Fit.Uniform) != null)
+                                modelBudget--;
+                            else
+                            {
+                                AddBox(tr, p, p + new Vector3(2.2f, 2.4f, 2.5f), 4f);
+                                AddTop(roofNear, p, p + new Vector3(2.2f, 2.4f, 2.5f), 8f);
+                            }
                         }
                     }
                 }
@@ -172,8 +205,6 @@ namespace Kitefall.Match
                 AddTop(silhouette, new Vector3(c.x - w * 0.5f, 0f, c.z - dep * 0.5f), new Vector3(c.x + w * 0.5f, h, c.z + dep * 0.5f), 40f);
             }
 
-            var root = new GameObject("Town").transform;
-            root.SetParent(parent, false);
             var all = new List<Bucket>();
             all.AddRange(facadeNear); all.AddRange(facadeFar); all.AddRange(trim);
             all.Add(roofNear); all.Add(roofFar); all.Add(tankBlue); all.Add(tankDark); all.Add(silhouette);

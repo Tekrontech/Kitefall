@@ -5,7 +5,8 @@ namespace Kitefall.Services
 {
     /// <summary>
     /// Builds every sound in code – original, tiny install size (spec 0: ≤ 150 MB, rule 5: original assets).
-    /// Replace any clip with a recorded one later by assigning it in AudioService.
+    /// These are the fallbacks: a recorded file in Assets/Resources/KitefallAudio/&lt;name&gt; replaces a clip by itself
+    /// (AudioService loads it first – names and specs in docs/AUDIO_LIST.md).
     /// </summary>
     public static class ProceduralAudio
     {
@@ -98,6 +99,9 @@ namespace Kitefall.Services
 
         public static AudioClip Click() => Make("click", 0.06f, (t, i) => Mathf.Sin(2f * Mathf.PI * 1400f * t) * Mathf.Exp(-t * 80f) * 0.5f);
 
+        /// <summary>Two rising soft plucks – a "yes / start" button.</summary>
+        public static AudioClip Confirm() => Make("confirm", 0.35f, (t, i) => (Pluck(659.25f, t) + Pluck(987.77f, t - 0.08f)) * 0.45f);
+
         public static AudioClip Spark()
         {
             var n = new Noise(6);
@@ -119,6 +123,13 @@ namespace Kitefall.Services
         {
             var n = new Noise(7);
             return Make("crowd", 2f, (t, i) => n.Low(0.2f) * (1f - t / 2f) * 1.5f * (0.6f + 0.4f * Mathf.Sin(t * 13f)));
+        }
+
+        /// <summary>A short rising-falling murmur, the crowd reacting to lines crossing.</summary>
+        public static AudioClip CrowdOoh()
+        {
+            var n = new Noise(8);
+            return Make("crowd_ooh", 1.4f, (t, i) => n.Low(0.12f) * Mathf.Sin(Mathf.PI * t / 1.4f) * 1.6f * (0.8f + 0.2f * Mathf.Sin(t * 7f)));
         }
 
         private static float Pluck(float freq, float t)

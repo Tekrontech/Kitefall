@@ -7,7 +7,10 @@ namespace Kitefall.Match
     /// <summary>
     /// Modelled rooftop world (upgrade spec 0.1, 10.1): houses with windows and doors, parapets with gaps where links attach,
     /// stairwell huts, water tanks, charpais, clothes lines, plant pots, dish antennas, flags, and the links between roofs –
-    /// planks, rope bridges, ladders, stairs and jump gaps. All procedural, original geometry with generated textures.
+    /// planks, rope bridges, ladders, stairs and jump gaps. All procedural, original geometry with generated textures –
+    /// unless an artist model with the matching name is in Assets/Art/World (see <see cref="WorldAssetLibrary"/> and
+    /// docs/WORLD_ASSET_LIST.md): then that model is placed (bottom-centre, fitted to the same size) and the generated
+    /// version is the fallback.
     /// </summary>
     public static class PropFactory
     {
@@ -19,6 +22,12 @@ namespace Kitefall.Match
         /// <summary>A house block: textured walls (plaster or brick), window rows, a door, a roof slab and a coping trim.</summary>
         public static GameObject House(Transform parent, ArenaBlock b, Color wall, int variant, bool detailed)
         {
+            GameObject model = WorldAssetLibrary.HouseFor(variant);
+            if (model != null)
+            {
+                Transform placed = PlaceHouse(model, parent, new Vector3(b.Center.X, b.Min.Y, b.Center.Z), new Vector3(b.Size.X, b.Size.Y, b.Size.Z), variant);
+                if (placed != null) return placed.gameObject;
+            }
             var root = new GameObject("House");
             root.transform.SetParent(parent, false);
             Vector3 c = new Vector3(b.Center.X, b.Center.Y, b.Center.Z);
@@ -59,6 +68,23 @@ namespace Kitefall.Match
             MeshKit.Part(root.transform, "Awning", MeshKit.Box(new Vector3(1.8f, 0.08f, 0.8f)), shutter, new Vector3(c.x + size.x * 0.25f, b.Min.Y + 2.4f, b.Min.Z - 0.4f), Quaternion.Euler(12f, 0f, 0f));
             return root;
         }
+
+        /// <summary>
+        /// An artist house fitted exactly to a block (footprint and height – the flat roof top lands on the block top, where
+        /// players may stand). Turned 90° when that matches the block's shape better, and 180° on odd variants for variety.
+        /// </summary>
+        public static Transform PlaceHouse(GameObject model, Transform parent, Vector3 bottomCentre, Vector3 size, int variant)
+        {
+            Vector3 own = WorldAssetLibrary.SizeOf(model);
+            bool turn = own.x > 0f && own.z > 0f && (own.x > own.z) != (size.x > size.z) && Mathf.Abs(own.x - own.z) > 0.15f * Mathf.Max(own.x, own.z);
+            float yaw = (turn ? 90f : 0f) + (Mathf.Abs(variant) % 2 == 1 ? 180f : 0f);
+            Vector3 fit = turn ? new Vector3(size.z, size.y, size.x) : size;
+            return WorldAssetLibrary.Place(model, "House", parent, bottomCentre, Quaternion.Euler(0f, yaw, 0f), fit, WorldAssetLibrary.Fit.Box);
+        }
+
+        /// <summary>A prop model fitted to <paramref name="height"/> (uniform scale), or null when there is no model.</summary>
+        private static Transform Model(string id, Transform parent, Vector3 bottomCentre, float yaw, float height) =>
+            WorldAssetLibrary.Place(id, parent, bottomCentre, Quaternion.Euler(0f, yaw, 0f), new Vector3(0f, height, 0f), WorldAssetLibrary.Fit.Uniform);
 
         private static void AddWindows(List<CombineInstance> glass, List<CombineInstance> frames, Vector3 center, Vector3 along, float width, DeterministicRandom rng, bool ground)
         {
@@ -141,9 +167,21 @@ namespace Kitefall.Match
         {
             if (b - a < 0.2f) return;
             Vector3 center = mid + along * ((a + b) * 0.5f);
+            if (ParapetModel(parent, center - Vector3.up * 0.45f, along, b - a, 0.9f, 0.22f) != null) return;
             Vector3 size = along == Vector3.right ? new Vector3(b - a, 0.9f, 0.22f) : new Vector3(0.22f, 0.9f, b - a);
             MeshKit.Part(parent, "Parapet", MeshKit.Box(size), m, center);
             MeshKit.Part(parent, "Coping", MeshKit.Box(size + new Vector3(along == Vector3.right ? 0f : 0.1f, -0.8f, along == Vector3.right ? 0.1f : 0f)), Materials.Lit(new Color(0.88f, 0.86f, 0.8f), 0.1f), center + Vector3.up * 0.5f);
+        }
+
+        /// <summary>
+        /// The roof_parapet model (one straight wall piece modelled along X) stretched to a wall segment; null without a model.
+        /// </summary>
+        public static Transform ParapetModel(Transform parent, Vector3 bottomCentre, Vector3 along, float length, float height, float thickness)
+        {
+            GameObject m = WorldAssetLibrary.Get(WorldAssetLibrary.RoofParapet);
+            if (m == null) return null;
+            Quaternion rot = Quaternion.FromToRotation(Vector3.right, new Vector3(along.x, 0f, along.z).normalized);
+            return WorldAssetLibrary.Place(m, "Parapet", parent, bottomCentre, rot, new Vector3(length, height, thickness), WorldAssetLibrary.Fit.Box);
         }
 
         /// <summary>Lived-in roof clutter: water tank, charpai, clothes line, pots, dish, stairwell hut (seeded).</summary>
@@ -163,6 +201,7 @@ namespace Kitefall.Match
 
         public static void WaterTank(Transform parent, Vector3 pos, int style)
         {
+            if (Model(WorldAssetLibrary.WaterTank, parent, pos, style * 120f, 2.6f) != null) return;
             Material tank = Materials.Lit(style == 0 ? new Color(0.12f, 0.12f, 0.13f) : style == 1 ? new Color(0.25f, 0.45f, 0.75f) : new Color(0.9f, 0.88f, 0.8f), 0.35f);
             Material steel = Materials.Lit(Metal, 0.6f);
             Transform t = new GameObject("WaterTank").transform;
@@ -177,6 +216,7 @@ namespace Kitefall.Match
 
         public static void StairHut(Transform parent, Vector3 pos, int variant)
         {
+            if (Model(WorldAssetLibrary.Stairwell, parent, pos, 0f, 2.55f) != null) return; // door faces −Z like the generated hut
             Material wall = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Plaster(Color.HSVToRGB((variant * 0.21f + 0.08f) % 1f, 0.18f, 0.88f)), "hut" + variant);
             Material door = Materials.Lit(Color.HSVToRGB((variant * 0.31f) % 1f, 0.5f, 0.55f), 0.2f);
             Transform t = new GameObject("StairHut").transform;
@@ -189,6 +229,8 @@ namespace Kitefall.Match
 
         public static void Charpai(Transform parent, Vector3 pos, float yaw)
         {
+            // Sized by its 2 m length (modelled along Z) – a low bed is easier to fit by length than by height.
+            if (WorldAssetLibrary.Place(WorldAssetLibrary.Charpai, parent, pos, Quaternion.Euler(0f, yaw, 0f), new Vector3(0f, 0f, 2f), WorldAssetLibrary.Fit.Uniform) != null) return;
             Material wood = Materials.Lit(Wood, 0.25f);
             Material weave = Materials.Lit(new Color(0.9f, 0.82f, 0.62f), 0.1f);
             Transform t = new GameObject("Charpai").transform;
@@ -204,6 +246,9 @@ namespace Kitefall.Match
 
         public static void ClothesLine(Transform parent, Vector3 a, Vector3 b, DeterministicRandom rng)
         {
+            Vector3 span = new Vector3(b.x - a.x, 0f, b.z - a.z);
+            if (span.sqrMagnitude > 0.01f && WorldAssetLibrary.Place(WorldAssetLibrary.ClothesLine, parent, (a + b) * 0.5f,
+                    Quaternion.FromToRotation(Vector3.right, span.normalized), new Vector3(span.magnitude, 0f, 0f), WorldAssetLibrary.Fit.Box) != null) return;
             a.y += 1.8f;
             b.y += 1.8f;
             Material pole = Materials.Lit(Metal, 0.5f);
@@ -224,12 +269,14 @@ namespace Kitefall.Match
 
         public static void PlantPot(Transform parent, Vector3 pos, DeterministicRandom rng)
         {
+            if (Model(WorldAssetLibrary.PlantPot, parent, pos, rng.Range(0f, 360f), 0.85f) != null) return;
             MeshKit.Part(parent, "Pot", MeshKit.Cached("pot", () => MeshKit.Cylinder(0.18f, 0.32f, 12, 0.24f)), Materials.Lit(new Color(0.72f, 0.38f, 0.22f), 0.15f), pos + Vector3.up * 0.16f);
             MeshKit.Part(parent, "Plant", MeshKit.Cached("plant", () => MeshKit.Ellipsoid(0.3f, 0.32f, 0.3f, 10, 7)), Materials.Lit(Color.HSVToRGB(rng.Range(0.25f, 0.38f), 0.6f, 0.55f), 0.1f), pos + Vector3.up * 0.55f);
         }
 
         public static void Dish(Transform parent, Vector3 pos, float yaw)
         {
+            if (Model(WorldAssetLibrary.DishAntenna, parent, pos, yaw, 1.3f) != null) return;
             Material white = Materials.Lit(new Color(0.92f, 0.92f, 0.9f), 0.4f);
             Transform t = new GameObject("Dish").transform;
             t.SetParent(parent, false);
@@ -241,6 +288,7 @@ namespace Kitefall.Match
 
         public static void Flag(Transform parent, Vector3 pos, Color color)
         {
+            if (Model(WorldAssetLibrary.FlagPole, parent, pos, 0f, 4f) != null) return;
             MeshKit.Part(parent, "FlagPole", MeshKit.Cached("flagpole", () => MeshKit.Cylinder(0.035f, 4f, 8)), Materials.Lit(new Color(0.85f, 0.85f, 0.85f), 0.5f), pos + Vector3.up * 2f);
             MeshKit.Part(parent, "Flag", MeshKit.Cached("flagcloth", () => MeshKit.Box(new Vector3(1.1f, 0.7f, 0.02f), new Vector3(0.55f, 0f, 0f))), Materials.Lit(color, 0.05f), pos + Vector3.up * 3.6f);
         }
@@ -265,11 +313,17 @@ namespace Kitefall.Match
                 {
                     Vector3 mid = (a + b) * 0.5f + Vector3.up * 0.06f;
                     float len = d.magnitude + 0.8f;
+                    // Plank model: modelled along Z, stretched to the gap (+ 0.4 m resting on each roof).
+                    if (WorldAssetLibrary.Place(WorldAssetLibrary.Plank, root, (a + b) * 0.5f + Vector3.up * 0.02f, Quaternion.LookRotation(d.normalized),
+                            new Vector3(0f, 0f, len), WorldAssetLibrary.Fit.Box) != null) break;
                     MeshKit.Part(root, "Plank", MeshKit.Box(new Vector3(0.55f, 0.08f, len)), wood, mid, Quaternion.LookRotation(d.normalized));
                     break;
                 }
                 case RoofLinkKind.RopeBridge:
                 {
+                    // Rope bridge model: straight and level along Z (deck at the bottom), stretched to the span.
+                    if (WorldAssetLibrary.Place(WorldAssetLibrary.RopeBridge, root, (a + b) * 0.5f, Quaternion.LookRotation(d.normalized),
+                            new Vector3(0f, 0f, d.magnitude), WorldAssetLibrary.Fit.Box) != null) break;
                     int slats = Mathf.Max(4, Mathf.RoundToInt(d.magnitude / 0.45f));
                     var left = new List<Vector3>();
                     var right = new List<Vector3>();
@@ -297,6 +351,17 @@ namespace Kitefall.Match
                     Vector3 top = high + Vector3.up * 0.9f;
                     Vector3 axis = top - bottom;
                     Quaternion lr = Quaternion.FromToRotation(Vector3.up, axis.normalized);
+                    GameObject ladder = WorldAssetLibrary.Get(WorldAssetLibrary.Ladder);
+                    if (ladder != null)
+                    {
+                        // Ladder model: upright along Y, rungs across X; leaned along the axis, stretched to its length.
+                        Vector3 flatDir = new Vector3(high.x - low.x, 0f, high.z - low.z);
+                        Vector3 face = Vector3.ProjectOnPlane(flatDir.sqrMagnitude > 1e-4f ? flatDir.normalized : Vector3.forward, axis.normalized);
+                        WorldAssetLibrary.Place(ladder, "Ladder", root, bottom, Quaternion.LookRotation(face.normalized, axis.normalized),
+                            new Vector3(0f, axis.magnitude, 0f), WorldAssetLibrary.Fit.Box);
+                        MeshKit.Part(root, "Walk", MeshKit.Box(new Vector3(0.6f, 0.06f, Vector3.Distance(low, bottom) + 0.4f)), wood, (low + bottom) * 0.5f + Vector3.up * 0.03f, rot);
+                        break;
+                    }
                     Vector3 side = Vector3.Cross(axis.normalized, Vector3.up).normalized * 0.25f;
                     foreach (float s in new[] { -1f, 1f })
                         MeshKit.Part(root, "Rail", MeshKit.Box(new Vector3(0.06f, axis.magnitude, 0.06f)), steel, (bottom + top) * 0.5f + side * s, lr);
@@ -314,6 +379,10 @@ namespace Kitefall.Match
                     int steps = Mathf.Max(4, Mathf.RoundToInt(Mathf.Abs(run.y) / 0.22f));
                     Material concrete = Materials.Lit(Color.white, 0.05f, ProceduralTextures.Concrete(new Color(0.75f, 0.72f, 0.68f)), "stairs");
                     Quaternion sr = Quaternion.LookRotation(new Vector3(run.x, 0f, run.z).normalized);
+                    Vector3 flatRun = new Vector3(run.x, 0f, run.z);
+                    // Stairs model: one flight rising towards +Z, fitted to the rise and run (rail included in the model).
+                    if (WorldAssetLibrary.Place(WorldAssetLibrary.Stairs, root, low + flatRun * 0.5f, sr, new Vector3(1.2f, Mathf.Abs(run.y), flatRun.magnitude),
+                            WorldAssetLibrary.Fit.Box) != null) break;
                     for (int i = 0; i < steps; i++)
                     {
                         Vector3 p = low + new Vector3(run.x, 0f, run.z) * ((i + 0.5f) / steps);
@@ -322,7 +391,16 @@ namespace Kitefall.Match
                     }
                     Vector3 rail = Vector3.Cross(Vector3.up, new Vector3(run.x, 0f, run.z).normalized) * 0.65f;
                     var pts = new List<Vector3> { low + rail + Vector3.up * 0.95f, high + rail + Vector3.up * 0.95f };
-                    MeshKit.Part(root, "Rail", MeshKit.Rope(pts, 0.03f), steel);
+                    GameObject railing = WorldAssetLibrary.Get(WorldAssetLibrary.Railing);
+                    if (railing != null)
+                    {
+                        // Railing model: a straight piece along X (posts up Y), tilted to follow the stairs.
+                        Vector3 dir = (high - low).normalized;
+                        Vector3 fwd = Vector3.Cross(dir, Vector3.up).normalized;
+                        WorldAssetLibrary.Place(railing, "Railing", root, (low + high) * 0.5f + rail, Quaternion.LookRotation(fwd, Vector3.Cross(fwd, dir)),
+                            new Vector3((high - low).magnitude, 0.95f, 0f), WorldAssetLibrary.Fit.Box);
+                    }
+                    else MeshKit.Part(root, "Rail", MeshKit.Rope(pts, 0.03f), steel);
                     break;
                 }
                 case RoofLinkKind.Jump:
