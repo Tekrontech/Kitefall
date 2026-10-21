@@ -89,7 +89,8 @@ namespace Kitefall.Match
                 catch (Exception ex)
                 {
                     // Safety fallback (upgrade W1): the old primitive flyer if the character cannot be built.
-                    Debug.LogWarning("[Kitefall] Character build failed, using fallback flyer: " + ex.Message);
+                    Debug.LogWarning($"[Kitefall] Character '{p.characterId}' could not be built – showing the simple fallback flyer instead. Reason: {ex.Message}");
+                    Debug.LogException(ex);
                     var fv = new GameObject("Flyer_" + i).AddComponent<FlyerView>();
                     fv.transform.SetParent(_world.transform, false);
                     fv.Init(anchor, team);
