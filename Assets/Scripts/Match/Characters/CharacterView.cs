@@ -43,6 +43,8 @@ namespace Kitefall.Match
         public Transform LineAnchor => Rig?.LineAnchor;
         public Transform HeadTop => _nameRoot;
         public bool IsLocal { get; private set; }
+        /// <summary>The colour of the ring under this flyer's feet (the HUD uses it for this flyer's kite marker).</summary>
+        public Color TeamColor { get; private set; } = Color.white;
         /// <summary>The ritual kite (before launch) – the camera follows it during tunke / climb.</summary>
         public Transform PrepKite => _prepKite;
 
@@ -82,6 +84,7 @@ namespace Kitefall.Match
         public void Init(CharacterBuilder.Look look, string displayName, Color teamColor, bool isLocal, bool showName)
         {
             IsLocal = isLocal;
+            TeamColor = teamColor;
             Rig = CharacterBuilder.Build(transform, look);
             foreach (Renderer r in Rig.Renderers)
             {
@@ -191,6 +194,9 @@ namespace Kitefall.Match
 
             Pose p = BasePose(f, dt);
             OverlayReactions(ref p, f, dt);
+            // Neck limits (audit C1): never bend the head further than a real neck can (pitch ±35°, yaw ±45°, neck + head together).
+            p.HeadPitch = Mathf.Clamp(p.HeadPitch, -MaxHeadPitch, MaxHeadPitch);
+            p.HeadYaw = Mathf.Clamp(p.HeadYaw, -MaxHeadYaw, MaxHeadYaw);
 
             // Smooth toward the pose
             _hipDrop = Mathf.Lerp(_hipDrop, p.HipDrop, k);
@@ -262,6 +268,8 @@ namespace Kitefall.Match
         }
 
         private static readonly Vector3 CharkhiHold = new Vector3(0.14f, 1.0f, 0.28f);
+        /// <summary>Total neck + head rotation limits in degrees (audit C1).</summary>
+        private const float MaxHeadPitch = 35f, MaxHeadYaw = 45f;
         private static readonly Vector3 PoleLDefault = new Vector3(-1f, -1f, -0.4f), PoleRDefault = new Vector3(1f, -1f, -0.4f);
 
         private Pose BasePose(in CharacterFrame f, float dt)
@@ -365,14 +373,17 @@ namespace Kitefall.Match
                     break;
                 }
                 case PrepStep.TieKanni:
+                    // Tying the bridle (kanni): the whole body kneels – hips down until the right knee touches the roof,
+                    // the back leans over the kite – so the head only tips a little instead of folding the neck (audit C1).
                     p.KneelPose = true;
                     p.Kneel = 1f;
-                    p.HipDrop = 0.42f;
-                    p.SpinePitch = 28f;
-                    p.HeadPitch = 30f;
+                    p.HipDrop = 0.5f;
+                    p.SpinePitch = 40f;
+                    p.ChestPitch += 4f;
+                    p.HeadPitch = 12f;
                     float w = Mathf.Sin(t * 16f) * 0.02f - _tapKick * 0.08f;
-                    p.HandL = new Vector3(-0.08f + w, 0.36f, 0.52f);
-                    p.HandR = new Vector3(0.08f - w, 0.36f + _tapKick * 0.06f, 0.52f);
+                    p.HandL = new Vector3(-0.08f + w, 0.32f, 0.52f);
+                    p.HandR = new Vector3(0.08f - w, 0.32f + _tapKick * 0.06f, 0.52f);
                     p.FastHands = true;
                     p.HeldKite = 2;
                     break;
@@ -491,9 +502,9 @@ namespace Kitefall.Match
         {
             if (!valid) return;
             Vector3 local = transform.InverseTransformPoint(world) - new Vector3(0f, 1.6f, 0f);
-            p.HeadYaw = Mathf.Clamp(Mathf.Atan2(local.x, Mathf.Max(0.1f, local.z)) * Mathf.Rad2Deg, -60f, 60f);
+            p.HeadYaw = Mathf.Clamp(Mathf.Atan2(local.x, Mathf.Max(0.1f, local.z)) * Mathf.Rad2Deg, -MaxHeadYaw, MaxHeadYaw);
             float flat = new Vector2(local.x, local.z).magnitude;
-            p.HeadPitch = Mathf.Clamp(-Mathf.Atan2(local.y, Mathf.Max(0.1f, flat)) * Mathf.Rad2Deg * 0.7f, -45f, 30f);
+            p.HeadPitch = Mathf.Clamp(-Mathf.Atan2(local.y, Mathf.Max(0.1f, flat)) * Mathf.Rad2Deg * 0.7f, -MaxHeadPitch, 30f);
         }
 
         // ---- Emotes & reactions -------------------------------------------------------
@@ -626,8 +637,11 @@ namespace Kitefall.Match
             Rig.Hips.localRotation = Quaternion.Euler(0f, _spineYaw * 0.3f, p.WalkSpeed > 0.15f ? Mathf.Sin(_walkPhase) * 3f : 0f);
             Rig.Spine.localRotation = Quaternion.Euler(_spinePitch * 0.5f, _spineYaw * 0.4f, 0f);
             Rig.Chest.localRotation = Quaternion.Euler(_spinePitch * 0.5f + _chestPitch, _spineYaw * 0.3f, 0f);
-            Rig.Neck.localRotation = Quaternion.Euler(_headPitch * 0.4f, _headYaw * 0.4f, 0f);
-            Rig.Head.localRotation = Quaternion.Euler(_headPitch * 0.6f, _headYaw * 0.6f, 0f);
+            // Neck + head share the look 40 / 60; the total stays inside the neck limits (audit C1).
+            float headPitch = Mathf.Clamp(_headPitch, -MaxHeadPitch, MaxHeadPitch);
+            float headYaw = Mathf.Clamp(_headYaw, -MaxHeadYaw, MaxHeadYaw);
+            Rig.Neck.localRotation = Quaternion.Euler(headPitch * 0.4f, headYaw * 0.4f, 0f);
+            Rig.Head.localRotation = Quaternion.Euler(headPitch * 0.6f, headYaw * 0.6f, 0f);
 
             // Legs
             float upL, loL, upR, loR, footL = 0f, footR = 0f;

@@ -66,14 +66,16 @@ namespace Kitefall.UI.Screens
 
         private void Kites(RectTransform list, PlayerProfile p)
         {
-            foreach (SpecDefaults.KiteInfo info in SpecDefaults.Kites)
+            // Scope freeze (R7): launch kites, plus hidden classes this profile already has (they keep working).
+            foreach (SpecDefaults.KiteInfo info in LaunchContent.PickerKites(k => (p.Kite(k)?.count ?? 0) > 0 || p.loadout.kite == k))
             {
                 string id = info.Stats.id;
                 KiteOwned owned = p.Kite(id);
                 int count = owned != null ? owned.count : 0;
                 bool free = id == "guddi";
                 int unlock = Catalog.KiteUnlockLevel(id);
-                bool locked = p.level < unlock;
+                bool soon = !LaunchContent.IsLaunchKite(id) && count <= 0 && p.loadout.kite != id;
+                bool locked = p.level < unlock || soon;
                 bool usable = !locked && (count > 0 || free);
                 Image card = Card(list, p.loadout.kite == id);
                 card.Size(-1, 150);
@@ -81,7 +83,7 @@ namespace Kitefall.UI.Screens
                 row.Stretch();
                 Text t = UiKit.Label(row, $"<b>{info.Name}</b>  <size=22>{info.InspiredBy} · {info.Style}</size>\n" +
                                           $"<size=24>Speed {info.Stats.speed} · Agility {info.Stats.agility} · Stability {info.Stats.stability} · Turn {info.Stats.turnRate:0}°/s · Sweet {info.Stats.sweetZoneBase}</size>\n" +
-                                          $"<size=24>{(locked ? $"<color=#F5C400>Unlocks at level {unlock}</color>" : free && count == 0 ? "Free basic kite (unlimited)" : $"×{count} · durability {(owned != null ? owned.durability : 100):0}%{(owned != null && owned.durability < 30 ? " <color=#E5484D>(−10 % power)</color>" : "")}")}</size>", 28);
+                                          $"<size=24>{(soon ? $"<color=#F5C400>{LaunchContent.ComingSoonLabel}</color>" : locked ? $"<color=#F5C400>Unlocks at level {unlock}</color>" : free && count == 0 ? "Free basic kite (unlimited)" : $"×{count} · durability {(owned != null ? owned.durability : 100):0}%{(owned != null && owned.durability < 30 ? " <color=#E5484D>(−10 % power)</color>" : "")}")}</size>", 28);
                 t.Size(-1, 120, 1);
                 if (usable)
                     UiKit.Button(row, p.loadout.kite == id ? "Selected" : "Select", () => SetLoadout(p, kite: id), p.loadout.kite == id ? Theme.Good : Theme.Accent, 24).Size(170, 80);
@@ -124,7 +126,8 @@ namespace Kitefall.UI.Screens
                 DorStats d = kv.Value;
                 float m = p.DorMeters(id);
                 bool locked = p.level < d.unlockLevel;
-                bool enough = m >= Game.Economy.minDorForMatch;
+                bool basic = id == EconomyService.BasicDor; // Sooti never blocks play (audit B1)
+                bool enough = basic || m >= Game.Economy.minDorForMatch;
                 Image card = Card(list, p.loadout.dor == id);
                 card.Size(-1, 150);
                 RectTransform row = UiKit.Row(card.transform, 16, 16);
@@ -132,7 +135,7 @@ namespace Kitefall.UI.Screens
                 MasteryEntry mastery = p.Mastery(id);
                 UiKit.Label(row, $"<b>{SpecDefaults.NameOf(id)}</b>  <size=22>{Role(id)}</size>   <color=#9FD8FF>{m:0} m</color>\n" +
                                   $"<size=24>Cut ×{d.dorCut:0.00} · Speed ×{d.dorSpeed:0.00} · Strength {d.strength}{Special(id)}</size>\n" +
-                                  $"<size=22>{(locked ? $"<color=#F5C400>Unlocks at level {d.unlockLevel}</color>" : !enough ? "<color=#E5484D>Needs 100 m to fly</color>" : $"Mastery {mastery.level}")}</size>", 28).Size(-1, 120, 1);
+                                  $"<size=22>{(locked ? $"<color=#F5C400>Unlocks at level {d.unlockLevel}</color>" : !enough ? "<color=#E5484D>Needs 100 m to fly</color>" : basic ? $"Unlimited (used only in Ranked / Last Kite Flying) · mastery {mastery.level}" : $"Mastery {mastery.level}")}</size>", 28).Size(-1, 120, 1);
                 UiKit.Button(row, p.loadout.dor == id ? "Selected" : "Select", () => SetLoadout(p, dor: id), p.loadout.dor == id ? Theme.Good : Theme.Accent, 24)
                     .Interactable(!locked && enough).Size(170, 80);
             }

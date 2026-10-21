@@ -35,6 +35,19 @@ namespace Kitefall.Match
         private Vector3 _anchor;
         private float _lastHeading;
         private float _bank;
+        private float _distanceScale = 1f;
+
+        // Readability (audit E1/E2, visual only – physics never sees it): a far kite is drawn bigger so it stays at least
+        // ~40 px tall at 720p (×3 at most), and the line is never thinner than ~2 px on screen.
+        private const float KiteWorldHeight = 1.15f * KiteVisualFactory.VisualScale;
+        private const float MinKiteScreenFraction = 40f / 720f;
+        private const float MinLineScreenFraction = 2f / 720f;
+        private const float MaxDistanceScale = 3f;
+
+        /// <summary>The extra visual scale this frame for distance (1 … 3). Visual only.</summary>
+        public float DistanceScale => _distanceScale;
+        /// <summary>How tall the kite is drawn right now, in metres (base size × distance scale). The HUD sizes its markers from it.</summary>
+        public float VisualHeight => KiteWorldHeight * _distanceScale;
 
         public void Init(int index, string kiteId, string skinId, string tailId, Color lineColor, int tailSegments, TailRopeSettings ropeSettings)
         {
@@ -153,7 +166,44 @@ namespace Kitefall.Match
                 _sailRenderer.SetPropertyBlock(_mpb);
             }
 
+            ApplyDistanceScale(dt);
             UpdateTail(wind, time, dt);
+        }
+
+        /// <summary>World size of one screen-height fraction at <paramref name="distance"/> (perspective camera).</summary>
+        private static float WorldPerScreen(Camera cam, float distance)
+        {
+            if (cam.orthographic) return cam.orthographicSize * 2f;
+            return 2f * Mathf.Max(0.01f, distance) * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+        }
+
+        private void ApplyDistanceScale(float dt)
+        {
+            Camera cam = Camera.main;
+            float target = 1f;
+            if (cam != null && _kite.activeSelf)
+            {
+                float d = Vector3.Distance(cam.transform.position, _kite.transform.position);
+                target = Mathf.Clamp(MinKiteScreenFraction * WorldPerScreen(cam, d) / KiteWorldHeight, 1f, MaxDistanceScale);
+            }
+            // Smooth so camera cuts never make the kite pop.
+            _distanceScale = dt > 0f ? Mathf.Lerp(_distanceScale, target, 1f - Mathf.Exp(-8f * dt)) : target;
+            _kite.transform.localScale = Vector3.one * _distanceScale;
+        }
+
+        /// <summary>Sets the line width so it is at least ~2 px on screen along its whole length (thicker far away).</summary>
+        private void FitLineWidth(LineRenderer lr, float baseWidth)
+        {
+            Camera cam = Camera.main;
+            int n = lr.positionCount;
+            if (cam == null || n < 2) { lr.widthCurve = AnimationCurve.Constant(0f, 1f, 1f); lr.widthMultiplier = baseWidth; return; }
+            Vector3 c = cam.transform.position;
+            float w0 = Mathf.Max(baseWidth, MinLineScreenFraction * WorldPerScreen(cam, Vector3.Distance(c, lr.GetPosition(0))));
+            float w1 = Mathf.Max(baseWidth, MinLineScreenFraction * WorldPerScreen(cam, Vector3.Distance(c, lr.GetPosition(n / 2))));
+            float w2 = Mathf.Max(baseWidth, MinLineScreenFraction * WorldPerScreen(cam, Vector3.Distance(c, lr.GetPosition(n - 1))));
+            float max = Mathf.Max(w0, Mathf.Max(w1, w2));
+            lr.widthMultiplier = max;
+            lr.widthCurve = new AnimationCurve(new Keyframe(0f, w0 / max), new Keyframe(0.5f, w1 / max), new Keyframe(1f, w2 / max));
         }
 
         private void OnStatusChanged(in KiteSnap s)
@@ -213,7 +263,7 @@ namespace Kitefall.Match
             Color c = highlighted ? new Color(1f, 0.85f, 0.2f, 1f) : _lineColor;
             if (s.Zone == TensionZone.Danger) c = Color.Lerp(c, new Color(1f, 0.3f, 0.25f), 0.6f);
             _line.startColor = _line.endColor = c;
-            _line.widthMultiplier = highlighted ? 0.09f : 0.05f;
+            FitLineWidth(_line, highlighted ? 0.09f : 0.05f);
         }
 
         private void DrawSlack(Vector3 from, Vector3 to, float sag)
@@ -222,6 +272,7 @@ namespace Kitefall.Match
             _line.positionCount = _linePts.Length;
             for (int i = 0; i < _linePts.Length; i++) _line.SetPosition(i, ArenaBuilder.ToUnity(_linePts[i]));
             _line.startColor = _line.endColor = new Color(_lineColor.r, _lineColor.g, _lineColor.b, 0.6f);
+            FitLineWidth(_line, 0.05f);
         }
 
         private void Fall(Vector3 wind, float dt)
@@ -262,6 +313,7 @@ namespace Kitefall.Match
             {
                 _ropeLines[i].enabled = visible;
                 if (!visible) continue;
+                _ropeLines[i].widthMultiplier = 0.16f * _distanceScale;
                 _ropes[i].Step(ToN(TailAttach(i)), ToN(wind), time, step);
                 _ropes[i].CopyPoints(_ropePts);
                 for (int p = 0; p < _ropePts.Length; p++) _ropeLines[i].SetPosition(p, ArenaBuilder.ToUnity(_ropePts[p]));

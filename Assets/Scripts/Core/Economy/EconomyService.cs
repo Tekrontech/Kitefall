@@ -115,7 +115,19 @@ namespace Kitefall.Core
             return r.Log($"Day {i + 1} of 7");
         }
 
-        /// <summary>Free Sooti refill of 300 m, once per day (spec 4.2).</summary>
+        /// <summary>The basic cotton line (Sooti). Free and never blocks play (audit B1).</summary>
+        public const string BasicDor = "sooti";
+
+        /// <summary>
+        /// Audit B1: Sooti is unlimited (not used up) in every mode except Ranked Duel and Last Kite Flying.
+        /// Only there do its metres count – and even there a low stock never blocks a match.
+        /// </summary>
+        public static bool SootiUnlimited(GameMode mode) => mode != GameMode.RankedDuel && mode != GameMode.LastKiteFlying;
+
+        /// <summary>True when today's free Sooti refill has not been given yet (the app claims it on the first launch of the day).</summary>
+        public static bool SootiRefillDue(PlayerProfile p, long nowUtc) => p.lastSootiRefillDay != Day(nowUtc);
+
+        /// <summary>Free Sooti refill of 300 m, once per day (spec 4.2). Claimed automatically on the first launch of the day.</summary>
         public static OpResult ClaimSootiRefill(PlayerProfile p, EconomyConfig c, long nowUtc)
         {
             long day = Day(nowUtc);
@@ -215,10 +227,11 @@ namespace Kitefall.Core
             foreach (string ch in me.CharkhisUsed) AddMastery(p, ch, won ? c.masteryXpWin : c.masteryXpLoss, c);
 
             // ---- Consumption (only the server ever lowers counts / meters).
-            // Spec 5: dor is used up only in modes with kite/dor loss.
+            // Spec 5: dor is used up only in modes with kite/dor loss. Audit B1: Sooti only in Ranked Duel / Last Kite Flying.
             if (rules.lossMode && m.Mode != GameMode.Tutorial)
             foreach (var kv in me.DorUsed)
             {
+                if (kv.Key == BasicDor && SootiUnlimited(m.Mode)) continue;
                 float lost = me.DorLost.TryGetValue(kv.Key, out float l) ? l : 0f;
                 float total = kv.Value + lost;
                 p.AddDor(kv.Key, -total);
@@ -376,6 +389,8 @@ namespace Kitefall.Core
 
         public static OpResult CraftKite(PlayerProfile p, string kiteId, EconomyConfig c)
         {
+            // Scope freeze (R7): hidden classes cannot be crafted new; a profile that already has one may keep crafting it.
+            if (!LaunchContent.IsLaunchKite(kiteId) && p.Kite(kiteId) == null) return OpResult.Fail(LaunchContent.ComingSoonLabel + ".");
             if (p.level < Catalog.KiteUnlockLevel(kiteId)) return OpResult.Fail($"Unlocks at level {Catalog.KiteUnlockLevel(kiteId)}.");
             if (p.Part(PartIds.Sail) < c.craftKiteSail || p.Part(PartIds.Sticks) < c.craftKiteSticks || p.coins < c.craftKiteCoins)
                 return OpResult.Fail($"Needs {c.craftKiteSail} sail, {c.craftKiteSticks} sticks and {c.craftKiteCoins} coins.");
@@ -495,7 +510,9 @@ namespace Kitefall.Core
                     break;
                 case RewardedPlacement.FreeKite:
                 {
-                    KiteOwned k = p.KiteOrAdd(string.IsNullOrEmpty(itemId) ? "guddi" : itemId);
+                    string kiteId = string.IsNullOrEmpty(itemId) ? "guddi" : itemId;
+                    if (!LaunchContent.IsLaunchKite(kiteId) && p.Kite(kiteId) == null) return OpResult.Fail(LaunchContent.ComingSoonLabel + ".");
+                    KiteOwned k = p.KiteOrAdd(kiteId);
                     if (k.count > 0) return OpResult.Fail("You still have this kite.");
                     if (p.level < Catalog.KiteUnlockLevel(k.id)) return OpResult.Fail("Kite not unlocked yet.");
                     k.count = 1;
@@ -526,6 +543,7 @@ namespace Kitefall.Core
             CosmeticItem item = Catalog.Cosmetic(cosmeticId);
             if (item == null) return OpResult.Fail("Unknown item.");
             if (item.passOnly) return OpResult.Fail("Season Pass reward only.");
+            if (!LaunchContent.IsLaunchCosmetic(item)) return OpResult.Fail(LaunchContent.ComingSoonLabel + "."); // scope freeze R7
             if (OwnsCosmetic(p, cosmeticId) && IsUnique(item)) return OpResult.Fail("Already owned.");
             if (p.level < item.unlockLevel) return OpResult.Fail($"Unlocks at level {item.unlockLevel}.");
             if (payWithCoins)
@@ -652,20 +670,43 @@ namespace Kitefall.Core
         // Hangar validation (spec 4.2)
         // =====================================================================
 
-        /// <summary>Checks if a loadout may be taken into a match; returns null if OK.</summary>
+        /// <summary>
+        /// Checks if a loadout may be taken into a match; returns null if OK.
+        /// Sooti (the free cotton line) never blocks (audit B1) – see <see cref="SootiLow"/> for the non-blocking warning.
+        /// </summary>
         public static string ValidateLoadout(PlayerProfile p, SavedLoadout l, EconomyConfig c)
         {
             KiteOwned kite = p.Kite(l.kite);
             bool freeGuddi = l.kite == "guddi";
             if (!freeGuddi && (kite == null || kite.count <= 0)) return $"No {SpecDefaults.NameOf(l.kite)} left – craft one or pick Guddi.";
-            if (p.DorMeters(l.dor) < c.minDorForMatch) return $"Less than {c.minDorForMatch:0} m of {SpecDefaults.NameOf(l.dor)} – make a spool or refill.";
+            if (l.dor != BasicDor && p.DorMeters(l.dor) < c.minDorForMatch)
+                return $"Less than {c.minDorForMatch:0} m of {SpecDefaults.NameOf(l.dor)} – make a spool or pick {SpecDefaults.NameOf(BasicDor)}.";
             if (!p.HasCharkhi(l.charkhi)) return $"You don't own the {SpecDefaults.NameOf(l.charkhi)} charkhi.";
             if (p.level < Catalog.DorUnlockLevel(l.dor)) return $"{SpecDefaults.NameOf(l.dor)} unlocks at level {Catalog.DorUnlockLevel(l.dor)}.";
             return null;
         }
 
-        /// <summary>Builds the match loadout (with tunings and durability) from the saved loadout.</summary>
-        public static ParticipantLoadout BuildMatchLoadout(PlayerProfile p, SavedLoadout l, string kiteId)
+        /// <summary>
+        /// Ranked Duel / Last Kite Flying only: the Sooti stock is below the match minimum. Shown as a warning with a
+        /// one-tap refill – the match still starts (audit B1). Last Kite Flying always starts on Sooti.
+        /// </summary>
+        public static bool SootiLow(PlayerProfile p, SavedLoadout l, GameMode mode, EconomyConfig c)
+        {
+            if (SootiUnlimited(mode)) return false;
+            bool usesSooti = mode == GameMode.LastKiteFlying || l == null || l.dor == BasicDor;
+            return usesSooti && p.DorMeters(BasicDor) < c.minDorForMatch;
+        }
+
+        /// <summary>Metres of Sooti a kite always gets in a match, whatever the stock (Sooti never blocks play).</summary>
+        public const float SootiMatchFloor = 100f;
+        /// <summary>Full spool of Sooti in the modes where it is unlimited.</summary>
+        public const float SootiUnlimitedStock = 600f;
+
+        /// <summary>
+        /// Builds the match loadout (with tunings and durability) from the saved loadout.
+        /// With a mode, Sooti gets a full spool where it is unlimited; it never goes below <see cref="SootiMatchFloor"/>.
+        /// </summary>
+        public static ParticipantLoadout BuildMatchLoadout(PlayerProfile p, SavedLoadout l, string kiteId, GameMode? mode = null)
         {
             var tunings = new List<string>();
             foreach (string item in new[] { l.dor, l.charkhi })
@@ -674,7 +715,10 @@ namespace Kitefall.Core
             KiteOwned k = p.Kite(kiteId);
             bool free = kiteId == "guddi" && (k == null || k.count <= 0);
             float durability = free || k == null ? 100f : k.durability;
-            ParticipantLoadout loadout = SpecDefaults.Loadout(kiteId, l.tail, l.dor, l.charkhi, durability, p.DorMeters(l.dor), tunings.ToArray());
+            float stock = p.DorMeters(l.dor);
+            if (l.dor == BasicDor)
+                stock = Math.Max(stock, mode.HasValue && SootiUnlimited(mode.Value) ? SootiUnlimitedStock : SootiMatchFloor);
+            ParticipantLoadout loadout = SpecDefaults.Loadout(kiteId, l.tail, l.dor, l.charkhi, durability, stock, tunings.ToArray());
             loadout.skinId = k != null ? k.skin : "";
             return loadout;
         }

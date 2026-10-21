@@ -28,12 +28,15 @@ namespace Kitefall.UI.Screens
             switch (_tab)
             {
                 case 0:
-                    foreach (SpecDefaults.KiteInfo k in SpecDefaults.Kites)
+                    // Scope freeze (R7): launch kites + hidden classes this profile already has (the server rule matches).
+                    foreach (SpecDefaults.KiteInfo k in LaunchContent.PickerKites(id => p.Kite(id) != null))
                     {
                         string id = k.Stats.id;
                         int lvl = Catalog.KiteUnlockLevel(id);
-                        Line(list, $"<b>{k.Name}</b>  ×{p.Kite(id)?.count ?? 0}", $"{c.craftKiteSail} sail · {c.craftKiteSticks} sticks · {c.craftKiteCoins} coins" + (p.level < lvl ? $"  <color=#F5C400>(level {lvl})</color>" : ""),
-                            "Craft", () => Run(EconomyCommands.CraftKite, id), p.level >= lvl);
+                        bool soon = !LaunchContent.IsLaunchKite(id) && p.Kite(id) == null;
+                        Line(list, $"<b>{k.Name}</b>  ×{p.Kite(id)?.count ?? 0}", $"{c.craftKiteSail} sail · {c.craftKiteSticks} sticks · {c.craftKiteCoins} coins" +
+                                   (soon ? $"  <color=#F5C400>({LaunchContent.ComingSoonLabel})</color>" : p.level < lvl ? $"  <color=#F5C400>(level {lvl})</color>" : ""),
+                            "Craft", () => Run(EconomyCommands.CraftKite, id), p.level >= lvl && !soon);
                     }
                     UiKit.Label(list, "Rare / Epic looks are cosmetic only – see the Shop.", 24, Theme.TextDim).Size(-1, 50);
                     break;

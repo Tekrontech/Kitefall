@@ -73,6 +73,8 @@ namespace Kitefall.Services
         // Developer
         public bool devBotRanked;
         public bool devShowDebug;
+        /// <summary>Show content outside the launch set as locked "Coming soon" entries (Core.LaunchContent, audit R7).</summary>
+        public bool devComingSoon;
     }
 
     public sealed class SettingsService
@@ -133,6 +135,7 @@ namespace Kitefall.Services
         public void Apply()
         {
             Kitefall.Core.Terms.Words = (Kitefall.Core.KiteWords)Mathf.Clamp(Data.kiteWords, 0, 1);
+            Kitefall.Core.LaunchContent.ShowComingSoon = Data.devComingSoon;
             int fps = Data.batterySaver ? 30 : Data.fps;
             if (EffectiveQuality == GraphicsQuality.Low) fps = Mathf.Min(fps, 30);
             Application.targetFrameRate = fps;

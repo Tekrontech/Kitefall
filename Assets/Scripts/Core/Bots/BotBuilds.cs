@@ -58,14 +58,18 @@ namespace Kitefall.Core
             }
         }
 
+        /// <summary>Build for a filler bot. Bots fly launch kites only (scope freeze R7); the archetype's dor / spool stay.</summary>
         public static BuildIds ForBot(BotDifficulty difficulty, string playerDorId, DeterministicRandom rng)
         {
+            BuildIds b;
             switch (difficulty)
             {
-                case BotDifficulty.Hard: return Get(CounterOf(Classify(playerDorId), rng));
-                case BotDifficulty.Medium: return Get((BuildArchetype)rng.Range(0, 6));
-                default: return Get(BuildArchetype.AllRounder);
+                case BotDifficulty.Hard: b = Get(CounterOf(Classify(playerDorId), rng)); break;
+                case BotDifficulty.Medium: b = Get((BuildArchetype)rng.Range(0, 6)); break;
+                default: b = Get(BuildArchetype.AllRounder); break;
             }
+            b.Kite = LaunchContent.LaunchKiteFor(b.Kite);
+            return b;
         }
     }
 }

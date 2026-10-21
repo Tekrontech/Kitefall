@@ -42,6 +42,8 @@ namespace Kitefall.UI.Screens
                 case 5: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.DorSkin); break;
                 default: items = Catalog.Cosmetics.FindAll(c => c.type == CosmeticType.CharkhiSkin); break;
             }
+            // Scope freeze (R7): launch content only (owned items stay listed; "Coming soon" ones shown locked when enabled).
+            items = items.FindAll(c => LaunchContent.IsListed(c, p.Cosmetic(c.id) > 0));
             RectTransform grid = UiKit.Grid(list, new Vector2(400, 300), new Vector2(16, 16), 4);
             foreach (CosmeticItem item in items) Tile(grid, item, p);
         }
@@ -66,7 +68,9 @@ namespace Kitefall.UI.Screens
             int owned = p.Cosmetic(item.id);
             bool equipped = p.equippedCosmetics.Contains(item.id);
             string id = item.id;
-            if (owned > 0)
+            if (owned <= 0 && LaunchContent.IsComingSoon(item))
+                UiKit.Button(col, LaunchContent.ComingSoonLabel, null, Theme.Disabled, 22).Interactable(false).Size(-1, 60);
+            else if (owned > 0)
                 UiKit.Button(col, equipped ? "Equipped" : "Equip", () => Run(EconomyCommands.Equip, id), equipped ? Theme.Good : Theme.Accent2, 22).Interactable(!equipped).Size(-1, 60);
             else
             {

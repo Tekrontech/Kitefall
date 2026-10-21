@@ -78,7 +78,9 @@ namespace Kitefall.UI.Screens
         private void Grid(RectTransform list, List<CosmeticItem> items, PlayerProfile p)
         {
             RectTransform grid = UiKit.Grid(list, new Vector2(300, 250), new Vector2(14, 14), 3);
-            foreach (CosmeticItem item in items) Tile(grid, item, p);
+            // Scope freeze (R7): launch characters, plus anything this profile owns or wears (Coming soon ones locked when enabled).
+            foreach (CosmeticItem item in items)
+                if (LaunchContent.IsListed(item, IsEquipped(item, p) || p.Cosmetic(item.id) > 0)) Tile(grid, item, p);
         }
 
         private void Tile(RectTransform grid, CosmeticItem item, PlayerProfile p)
@@ -114,6 +116,7 @@ namespace Kitefall.UI.Screens
                 UiKit.Button(col, equipped ? (item.type == CosmeticType.Accessory ? "Remove" : "Equipped") : "Equip", () => Run(op, args),
                     equipped ? Theme.Good : Theme.Accent2, 22).Interactable(!equipped || item.type == CosmeticType.Accessory).Size(-1, 54);
             }
+            else if (LaunchContent.IsComingSoon(item)) UiKit.Label(col, LaunchContent.ComingSoonLabel, 20, Theme.Coin, TextAnchor.MiddleCenter).Size(-1, 54);
             else if (item.passOnly) UiKit.Label(col, "Season Pass reward", 20, Theme.Coin, TextAnchor.MiddleCenter).Size(-1, 54);
             else if (p.level < item.unlockLevel && item.gemPrice == 0) UiKit.Label(col, $"Unlocks at level {item.unlockLevel}", 20, Theme.TextDim, TextAnchor.MiddleCenter).Size(-1, 54);
             else
@@ -333,10 +336,12 @@ namespace Kitefall.UI.Screens
             UiKit.Label(list, "Try anything – nothing in your inventory changes.", 26, Theme.TextDim).Size(-1, 44);
             UiKit.Label(list, "Kite", 28, Theme.Accent, TextAnchor.MiddleLeft, FontStyle.Bold).Size(-1, 44);
             RectTransform kites = UiKit.Grid(list, new Vector2(240, 64), new Vector2(10, 10), 5);
-            foreach (SpecDefaults.KiteInfo k in SpecDefaults.Kites)
+            foreach (SpecDefaults.KiteInfo k in LaunchContent.PickerKites()) // launch kites (R7); Coming soon ones locked
             {
                 string id = k.Stats.id;
-                UiKit.Button(kites, k.Name, () => { Req.Kite = id; Refresh(); }, id == Req.Kite ? Theme.Accent : Theme.PanelLight, 22);
+                bool soon = !LaunchContent.IsLaunchKite(id);
+                UiKit.Button(kites, soon ? $"{k.Name} ({LaunchContent.ComingSoonLabel})" : k.Name, () => { Req.Kite = id; Refresh(); }, id == Req.Kite ? Theme.Accent : Theme.PanelLight, soon ? 16 : 22)
+                    .Interactable(!soon);
             }
             Pick(list, Terms.Tail, SpecDefaults.Tails, Req.Tail, id => Req.Tail = id);
             Pick(list, Terms.Line, SpecDefaults.Dors, Req.Dor, id => Req.Dor = id);

@@ -88,7 +88,10 @@ namespace Kitefall.Tests
             PlayerProfile p = NewPlayer();
             EconomyService.ApplyMatchResult(p, Result(GameMode.FreeForAll, false, lostKite: "guddi", dorLost: 50f), Ctx("ffa"), C, R);
             Assert.AreEqual(2, p.Kite("guddi").count);
-            Assert.AreEqual(600f - 80f - 50f, p.DorMeters("sooti"), 0.01f);
+            Assert.AreEqual(600f, p.DorMeters("sooti"), 0.01f, "audit B1: Sooti is unlimited in Free-for-All");
+            EconomyService.ApplyMatchResult(p, Result(GameMode.LastKiteFlying, false, lostKite: "guddi", dorLost: 50f), Ctx("lkf"), C, R);
+            Assert.AreEqual(1, p.Kite("guddi").count);
+            Assert.AreEqual(600f - 80f - 50f, p.DorMeters("sooti"), 0.01f, "Last Kite Flying uses Sooti up");
 
             PlayerProfile q = NewPlayer();
             EconomyService.ApplyMatchResult(q, Result(GameMode.QuickDuel, false), Ctx("qd"), C, R);
@@ -243,7 +246,11 @@ namespace Kitefall.Tests
             p.Kite("guddi").count = 0;
             Assert.IsNull(EconomyService.ValidateLoadout(p, p.loadout, C), "Free Guddi is always available");
             p.AddDor("sooti", -550f);
-            Assert.IsNotNull(EconomyService.ValidateLoadout(p, p.loadout, C));
+            Assert.IsNull(EconomyService.ValidateLoadout(p, p.loadout, C), "audit B1: Sooti never blocks a match");
+            Assert.IsTrue(EconomyService.SootiLow(p, p.loadout, GameMode.RankedDuel, C), "Ranked shows the refill offer");
+            Assert.IsFalse(EconomyService.SootiLow(p, p.loadout, GameMode.QuickDuel, C), "no check outside Ranked / LKF");
+            p.loadout.dor = "reshmi";
+            Assert.IsNotNull(EconomyService.ValidateLoadout(p, p.loadout, C), "crafted lines still need 100 m");
         }
 
         [TestCase("Ali", true)]

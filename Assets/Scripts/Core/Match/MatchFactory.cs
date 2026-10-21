@@ -52,10 +52,10 @@ namespace Kitefall.Core
             return p;
         }
 
-        /// <summary>Gives a bot a character, outfit and maybe an accessory (visual only).</summary>
+        /// <summary>Gives a bot a character, outfit and maybe an accessory (visual only). Launch characters only (R7).</summary>
         public static void DressBot(ParticipantSetup p, DeterministicRandom rng)
         {
-            var chars = CharacterCatalog.Characters;
+            var chars = LaunchContent.LaunchCharacters();
             p.characterId = chars[rng.Range(0, chars.Count)].id;
             p.outfitId = rng.Chance(0.5f) ? "" : CharacterCatalog.Outfits[rng.Range(0, CharacterCatalog.Outfits.Count - 1)].id;
             p.accessories = new string[4];

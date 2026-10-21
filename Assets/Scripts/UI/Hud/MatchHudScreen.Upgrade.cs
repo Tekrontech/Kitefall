@@ -48,22 +48,22 @@ namespace Kitefall.UI.Hud
             Button cam = IconButton(Root, "camera", () => Game.Matches.Presenter.ToggleCamera(), new Color(0, 0, 0, 0.5f));
             cam.GetComponent<RectTransform>().Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(132, -24), new Vector2(96, 76));
 
-            // Emote wheel + quick chat + push-to-talk on the right edge.
+            // Emote wheel + quick chat + push-to-talk in a row under the radar (the right edge below is the tension bar's).
             Button emote = IconButton(Root, "emote", null, new Color(0, 0, 0, 0.5f));
-            emote.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24, 150), new Vector2(96, 96));
+            emote.GetComponent<RectTransform>().Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -266), new Vector2(80, 80));
             emote.onClick.RemoveAllListeners();
             emote.gameObject.AddComponent<EmoteWheelButton>().Init(this);
             Button chat = IconButton(Root, "chat", OpenQuickChat, new Color(0, 0, 0, 0.5f));
-            chat.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24, 40), new Vector2(96, 96));
+            chat.GetComponent<RectTransform>().Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-114, -266), new Vector2(80, 80));
             if (VoiceRegistry.Available != null && VoiceRegistry.Available())
             {
                 _micButton = IconButton(Root, "mic", null, new Color(0, 0, 0, 0.5f));
-                _micButton.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24, -70), new Vector2(96, 96));
+                _micButton.GetComponent<RectTransform>().Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-204, -266), new Vector2(80, 80));
                 _micButton.gameObject.AddComponent<PushToTalk>();
             }
 
             _streak = UiKit.Label(Root, "", 58, Theme.Coin, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
-            _streak.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -150), new Vector2(900, 80));
+            _streak.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -480), new Vector2(900, 70));
 
             BuildPrep();
             BuildRoofOverlay();
@@ -507,7 +507,8 @@ namespace Kitefall.UI.Hud
         {
             Image bar = UiKit.Panel(Root, new Color(0, 0, 0, 0.55f), "Spectate", false);
             _spectateBar = bar.rectTransform;
-            _spectateBar.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1100, 110));
+            // Banner zone under the wind compass (286–396), 900 wide so it clears the kill feed on the left.
+            _spectateBar.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -286), new Vector2(900, 110));
             Button l = UiKit.Button(_spectateBar, "◀", () => Game.Matches.Presenter.CycleSpectate(-1), Theme.PanelLight, 40);
             l.GetComponent<RectTransform>().Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(10, 0), new Vector2(90, 90));
             Button r = UiKit.Button(_spectateBar, "▶", () => Game.Matches.Presenter.CycleSpectate(1), Theme.PanelLight, 40);
@@ -525,17 +526,24 @@ namespace Kitefall.UI.Hud
             fire.GetComponent<RectTransform>().Place(new Vector2(1, 0), new Vector2(1, 1), new Vector2(-200, -6), new Vector2(80, 70));
         }
 
+        /// <summary>The spectate bar is up – but never together with an announcement in the same zone (audit F1).</summary>
+        private bool SpectateBarWanted(MatchSnapshot snap, int me)
+        {
+            int target = Game.Matches.Presenter.SpectateTarget;
+            return target >= 0 && target < snap.Kites.Length && SpectateRules.CanSpectate(snap, me) && !Announcing;
+        }
+
         private void TickSpectate(MatchSnapshot snap, in KiteSnap k, int me)
         {
             int target = Game.Matches.Presenter.SpectateTarget;
-            bool show = target >= 0 && target < snap.Kites.Length && SpectateRules.CanSpectate(snap, me);
+            bool show = SpectateBarWanted(snap, me);
             _spectateBar.gameObject.SetActive(show);
             _leaveButton.gameObject.SetActive(show && k.Eliminated && S.Setup.Rules.stormZone && !S.Setup.Rules.respawn);
             if (!show) return;
             ParticipantSetup p = S.Setup.Participants[target];
             ParticipantLoadout l = p.stack.Count > 0 ? p.stack[Mathf.Min(snap.Kites[target].StackIndex, p.stack.Count - 1)] : S.Setup.FreeGuddi;
             _specName.text = $"Spectating {p.displayName}{(p.isBot ? " <size=20>[BOT]</size>" : "")}";
-            _specInfo.text = $"{SpecDefaults.NameOf(l.kiteId)} · {SpecDefaults.NameOf(l.dorId)} · cuts {snap.Kites[target].Cuts}" + (k.RespawnIn > 0f ? $"   ·   next kite in {k.RespawnIn:0}s" : "");
+            _specInfo.text = (k.Eliminated ? "Eliminated   ·   " : "") + $"{SpecDefaults.NameOf(l.kiteId)} · {SpecDefaults.NameOf(l.dorId)} · cuts {snap.Kites[target].Cuts}" + (k.RespawnIn > 0f ? $"   ·   next kite in {k.RespawnIn:0}s" : "");
         }
 
         // =====================================================================
@@ -546,14 +554,14 @@ namespace Kitefall.UI.Hud
         {
             Image b = UiKit.Panel(Root, new Color(0, 0, 0, 0.5f), "Warmup", false);
             _warmupBanner = b.rectTransform;
-            _warmupBanner.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(900, 80));
+            _warmupBanner.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -286), new Vector2(900, 80));
             _warmupText = UiKit.Label(_warmupBanner, "", 32, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
             _warmupText.rectTransform.Stretch();
         }
 
         private void TickWarmup(MatchSnapshot snap)
         {
-            bool show = snap.Phase == MatchPhase.Warmup;
+            bool show = snap.Phase == MatchPhase.Warmup && !Announcing; // same zone as announcements
             _warmupBanner.gameObject.SetActive(show);
             if (!show) return;
             int connected = 0;
@@ -649,12 +657,14 @@ namespace Kitefall.UI.Hud
             bool involvesMe = e.Involves(me);
             Image row = UiKit.Panel(_feed, involvesMe ? new Color(1f, 0.6f, 0.15f, 0.28f) : new Color(0, 0, 0, 0.35f), "FeedRow", false);
             row.Size(-1, 44);
-            RectTransform r = UiKit.Row(row.transform, 8, 6, TextAnchor.MiddleRight);
+            RectTransform r = UiKit.Row(row.transform, 8, 6, TextAnchor.MiddleLeft);
             r.Stretch();
+            // Names are white on the tinted row (readable on the orange "you" tint too); the team colour is the strip beside them.
             if (e.Attacker >= 0)
             {
                 Avatar(r, e.Attacker, 34);
-                UiKit.Label(r, NameOf(e.Attacker), 22, NameColor(e.Attacker), TextAnchor.MiddleRight, FontStyle.Bold).Size(150, 40);
+                TeamStrip(r, e.Attacker);
+                UiKit.Label(r, NameOf(e.Attacker), 22, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed().Size(124, 40);
             }
             switch (e.Kind)
             {
@@ -671,11 +681,12 @@ namespace Kitefall.UI.Hud
             if (e.Victim >= 0)
             {
                 string suffix = e.Kind == FeedKind.SelfSnap ? " overpulled" : e.Kind == FeedKind.Crash ? " crashed" : e.Kind == FeedKind.Eliminated ? " is out" : "";
-                UiKit.Label(r, NameOf(e.Victim) + suffix, 22, NameColor(e.Victim), TextAnchor.MiddleLeft, FontStyle.Bold).Size(200, 40);
+                TeamStrip(r, e.Victim);
+                UiKit.Label(r, NameOf(e.Victim) + suffix, 22, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed().Size(140, 40);
                 Avatar(r, e.Victim, 34);
             }
             else if (e.Kind == FeedKind.CrateTaken)
-                UiKit.Label(r, SkyCrate.DisplayName(e.Crate), 22, Theme.Coin, TextAnchor.MiddleLeft).Size(200, 40);
+                UiKit.Label(r, SkyCrate.DisplayName(e.Crate), 22, Color.white, TextAnchor.MiddleLeft).Shadowed().Size(170, 40);
             _feedItems.Add((row.gameObject, Time.unscaledTime + 5f));
             if (_feedItems.Count > 5)
             {
@@ -686,12 +697,15 @@ namespace Kitefall.UI.Hud
 
         private string NameOf(int i) => i == S.LocalIndex ? "You" : S.Setup.Participants[i].displayName;
 
+        private void TeamStrip(Transform row, int i) => UiKit.Image(row, NameColor(i), Sprites.White, "Team").Size(5, 30);
+
         private Color NameColor(int i)
         {
             int me = S.LocalIndex;
+            bool cb = Game.ColorBlind;
             if (i == me) return Theme.Accent;                                   // own name orange
-            if (S.Setup.Rules.teamCount > 1 && _teams[i] == _teams[me]) return new Color(0.45f, 0.7f, 1f); // teammates blue
-            return new Color(1f, 0.45f, 0.45f);                                 // enemies red
+            if (S.Setup.Rules.teamCount > 1 && _teams[i] == _teams[me]) return cb ? Theme.ZoneSafe(true) : new Color(0.45f, 0.7f, 1f); // teammates blue
+            return cb ? Theme.ZoneDanger(true) : new Color(1f, 0.45f, 0.45f);   // enemies red (magenta when colour-blind)
         }
 
         private static string AttackIcon(AttackType a)

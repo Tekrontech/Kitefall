@@ -87,7 +87,8 @@ namespace Kitefall.UI.Screens
 
         public PrivateRoomScreen(ArenaType arena)
         {
-            _req = new MatchRequest { Mode = GameMode.PrivateRoom, Arena = arena, Players = 4, MatchMinutes = 10, Difficulty = BotDifficulty.Medium };
+            // Scope freeze (R7): a hidden arena falls back to a launch arena (offline and online rooms).
+            _req = new MatchRequest { Mode = GameMode.PrivateRoom, Arena = LaunchContent.ArenaOrDefault(arena), Players = 4, MatchMinutes = 10, Difficulty = BotDifficulty.Medium };
         }
 
         protected override void BuildContent(RectTransform content)

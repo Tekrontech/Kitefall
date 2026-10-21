@@ -118,8 +118,22 @@ namespace Kitefall.App
 
         private async Task DailyLoginAsync()
         {
+            // Audit B1: the free daily 300 m of Sooti is given automatically on the first launch of the day
+            // (same server command as the Hangar button; the server refuses a second claim the same day).
+            OpResult refill = null;
+            PlayerProfile p = Game.Profile;
+            if (p != null && EconomyService.SootiRefillDue(p, Game.Now))
+            {
+                refill = await Game.Backend.RunAsync(EconomyCommands.SootiRefill);
+                if (refill != null && !refill.Ok) refill = null;
+            }
             OpResult r = await Game.Backend.RunAsync(EconomyCommands.DailyLogin);
-            if (!r.Ok) return;
+            if (!r.Ok)
+            {
+                if (refill != null) { Game.UI.ToastResult(refill); Game.UI.RefreshCurrent(); }
+                return;
+            }
+            if (refill != null) r.Ledger.AddRange(refill.Ledger);
             Game.UI.Message("Daily reward", string.Join("\n", r.Ledger));
             Game.UI.RefreshCurrent();
         }
@@ -152,6 +166,28 @@ namespace Kitefall.App
             LastRequest = req.Clone();
             _ = Game.Backend.RunAsync(EconomyCommands.SetMode, req.Mode.ToString());
             Game.UI.Push(new MatchmakingScreen(req));
+            if (!req.FirstDuel && EconomyService.SootiLow(p, p.loadout, req.Mode, Game.Economy)) OfferSootiRefill(p);
+        }
+
+        /// <summary>
+        /// Audit B1: low Sooti in Ranked Duel / Last Kite Flying never blocks – matchmaking already runs behind this
+        /// one-tap offer (free daily refill, else a rewarded ad). The kite always gets at least the match minimum.
+        /// </summary>
+        private static void OfferSootiRefill(PlayerProfile p)
+        {
+            string line = SpecDefaults.NameOf(EconomyService.BasicDor);
+            float have = p.DorMeters(EconomyService.BasicDor);
+            if (EconomyService.SootiRefillDue(p, Game.Now))
+            {
+                Game.UI.Confirm($"Low on {line}", $"Only {have:0} m of {line} left. Matchmaking has started – refill now?",
+                    $"Refill +{Game.Economy.sootiDailyRefill:0} m", async () => Game.UI.ToastResult(await Game.Backend.RunAsync(EconomyCommands.SootiRefill)), "Play anyway");
+            }
+            else if (Game.Ads.CanShowRewarded(RewardedPlacement.DorRefill, AdContext.Home))
+            {
+                Game.UI.Confirm($"Low on {line}", $"Only {have:0} m of {line} left. Matchmaking has started – watch an ad for +{Game.Economy.adDorRefill} m?",
+                    $"+{Game.Economy.adDorRefill} m (ad)", async () => Game.UI.ToastResult(await Game.Ads.ShowRewardedAsync(RewardedPlacement.DorRefill, AdContext.Home)), "Play anyway");
+            }
+            else Game.UI.Toast($"Low on {line} ({have:0} m) – you still play with a full minimum spool.", Theme.Warn, 3f);
         }
 
         /// <summary>Called by the matchmaking screen once players are found (offline: bots fill).</summary>
@@ -184,8 +220,8 @@ namespace Kitefall.App
         {
             PlayerProfile p = Game.Profile;
             int seed = req.Seed != 0 ? req.Seed : UnityEngine.Random.Range(1, int.MaxValue);
-            ArenaType arena = req.Arena;
-            if (req.Mode == GameMode.LastKiteFlying) arena = ArenaType.StormArchipelago;
+            // Scope freeze (R7): launch arenas only; Last Kite Flying keeps Storm Archipelago (see Core.LaunchContent).
+            ArenaType arena = LaunchContent.ArenaForMatch(req.Mode, req.Arena);
             MatchSetup setup = MatchFactory.NewSetup(req.Mode, arena, seed);
             Game.Db.Configure(setup);
 
@@ -223,16 +259,16 @@ namespace Kitefall.App
             if (setup.Rules.IsDuel)
             {
                 string kite = p.loadout.kite;
-                for (int i = 0; i < 5; i++) me.stack.Add(EconomyService.BuildMatchLoadout(p, p.loadout, kite));
+                for (int i = 0; i < 5; i++) me.stack.Add(EconomyService.BuildMatchLoadout(p, p.loadout, kite, req.Mode));
             }
             else
             {
                 foreach (string kite in p.loadout.stack)
                 {
                     KiteOwned k = p.Kite(kite);
-                    if (kite == "guddi" || (k != null && k.count > 0)) me.stack.Add(EconomyService.BuildMatchLoadout(p, p.loadout, kite));
+                    if (kite == "guddi" || (k != null && k.count > 0)) me.stack.Add(EconomyService.BuildMatchLoadout(p, p.loadout, kite, req.Mode));
                 }
-                if (me.stack.Count == 0) me.stack.Add(EconomyService.BuildMatchLoadout(p, p.loadout, p.loadout.kite));
+                if (me.stack.Count == 0) me.stack.Add(EconomyService.BuildMatchLoadout(p, p.loadout, p.loadout.kite, req.Mode));
             }
             setup.Participants.Add(me);
             localIndex = 0;
@@ -322,7 +358,7 @@ namespace Kitefall.App
             {
                 case MatchEventType.KiteCut:
                     if (e.B == me) Hud.Announce("YOU CUT THEIR LINE!", $"−{e.Value:0} m of their {Terms.LineLower} cut away");
-                    else if (e.A == me) Hud.Announce("YOUR LINE WAS CUT", "Read the results to see why");
+                    else if (e.A == me) Hud.Announce("YOUR LINE WAS CUT", "Read the results to see why", 2f); // 2 s + fade, then the spectate bar
                     break;
                 case MatchEventType.SelfSnap:
                     if (e.A == me) Hud.Announce("SELF-SNAP!", $"Tension stayed above Strength {e.Value:0} too long");

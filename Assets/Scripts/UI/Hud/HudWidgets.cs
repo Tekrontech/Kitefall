@@ -18,7 +18,8 @@ namespace Kitefall.UI.Hud
         {
             Image bg = UiKit.Image(parent, new Color(0, 0, 0, 0.45f), Sprites.Rounded, "TensionBar");
             _bar = bg.rectTransform;
-            _bar.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-36, 90), new Vector2(54, 470));
+            // Right edge, from under the radar + emote row (top 396) down to 130 above the bottom: fits 16:9 … 20:9 (audit F1).
+            _bar.Band(new Vector2(1, 0), new Vector2(1, 1), new Vector2(-90, 130), new Vector2(-36, -396));
             _flash = UiKit.Image(_bar, new Color(1, 0.2f, 0.15f, 0f), Sprites.Rounded, "Flash");
             _flash.rectTransform.Stretch(-10, -10, -10, -10);
             _flash.transform.SetAsFirstSibling();

@@ -91,6 +91,7 @@ namespace Kitefall.UI.Screens
             UiKit.Button(col, "Privacy Policy", () => Application.OpenURL(Game.Balance.privacyUrl), Theme.PanelLight, 24).Size(-1, 70);
             UiKit.Label(col, "Developer (testing only)", 28, Theme.Accent, TextAnchor.MiddleLeft, FontStyle.Bold).Size(-1, 44);
             UiKit.Toggle(col, "Bot Ranked (no rank points)", d.devBotRanked, v => { d.devBotRanked = v; Save(); });
+            UiKit.Toggle(col, "Show \"Coming soon\" content (locked)", d.devComingSoon, v => { d.devComingSoon = v; Save(); });
             if (Game.Backend is LocalBackendService local)
                 UiKit.Button(col, "Delete local save", () => UI.Confirm("Delete save?", "All offline progress on this device will be erased.", "Delete", () =>
                 {

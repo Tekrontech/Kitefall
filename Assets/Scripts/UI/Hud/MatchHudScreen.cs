@@ -21,12 +21,14 @@ namespace Kitefall.UI.Hud
         private RadarWidget _radar;
         private CompassWidget _compass;
         private Text _score, _timer, _phase, _center, _sub, _dor, _launchText;
+        private Image _scoreTintA, _scoreTintB;
         private RectTransform _feed, _tags, _launch, _launchFill, _ring;
         private GameObject _breakPanel;
         private readonly List<Text> _tagPool = new List<Text>();
         private readonly List<(GameObject go, float until)> _feedItems = new List<(GameObject, float)>();
         private readonly List<DragHandle> _handles = new List<DragHandle>();
         private float _centerUntil;
+        private const float AnnounceFade = 0.4f;
         private bool _editing;
         private int[] _teams;
 
@@ -42,6 +44,7 @@ namespace Kitefall.UI.Hud
             _teams = new int[S.Setup.Participants.Count];
             for (int i = 0; i < _teams.Length; i++) _teams[i] = S.Setup.Participants[i].team;
 
+            BuildMarkers();
             _tags = UiKit.Rect("NameTags", Root).Stretch();
             _ring = UiKit.Image(Root, new Color(1f, 0.85f, 0.2f, 0.8f), Sprites.Ring, "ApproachRing").rectTransform;
             _ring.sizeDelta = new Vector2(150, 150);
@@ -62,13 +65,23 @@ namespace Kitefall.UI.Hud
             _dor = UiKit.Label(dorBg.transform, "", 24, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
             _dor.rectTransform.Stretch(12, 4, 12, 4);
 
-            _feed = UiKit.Column(Root, 6, 0, TextAnchor.UpperRight);
-            _feed.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -272), new Vector2(560, 320));
+            // Fixed HUD zones (audit F1), canvas 1920×1080 reference, checked down to 20:9 (≈ 2150×966 canvas units):
+            //   top centre: score 16–134 · wind compass 150–276 · banner zone 286–396 (spectate bar / warmup, or the announcement –
+            //   never both: the bar waits until the announcement has faded) · announce sub-line 396–476 · streak 480–550.
+            //   top left: menu + camera 24–100 · kill feed 120–370.   top right: radar 24–254 · emote/chat/mic row 266–346 ·
+            //   tension bar 396 → 130 px above the bottom, right edge.   bottom: controls in the corners, line info centre.
+            _feed = UiKit.Column(Root, 6, 0, TextAnchor.UpperLeft);
+            _feed.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -120), new Vector2(480, 250));
 
             _center = UiKit.Label(Root, "", 64, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
-            _center.rectTransform.Place(new Vector2(0.5f, 0.66f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1600, 110));
+            _center.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -286), new Vector2(1000, 110));
+            _center.resizeTextForBestFit = true;
+            _center.resizeTextMinSize = 36;
+            _center.resizeTextMaxSize = 64;
+            _center.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _center.verticalOverflow = VerticalWrapMode.Truncate;
             _sub = UiKit.Label(Root, "", 30, Color.white, TextAnchor.UpperCenter).Shadowed();
-            _sub.rectTransform.Place(new Vector2(0.5f, 0.66f), new Vector2(0.5f, 1f), new Vector2(0, -56), new Vector2(1500, 120));
+            _sub.rectTransform.Place(new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -396), new Vector2(1000, 80));
 
             BuildLaunch();
             BuildControls();
@@ -82,6 +95,14 @@ namespace Kitefall.UI.Hud
         {
             Image bg = UiKit.Panel(Root, new Color(0, 0, 0, 0.45f), "Score", false);
             bg.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -16), new Vector2(820, 118));
+            // Team modes: white score text on blue / red tinted halves (readable for everyone, colour-blind included – the words say the team).
+            _scoreTintA = UiKit.Image(bg.transform, new Color(0.25f, 0.5f, 0.95f, 0.55f), Sprites.RoundedSmall, "TintBlue");
+            _scoreTintA.rectTransform.Band(new Vector2(0, 1), new Vector2(0.5f, 1), new Vector2(10, -54), new Vector2(-2, -4));
+            _scoreTintB = UiKit.Image(bg.transform, new Color(0.9f, 0.28f, 0.28f, 0.55f), Sprites.RoundedSmall, "TintRed");
+            _scoreTintB.rectTransform.Band(new Vector2(0.5f, 1), new Vector2(1, 1), new Vector2(2, -54), new Vector2(-10, -4));
+            bool teams = S.Setup.Rules.teamCount > 1 && !S.Setup.Rules.IsDuel;
+            _scoreTintA.gameObject.SetActive(teams);
+            _scoreTintB.gameObject.SetActive(teams);
             _score = UiKit.Label(bg.transform, "", 34, Color.white, TextAnchor.UpperCenter, FontStyle.Bold).Shadowed();
             _score.rectTransform.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(16, -52), new Vector2(-16, -6));
             _timer = UiKit.Label(bg.transform, "", 26, Theme.Coin, TextAnchor.MiddleCenter, FontStyle.Bold);
@@ -213,7 +234,7 @@ namespace Kitefall.UI.Hud
             }
             else if (rules.teamCount > 1)
             {
-                _score.text = $"<color=#5AA0FF>BLUE {snap.TeamScores[0]}</color>   –   <color=#FF6060>{snap.TeamScores[1]} RED</color>   <size=22>(to {rules.teamCutsToWin})</size>";
+                _score.text = $"BLUE {snap.TeamScores[0]}   –   {snap.TeamScores[1]} RED   <size=22>(to {rules.teamCutsToWin})</size>";
                 _timer.text = Clock(rules.matchTime - snap.MatchTime);
             }
             else
@@ -258,9 +279,21 @@ namespace Kitefall.UI.Hud
             _launchText.text = $"HOLD PULL to launch – let go in the gold zone   ({snap.PhaseTimeLeft:0.0}s)";
         }
 
+        /// <summary>True while an announcement ("YOUR LINE WAS CUT" …) is on screen, fade included.</summary>
+        private bool Announcing => Time.unscaledTime < _centerUntil;
+
         private void UpdateCenter(MatchSnapshot snap, in KiteSnap k)
         {
-            if (Time.unscaledTime < _centerUntil) return;
+            if (Announcing)
+            {
+                // Fade out over the last 0.4 s, so it is gone before the spectate bar takes the same zone (audit F1).
+                float a = Mathf.Clamp01((_centerUntil - Time.unscaledTime) / AnnounceFade);
+                SetAlpha(_center, a);
+                SetAlpha(_sub, a);
+                return;
+            }
+            SetAlpha(_center, 1f);
+            SetAlpha(_sub, 1f);
             string big = "", small = "";
             switch (snap.Phase)
             {
@@ -273,9 +306,10 @@ namespace Kitefall.UI.Hud
                     small = $"Change your {Terms.TailLower} or {Terms.SpoolLower}";
                     break;
                 case MatchPhase.Round:
+                    // While the spectate bar is up it carries this (name, next kite, eliminated) – one thing per zone.
+                    if (SpectateBarWanted(snap, S.LocalIndex)) break;
                     if (k.Status == KiteStatus.Waiting && k.RespawnIn > 0f) big = $"Next kite in {k.RespawnIn:0}";
                     else if (!k.IsFlying && k.Eliminated) { big = "Eliminated"; small = "Spectating"; }
-                    else if (Game.Matches.Presenter.SpectateTarget >= 0) small = "Spectating " + S.Setup.Participants[Game.Matches.Presenter.SpectateTarget].displayName;
                     break;
                 case MatchPhase.Results:
                     big = S.Result != null && S.Result.WinnerIndex == S.LocalIndex ? "VICTORY" : S.Result != null && S.Result.Draw ? "DRAW" : "MATCH OVER";
@@ -283,6 +317,14 @@ namespace Kitefall.UI.Hud
             }
             _center.text = big;
             _sub.text = small;
+        }
+
+        private static void SetAlpha(Text t, float a)
+        {
+            Color c = t.color;
+            if (Mathf.Approximately(c.a, a)) return;
+            c.a = a;
+            t.color = c;
         }
 
         private void UpdateTags(MatchSnapshot snap, int me)
@@ -300,16 +342,22 @@ namespace Kitefall.UI.Hud
             {
                 Text tag = _tagPool[i];
                 bool show = i != me && i < snap.Kites.Length && snap.Kites[i].IsFlying && views[i].Visible;
-                Vector3 sp = show ? cam.WorldToScreenPoint(views[i].KitePosition + Vector3.up * 2.2f) : Vector3.zero;
+                Vector3 sp = show ? cam.WorldToScreenPoint(views[i].KitePosition) : Vector3.zero;
                 show &= sp.z > 0f;
                 tag.gameObject.SetActive(show);
                 if (!show) continue;
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(_tags, sp, null, out Vector2 local);
-                tag.rectTransform.anchoredPosition = local;
+                // Above the kite marker by screen pixels (a far kite's tag no longer sits on top of the kite).
+                tag.rectTransform.anchoredPosition = local + new Vector2(0f, KiteCanvasHeight(cam, views[i]) * 0.5f + 46f);
                 ParticipantSetup p = S.Setup.Participants[i];
-                string team = S.Setup.Rules.teamCount > 1 ? (p.team == _teams[me] ? "<color=#5AE0E0>" : "<color=#FF7070>") : "<color=#FFFFFF>";
+                bool cbTag = Game.ColorBlind;
+                string team = S.Setup.Rules.teamCount > 1
+                    ? "<color=#" + ColorUtility.ToHtmlStringRGB(p.team == _teams[me] ? (cbTag ? Theme.ZoneSafe(true) : new Color(0.35f, 0.88f, 0.88f)) : (cbTag ? Theme.ZoneDanger(true) : new Color(1f, 0.44f, 0.44f))) + ">"
+                    : "<color=#FFFFFF>";
                 tag.text = $"{team}{p.displayName}</color> <size=16>{p.country}{(p.isBot ? " BOT" : "")}{(p.captain ? " (C)" : "")}</size>";
             }
+
+            UpdateMarkers(snap, me, cam, views);
 
             // Approach ring around my kite (spec 9.3).
             bool approach = snap.Kites[me].Approaching && snap.Kites[me].IsFlying && !snap.Kites[me].InContest;
@@ -337,7 +385,7 @@ namespace Kitefall.UI.Hud
         public void Feed(string text, Color color)
         {
             if (_feed == null) return;
-            Text t = UiKit.Label(_feed, text, 24, color, TextAnchor.MiddleRight, FontStyle.Bold).Shadowed();
+            Text t = UiKit.Label(_feed, text, 24, color, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed();
             t.Size(-1, 32);
             _feedItems.Add((t.gameObject, Time.unscaledTime + 5f));
             if (_feedItems.Count > 6)
@@ -347,12 +395,15 @@ namespace Kitefall.UI.Hud
             }
         }
 
+        /// <summary>Big centre message: fully shown for <paramref name="seconds"/>, then fades out over 0.4 s.</summary>
         public void Announce(string big, string small, float seconds = 2.2f)
         {
             if (_center == null) return;
             _center.text = big;
             _sub.text = small;
-            _centerUntil = Time.unscaledTime + seconds;
+            SetAlpha(_center, 1f);
+            SetAlpha(_sub, 1f);
+            _centerUntil = Time.unscaledTime + seconds + AnnounceFade;
         }
 
         // ---- Loadout break (Ranked, spec 5.1) ---------------------------------

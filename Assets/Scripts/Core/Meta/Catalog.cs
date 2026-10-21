@@ -141,11 +141,11 @@ namespace Kitefall.Core
             return null;
         }
 
-        /// <summary>Featured shop items for a day (spec 4.4 "Featured (daily)").</summary>
+        /// <summary>Featured shop items for a day (spec 4.4 "Featured (daily)"). Launch content only (R7).</summary>
         public static List<CosmeticItem> FeaturedFor(long day, int count = 4)
         {
             var rng = new DeterministicRandom((int)(day * 2654435761L % int.MaxValue));
-            var pool = Cosmetics.FindAll(c => !c.passOnly && (c.gemPrice > 0 || c.coinPrice > 0));
+            var pool = Cosmetics.FindAll(c => !c.passOnly && (c.gemPrice > 0 || c.coinPrice > 0) && LaunchContent.IsLaunchCosmetic(c));
             var list = new List<CosmeticItem>();
             for (int i = 0; i < count && pool.Count > 0; i++)
             {
@@ -209,8 +209,9 @@ namespace Kitefall.Core
         private static List<PassReward> BuildPass(int levels)
         {
             var list = new List<PassReward>();
-            var passSkins = Cosmetics.FindAll(c => c.passOnly && c.type == CosmeticType.KiteSkin);
-            passSkins.AddRange(Cosmetics.FindAll(c => c.passOnly && c.type != CosmeticType.KiteSkin));
+            // Launch content only (scope freeze R7): skins of hidden kite classes stay in the catalog but are not pass rewards.
+            var passSkins = Cosmetics.FindAll(c => c.passOnly && c.type == CosmeticType.KiteSkin && LaunchContent.IsLaunchCosmetic(c));
+            passSkins.AddRange(Cosmetics.FindAll(c => c.passOnly && c.type != CosmeticType.KiteSkin && LaunchContent.IsLaunchCosmetic(c)));
             int skin = 0;
             for (int lvl = 1; lvl <= levels; lvl++)
             {
