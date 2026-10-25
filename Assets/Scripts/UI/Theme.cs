@@ -2,27 +2,37 @@ using UnityEngine;
 
 namespace Kitefall.UI
 {
-    /// <summary>Colours and sizes used by every screen. Change here to restyle the whole game.</summary>
+    /// <summary>
+    /// Colours and sizes used by every screen. Change here to restyle the whole game.
+    /// "Sky Ops" look (v1.5): dark slate glass with cut corners, amber call-to-action, cyan selection, condensed display type.
+    /// </summary>
     public static class Theme
     {
-        public static readonly Color Background = Hex("#0E1A2B");
-        public static readonly Color Panel = new Color(0.07f, 0.10f, 0.17f, 0.90f);
-        public static readonly Color PanelLight = new Color(0.14f, 0.19f, 0.30f, 0.95f);
-        public static readonly Color Card = new Color(0.11f, 0.16f, 0.26f, 0.96f);
-        public static readonly Color CardSelected = Hex("#2D4C7A");
-        public static readonly Color Accent = Hex("#FF8C1A");
-        public static readonly Color Accent2 = Hex("#21A6A6");
-        public static readonly Color Good = Hex("#3BB273");
-        public static readonly Color Bad = Hex("#E5484D");
-        public static readonly Color Warn = Hex("#F5C400");
-        public static readonly Color Text = Color.white;
-        public static readonly Color TextDim = new Color(1f, 1f, 1f, 0.65f);
+        public static readonly Color Background = Hex("#070B14");
+        public static readonly Color Panel = new Color(0.07f, 0.10f, 0.16f, 0.92f);
+        public static readonly Color PanelLight = new Color(0.17f, 0.22f, 0.33f, 0.95f);
+        public static readonly Color Card = new Color(0.10f, 0.14f, 0.22f, 0.95f);
+        public static readonly Color CardSelected = Hex("#1490C0");
+        /// <summary>Call-to-action amber (PLAY, Buy, Claim chest…).</summary>
+        public static readonly Color Accent = Hex("#FFA51F");
+        /// <summary>Selection cyan (selected tab, chosen mode…).</summary>
+        public static readonly Color Accent2 = Hex("#22C3EE");
+        public static readonly Color Good = Hex("#2FD27F");
+        public static readonly Color Bad = Hex("#FF3B52");
+        public static readonly Color Warn = Hex("#FFC21A");
+        public static readonly Color Text = Hex("#F4F7FB");
+        public static readonly Color TextDim = Hex("#A9B8CF");
+        /// <summary>Dark text on amber / green buttons.</summary>
+        public static readonly Color TextOnAccent = Hex("#2A1300");
+        public static readonly Color TextOnGood = Hex("#04220F");
         public static readonly Color Coin = Hex("#FFD24D");
-        public static readonly Color Gem = Hex("#C77DFF");
-        public static readonly Color Disabled = new Color(0.35f, 0.38f, 0.45f, 0.9f);
-        public static readonly Color Overlay = new Color(0f, 0f, 0f, 0.6f);
+        public static readonly Color Gem = Hex("#B565FF");
+        public static readonly Color GemBlue = Hex("#3FB6FF");
+        public static readonly Color Disabled = new Color(0.17f, 0.20f, 0.26f, 0.95f);
+        public static readonly Color Overlay = new Color(0.01f, 0.02f, 0.05f, 0.72f);
 
-        public static readonly Color[] RarityColors = { Hex("#9AA5B1"), Hex("#3B82F6"), Hex("#A855F7"), Hex("#F59E0B") };
+        /// <summary>Common, Rare, Epic, Legendary (+ Mythic for event items).</summary>
+        public static readonly Color[] RarityColors = { Hex("#7C8799"), Hex("#2F86F0"), Hex("#9A4DF5"), Hex("#FFA515"), Hex("#FF3B52") };
 
         public const int TitleSize = 54;
         public const int HeaderSize = 38;

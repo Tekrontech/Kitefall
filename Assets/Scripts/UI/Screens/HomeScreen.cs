@@ -196,11 +196,11 @@ namespace Kitefall.UI.Screens
             Image ic = UiKit.Image(cell, art ? Color.white : tint, icon, "Icon");
             ic.preserveAspect = true;
             ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(52, 52));
-            Text t = UiKit.Label(cell, value, 28, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed();
+            Text t = UiKit.UseButtonFont(UiKit.Label(cell, value, 28, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed(), false);
             t.rectTransform.Stretch(58, 0, plus != null ? 52 : 0, 0);
             if (plus == null) return t;
-            Button add = Glossy.Button(cell, "+", null, plus, Glossy.Style.Pill, 30);
-            add.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(48, 48));
+            Button add = Glossy.Button(cell, "+", null, plus, Glossy.Style.Orange, 28);
+            add.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(42, 42));
             return t;
         }
 
@@ -246,7 +246,7 @@ namespace Kitefall.UI.Screens
             Image star = UiKit.Image(panel.transform, Glossy.Gold, Sprites.Circle, "StarBadge");
             star.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(16, -12), new Vector2(66, 66));
             UiKit.Image(star.transform, Theme.Hex("#7A4A0A"), Icons.Get("star"), "Star").rectTransform.Stretch(12, 12, 12, 12);
-            UiKit.Label(panel.transform, "Daily Missions", 34, Glossy.Gold, TextAnchor.MiddleLeft, FontStyle.Bold).Shadowed()
+            UiKit.Display(UiKit.Label(panel.transform, "Daily Missions", 36, Theme.Text, TextAnchor.MiddleLeft, FontStyle.Bold)).Shadowed()
                 .rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(96, -14), new Vector2(330, 62));
             long secs = (EconomyService.Day(Game.Now) + 1) * 86400L - Game.Now;
             UiKit.Image(panel.transform, new Color(1, 1, 1, 0.85f), Icons.Get("clock"), "Clock").rectTransform
@@ -368,7 +368,7 @@ namespace Kitefall.UI.Screens
 
         private void BuildPlayButton()
         {
-            Button play = Glossy.Button(Root, "PLAY", Icons.Get("swords"), Play, Glossy.Style.Play, 84, iconColor: Theme.Hex("#FFF4C8"));
+            Button play = Glossy.Button(Root, "PLAY", Icons.Get("swords"), Play, Glossy.Style.Play, 84, iconColor: Theme.TextOnAccent);
             play.GetComponent<RectTransform>().Place(new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 26), new Vector2(570, 156));
             play.gameObject.AddComponent<Breathe>();
             Shine.Add((RectTransform)play.transform);

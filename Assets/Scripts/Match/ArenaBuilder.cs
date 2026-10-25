@@ -174,7 +174,7 @@ namespace Kitefall.Match
 
             SetupSky(timeOfDay01, far);
             // Islands: nothing on the horizon but sea – a closer fog hides the edge of the water plane.
-            if (layout.Type == ArenaType.StormArchipelago) RenderSettings.fogEndDistance = 900f;
+            if (layout.Type == ArenaType.StormArchipelago) { RenderSettings.fogEndDistance = 900f; RenderSettings.fogDensity = 0.00238f; }
             // Everything here is static: combine for static batching (upgrade 12: ≤ 150 draw calls on Medium).
             StaticBatchingUtility.Combine(root);
             return root;
@@ -393,13 +393,25 @@ namespace Kitefall.Match
             }
         }
 
+        private static Material _runtimeSky;
+
         public static void SetupSky(float timeOfDay01, Color fog)
         {
             Material sky = Materials.Skybox(timeOfDay01);
-            if (sky != null) RenderSettings.skybox = sky;
+            if (sky != null)
+            {
+                RenderSettings.skybox = sky;
+                // Each arena made a new sky material and the old one was never freed (audit G4). Only our own runtime copy is
+                // destroyed – never a material asset from the project.
+                if (_runtimeSky != null && _runtimeSky != sky) Object.Destroy(_runtimeSky);
+                _runtimeSky = sky;
+            }
             RenderSettings.ambientMode = AmbientMode.Skybox;
             RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
+            // Exponential-squared haze (audit G7): clear around the rooftops, thick towards the horizon (≈99 % at 1.1 km, so
+            // the edge of the world stays hidden like the old linear 160–1150 m fog) – gives the city real depth.
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = 0.00195f;
             RenderSettings.fogStartDistance = 160f;
             RenderSettings.fogEndDistance = 1150f;
             RenderSettings.fogColor = Color.Lerp(fog, new Color(0.85f, 0.8f, 0.75f), 0.5f);

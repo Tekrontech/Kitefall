@@ -40,6 +40,83 @@ namespace Kitefall.UI
             }
         }
 
+        private static Font _display, _cond;
+
+        /// <summary>
+        /// Sky Ops display face: Barlow Condensed ExtraBold Italic (SIL OFL, Assets/Resources/Fonts) – screen titles, PLAY,
+        /// big numbers. Falls back to the bold body face.
+        /// </summary>
+        public static Font DisplayFont
+        {
+            get
+            {
+                if (_display == null) _display = Resources.Load<Font>("Fonts/BarlowCondensed-ExtraBoldItalic");
+                return _display != null ? _display : BoldFont;
+            }
+        }
+
+        /// <summary>Barlow Condensed Bold (upright) – button labels, tabs, small caps labels.</summary>
+        public static Font CondFont
+        {
+            get
+            {
+                if (_cond == null) _cond = Resources.Load<Font>("Fonts/BarlowCondensed-Bold");
+                return _cond != null ? _cond : BoldFont;
+            }
+        }
+
+        /// <summary>Condensed faces look smaller than Inter at the same point size; this keeps the visual size.</summary>
+        public const float CondScale = 1.14f;
+
+        /// <summary>Upper-cases text but leaves rich-text tags (&lt;color=#…&gt;, &lt;size=…&gt;) untouched.</summary>
+        public static string Caps(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            if (s.IndexOf('<') < 0) return s.ToUpperInvariant();
+            var sb = new System.Text.StringBuilder(s.Length);
+            bool tag = false;
+            foreach (char ch in s)
+            {
+                if (ch == '<') tag = true;
+                sb.Append(tag ? ch : char.ToUpperInvariant(ch));
+                if (ch == '>') tag = false;
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Button label face: condensed bold, or the italic display face for calls to action.</summary>
+        public static Text UseButtonFont(Text t, bool callToAction)
+        {
+            if (t == null) return t;
+            Font f = callToAction ? DisplayFont : CondFont;
+            if (f == t.font) return t;
+            bool scaled = f != BoldFont && f != Font;
+            t.font = f;
+            t.fontStyle = FontStyle.Normal;
+            if (scaled) t.fontSize = Mathf.RoundToInt(t.fontSize * CondScale);
+            return t;
+        }
+
+        /// <summary>Screen / panel title: display face, upper case.</summary>
+        public static Text Display(Text t)
+        {
+            if (t == null) return t;
+            if (t.font != DisplayFont && DisplayFont != BoldFont) t.fontSize = Mathf.RoundToInt(t.fontSize * CondScale);
+            t.font = DisplayFont;
+            t.fontStyle = FontStyle.Normal;
+            t.text = Caps(t.text);
+            return t;
+        }
+
+        /// <summary>Light 1 px lift for dark text on bright buttons.</summary>
+        public static Text SoftShadow(Text t)
+        {
+            var s = t.gameObject.AddComponent<Shadow>();
+            s.effectColor = new Color(1f, 1f, 1f, 0.35f);
+            s.effectDistance = new Vector2(0f, -1.5f);
+            return t;
+        }
+
         // ---- Rect helpers ----------------------------------------------------
 
         public static RectTransform Rect(string name, Transform parent)
@@ -122,17 +199,44 @@ namespace Kitefall.UI
 
         private static bool Same(Color a, Color b) => Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b) < 0.03f;
 
-        /// <summary>Theme colour → glossy button skin (orange call-to-action, blue menu, bright selected, green confirm).</summary>
+        /// <summary>Theme colour → Sky Ops button skin (amber call-to-action, slate menu, cyan selected, green confirm, red danger).</summary>
+        public static Glossy.Style? SkinStyle(Color c)
+        {
+            if (Same(c, Theme.Accent)) return Glossy.Style.Orange;
+            if (Same(c, Theme.Good)) return Glossy.Style.Green;
+            if (Same(c, Theme.Bad)) return Glossy.Style.Red;
+            if (Same(c, Theme.Accent2) || Same(c, Theme.CardSelected)) return Glossy.Style.Selected;
+            if (Same(c, Theme.PanelLight) || Same(c, Theme.Card) || Same(c, Theme.Panel) || Same(c, new Color(0.12f, 0.17f, 0.28f))) return Glossy.Style.Menu;
+            if (Same(c, Theme.Disabled)) return Glossy.Style.Locked;
+            return null;
+        }
+
         private static Sprite ButtonSkin(Color c, out Color tint)
         {
             tint = Color.white;
-            if (Same(c, Theme.Accent)) return Glossy.Sprite(Glossy.Style.Orange);
-            if (Same(c, Theme.Good)) return Glossy.Sprite(Glossy.Style.Green);
-            if (Same(c, Theme.Accent2) || Same(c, Theme.CardSelected)) return Glossy.Sprite(Glossy.Style.Selected);
-            if (Same(c, Theme.PanelLight) || Same(c, Theme.Card) || Same(c, Theme.Panel) || Same(c, new Color(0.12f, 0.17f, 0.28f))) return Glossy.Sprite(Glossy.Style.Menu);
-            if (Same(c, Theme.Disabled)) return Glossy.Sprite(Glossy.Style.Locked);
+            Glossy.Style? s = SkinStyle(c);
+            if (s.HasValue) return Glossy.Sprite(s.Value);
             tint = c;
             return Sprites.Rounded;
+        }
+
+        /// <summary>
+        /// Re-skins a button made by <see cref="Button"/> for a new theme colour (selected tab, ON/OFF…): swaps the sprite,
+        /// the tint and the label colour. (Before: only the tint changed, so an orange skin was darkened instead of swapped.)
+        /// </summary>
+        public static void SetSkin(Button b, Color themeColor)
+        {
+            if (b == null) return;
+            Sprite skin = ButtonSkin(themeColor, out Color tint);
+            b.image.sprite = skin;
+            b.image.type = UnityEngine.UI.Image.Type.Sliced;
+            b.image.color = tint;
+            Text label = b.ButtonLabel();
+            if (label == null) return;
+            Glossy.Style? s = SkinStyle(themeColor);
+            label.color = s.HasValue ? Glossy.TextOn(s.Value) : Theme.Text;
+            Shadow sh = label.GetComponent<Shadow>();
+            if (sh != null) sh.effectColor = label.color == Theme.Text ? new Color(0f, 0f, 0f, 0.7f) : new Color(1f, 1f, 1f, 0.35f);
         }
 
         public static Text Label(Transform parent, string text, int size = Theme.BodySize, Color? color = null, TextAnchor align = TextAnchor.MiddleLeft, FontStyle style = FontStyle.Normal, string name = "Label")
@@ -140,7 +244,10 @@ namespace Kitefall.UI
             RectTransform rt = Rect(name, parent);
             var t = rt.gameObject.AddComponent<Text>();
             bool realBold = style == FontStyle.Bold && BoldFont != Font;
-            t.font = realBold ? BoldFont : Font;
+            // Big bold text (titles, scores, prices ≥ 40) uses the condensed italic display face of the Sky Ops look.
+            bool display = style == FontStyle.Bold && size >= 40 && DisplayFont != BoldFont;
+            t.font = display ? DisplayFont : realBold ? BoldFont : Font;
+            if (display) { size = Mathf.RoundToInt(size * CondScale); realBold = true; }
             t.text = text;
             t.fontSize = size;
             t.color = color ?? Theme.Text;
@@ -179,9 +286,13 @@ namespace Kitefall.UI
             img.gameObject.AddComponent<DisabledSkin>();
             if (!string.IsNullOrEmpty(text))
             {
-                Text label = Label(img.transform, text, fontSize, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+                Glossy.Style? style = SkinStyle(color ?? Theme.Accent);
+                Color ink = style.HasValue ? Glossy.TextOn(style.Value) : Color.white;
+                Text label = Label(img.transform, text.Length <= 3 ? text : Caps(text), fontSize, ink, TextAnchor.MiddleCenter, FontStyle.Bold);
+                UseButtonFont(label, style.HasValue && Glossy.IsCallToAction(style.Value) && fontSize >= 30);
                 label.rectTransform.Stretch(8, 4, 8, 4);
-                label.Shadowed();
+                if (ink == Theme.Text || ink == Color.white) label.Shadowed();
+                else SoftShadow(label);
             }
             if (onClick != null)
                 b.onClick.AddListener(() =>
@@ -345,7 +456,7 @@ namespace Kitefall.UI
             {
                 state = !state;
                 b.ButtonLabel().text = state ? "ON" : "OFF";
-                b.image.color = state ? Theme.Good : Theme.Disabled;
+                SetSkin(b, state ? Theme.Good : Theme.Disabled);
                 changed?.Invoke(state);
             }, state ? Theme.Good : Theme.Disabled, Theme.BodySize);
             b.Size(150, 60);
@@ -364,9 +475,9 @@ namespace Kitefall.UI
                 int index = i;
                 Button b = Button(row, options[i], () =>
                 {
-                    for (int k = 0; k < buttons.Count; k++) buttons[k].image.color = k == index ? Theme.Accent : Theme.PanelLight;
+                    for (int k = 0; k < buttons.Count; k++) SetSkin(buttons[k], k == index ? Theme.Accent2 : Theme.PanelLight);
                     changed?.Invoke(index);
-                }, i == selected ? Theme.Accent : Theme.PanelLight, Theme.SmallSize + 2);
+                }, i == selected ? Theme.Accent2 : Theme.PanelLight, Theme.SmallSize + 2);
                 b.Size(-1, 60, 1);
                 buttons.Add(b);
             }
@@ -409,15 +520,15 @@ namespace Kitefall.UI
                 int index = i;
                 Button b = Button(row, names[i], () =>
                 {
-                    for (int k = 0; k < list.Count; k++) list[k].image.color = k == index ? Theme.Accent : Theme.PanelLight;
+                    for (int k = 0; k < list.Count; k++) SetSkin(list[k], k == index ? Theme.Accent2 : Theme.PanelLight);
                     changed?.Invoke(index);
-                }, i == selected ? Theme.Accent : Theme.PanelLight, Theme.SmallSize + 2);
+                }, i == selected ? Theme.Accent2 : Theme.PanelLight, Theme.SmallSize + 2);
                 list.Add(b);
             }
             return list;
         }
 
         public static string Coins(int n) => $"<color=#FFD24D>●</color> {n:N0}";
-        public static string Gems(int n) => $"<color=#C77DFF>♦</color> {n:N0}";
+        public static string Gems(int n) => $"<color=#3FB6FF>♦</color> {n:N0}";
     }
 }

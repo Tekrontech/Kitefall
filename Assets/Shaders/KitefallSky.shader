@@ -82,7 +82,8 @@ Shader "Kitefall/GradientSky"
                     float2 uv = d.xz / (h + 0.15) * _CloudScale + _Time.y * _CloudSpeed * float2(1.0, 0.35);
                     float n = fbm(uv);
                     float c = smoothstep(1.0 - _CloudCover, 1.0 - _CloudCover + 0.35, n);
-                    float lit = 0.75 + 0.25 * saturate(fbm(uv + sun.xz * 0.4) * 1.4);
+                    // One noise tap instead of a second 4-octave fbm (audit G6: the sky covers the whole screen on phones).
+                    float lit = 0.75 + 0.25 * saturate(noise(uv * 2.0 + sun.xz * 0.4) * 1.4);
                     float3 cloud = _CloudColor.rgb * lit + _GoldenColor.rgb * band * 0.6 + _SunColor.rgb * pow(sunDot, 12.0) * 0.4;
                     col = lerp(col, cloud, c * saturate(h * 8.0) * 0.92);
                 }

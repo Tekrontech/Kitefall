@@ -17,7 +17,9 @@ namespace Kitefall.UI
         {
             if (Cache.TryGetValue(name, out Sprite s) && s != null) return s;
             // Artist glyphs (white on transparent, tinted like the drawn ones) win over the code-drawn shape.
-            s = Art.Sprite("ui_icon_" + name) ?? Art.Sprite("hud_" + name) ?? Art.Sprite("chat_" + name) ?? Art.Sprite("trait_" + name);
+            // (The kit's chevron and clock glyphs are too faint on dark glass, so those stay code-drawn.)
+            bool faintKitGlyph = name == "chevron_left" || name == "chevron_right" || name == "clock";
+            s = (faintKitGlyph ? null : Art.Sprite("ui_icon_" + name)) ?? Art.Sprite("hud_" + name) ?? Art.Sprite("chat_" + name) ?? Art.Sprite("trait_" + name);
             if (s != null) { Cache[name] = s; return s; }
             var p = new Painter();
             Draw(name, p);
@@ -216,6 +218,9 @@ namespace Kitefall.UI
                     break;
                 case "clock":
                     p.Ring(48, 48, 34, 8); p.Line(48, 48, 48, 72, 7); p.Line(48, 48, 64, 40, 7);
+                    break;
+                case "close":
+                    p.Line(24, 24, 72, 72, 11); p.Line(72, 24, 24, 72, 11);
                     break;
                 case "coin":
                     p.Circle(48, 48, 38); p.Ring(48, 48, 26, 5, 0f, 360f, true); p.Star(48, 48, 16, 7);

@@ -11,9 +11,13 @@ namespace Kitefall.Match
 
         public static bool Urp => GraphicsSettings.currentRenderPipeline != null;
 
-        public static Material Lit(Color color, float smoothness = 0.15f, Texture texture = null, string key = null)
+        /// <param name="doubleSided">
+        /// Draw back faces too (sails, flags, cloth, thin cards). Closed meshes (the town's merged boxes) pass false: culling
+        /// the back faces halves their pixel cost and stops shadow acne on walls (audit G5).
+        /// </param>
+        public static Material Lit(Color color, float smoothness = 0.15f, Texture texture = null, string key = null, bool doubleSided = true)
         {
-            key = key ?? ("lit_" + ColorUtility.ToHtmlStringRGBA(color) + smoothness + (texture != null ? texture.GetHashCode().ToString() : ""));
+            key = (key ?? ("lit_" + ColorUtility.ToHtmlStringRGBA(color) + smoothness + (texture != null ? texture.GetHashCode().ToString() : ""))) + (doubleSided ? "" : "_1s");
             if (Cache.TryGetValue(key, out Material m) && m != null) return m;
             Material template = Kitefall.App.Game.Db != null ? Kitefall.App.Game.Db.litTemplate : null;
             if (template != null) m = new Material(template) { name = key, color = color };
@@ -30,7 +34,7 @@ namespace Kitefall.Match
                 m.mainTexture = texture;
                 if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", texture);
             }
-            if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f); // double-sided sails
+            if (m.HasProperty("_Cull")) m.SetFloat("_Cull", doubleSided ? 0f : 2f); // 0 = off (double-sided), 2 = back
             Cache[key] = m;
             return m;
         }

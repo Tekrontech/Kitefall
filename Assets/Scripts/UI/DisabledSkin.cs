@@ -39,7 +39,9 @@ namespace Kitefall.UI
                 _image.color = Color.white;
                 _labels = GetComponentsInChildren<Text>(true);
                 _labelColors = new Color[_labels.Length];
-                for (int i = 0; i < _labels.Length; i++) { _labelColors[i] = _labels[i].color; _labels[i].color = _labels[i].color * new Color(1, 1, 1, 0.6f); }
+                // Dark labels (amber / green skins) would vanish on the grey skin: all disabled labels use the muted grey.
+                Color muted = Glossy.TextOn(Glossy.Style.Locked);
+                for (int i = 0; i < _labels.Length; i++) { _labelColors[i] = _labels[i].color; muted.a = _labels[i].color.a; _labels[i].color = muted; }
             }
             else
             {

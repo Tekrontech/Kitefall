@@ -134,14 +134,19 @@ namespace Kitefall.UI
             panel.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, size);
             if (!string.IsNullOrEmpty(title))
             {
-                Text t = UiKit.Label(panel.transform, title, Theme.HeaderSize, Theme.Text, TextAnchor.MiddleCenter, FontStyle.Bold, "Title");
-                t.rectTransform.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(20, -90), new Vector2(-20, -16));
+                Text t = UiKit.Display(UiKit.Label(panel.transform, title, Theme.HeaderSize + 4, Theme.Text, TextAnchor.MiddleCenter, FontStyle.Bold, "Title")).Shadowed();
+                t.rectTransform.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(20, -92), new Vector2(-20, -16));
+                Image line = UiKit.Image(panel.transform, Theme.Hex("#FF9A10"), Sprites.Slant, "TitleLine");
+                line.type = Image.Type.Sliced;
+                line.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -94), new Vector2(120, 6));
             }
             if (closeButton)
             {
                 GameObject go = veil.gameObject;
-                UiKit.Button(panel.transform, "X", () => ClosePopup(go), Theme.PanelLight, 32).GetComponent<RectTransform>()
-                    .Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-14, -14), new Vector2(64, 64));
+                Button close = Glossy.Button(panel.transform, "", Icons.Get("close"), () => ClosePopup(go), Glossy.Style.Menu, 26);
+                close.GetComponent<RectTransform>().Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-14, -14), new Vector2(64, 64));
+                Transform ci = close.transform.Find("Icon");
+                if (ci != null) ((RectTransform)ci).Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(30, 30));
             }
             RectTransform body = UiKit.Rect("Body", panel.transform).Stretch(28, string.IsNullOrEmpty(title) ? 28 : 100, 28, 28);
             _popups.Add(veil.gameObject);

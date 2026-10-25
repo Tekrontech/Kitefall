@@ -19,8 +19,9 @@ namespace Kitefall.UI.Screens
             if (splash != null) MenuScreen.ArtBackground(Root, splash);
             else
             {
-                Image glow = UiKit.Image(Root, new Color(1f, 0.55f, 0.1f, 0.35f), Sprites.VerticalFade, "Glow");
-                glow.rectTransform.Band(Vector2.zero, new Vector2(1, 0.6f), Vector2.zero, Vector2.zero);
+                MenuScreen.Backdrop(Root);
+                Image glow = UiKit.Image(Root, new Color(1f, 0.55f, 0.1f, 0.30f), Sprites.Soft, "Glow");
+                glow.rectTransform.Place(new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1500, 700));
             }
             // Logo artwork is the ornamental frame (AI cannot letter text); the word is drawn on top of it.
             Sprite logoArt = Art.Sprite("logo_kitefall");
@@ -32,9 +33,14 @@ namespace Kitefall.UI.Screens
                 frame.preserveAspect = true;
                 frame.rectTransform.Stretch();
             }
-            Text logoText = UiKit.Label(holder, "KITEFALL", logoArt != null ? 110 : 140, logoArt != null ? new Color(0.36f, 0.16f, 0.05f) : Color.white,
+            Text logoText = UiKit.Label(holder, "KITEFALL", logoArt != null ? 110 : 150, logoArt != null ? new Color(0.36f, 0.16f, 0.05f) : Theme.Hex("#FFC93C"),
                 TextAnchor.MiddleCenter, FontStyle.Bold);
-            if (logoArt == null) logoText.Shadowed();
+            if (logoArt == null)
+            {
+                var lift = logoText.gameObject.AddComponent<Shadow>();
+                lift.effectColor = new Color(0.35f, 0.12f, 0f, 0.85f);
+                lift.effectDistance = new Vector2(0f, -7f);
+            }
             logoText.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 200));
             _pulse = holder;
             Text tag = UiKit.Label(Root, "Read the wind, win the cross, cut the line.", 36, Theme.TextDim, TextAnchor.MiddleCenter);
@@ -71,22 +77,70 @@ namespace Kitefall.UI.Screens
     {
         protected override void Build()
         {
-            UiKit.Image(Root, new Color(0.04f, 0.07f, 0.12f, 0.92f), Sprites.White, "Bg", true).rectTransform.Stretch();
-            Text logo = UiKit.Label(Root, "KITEFALL", 110, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
-            logo.rectTransform.Place(new Vector2(0.5f, 0.78f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1400, 160));
-            RectTransform col = UiKit.Column(Root, 22, 0, TextAnchor.UpperCenter);
-            col.Place(new Vector2(0.5f, 0.52f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 420));
+            // Sky Ops sign-in: the painting behind, logo + tagline on the left, a glass card with the sign-in buttons on the right.
+            UiKit.Image(Root, Theme.Background, Sprites.White, "Bg", true).rectTransform.Stretch();
+            Sprite painting = Art.Sprite("home_background");
+            if (painting != null) MenuScreen.ArtBackground(Root, painting);
+            else MenuScreen.Backdrop(Root);
+            Image shade = UiKit.Image(Root, new Color(0.02f, 0.03f, 0.06f, 0.85f), Sprites.White, "LeftShade");
+            shade.rectTransform.Band(Vector2.zero, new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
+            Image fade = UiKit.Image(Root, new Color(0.02f, 0.03f, 0.06f, 0.85f), Sprites.White, "Fade");
+            fade.rectTransform.Band(new Vector2(0.5f, 0f), new Vector2(0.75f, 1f), Vector2.zero, Vector2.zero);
+            fade.gameObject.AddComponent<HorizontalFade>();
+
+            Text kicker = UiKit.UseButtonFont(UiKit.Label(Root, "ONLINE KITE FIGHTING", 24, Theme.Hex("#FFB21A"), TextAnchor.LowerLeft, FontStyle.Bold), false);
+            kicker.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(120, 250), new Vector2(800, 40));
+            Text logo = UiKit.Display(UiKit.Label(Root, "Kitefall", 170, Theme.Hex("#FFC93C"), TextAnchor.MiddleLeft, FontStyle.Bold));
+            var outline = logo.gameObject.AddComponent<Shadow>();
+            outline.effectColor = new Color(0.35f, 0.12f, 0f, 0.85f);
+            outline.effectDistance = new Vector2(0f, -7f);
+            logo.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(110, 130), new Vector2(900, 210));
+            Text tag = UiKit.UseButtonFont(UiKit.Label(Root, "READ THE WIND · WIN THE CROSS · CUT THE LINE", 36, Theme.Text, TextAnchor.UpperLeft, FontStyle.Bold), false).Shadowed();
+            tag.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(120, -10), new Vector2(900, 60));
+
+            Image card = Glossy.Panel(Root, Glossy.Style.Panel, "SignInCard");
+            card.rectTransform.Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-120, 0), new Vector2(620, 560));
+            Text step = UiKit.UseButtonFont(UiKit.Label(card.transform, "STEP 1 OF 3", 20, Theme.Hex("#FFB21A"), TextAnchor.UpperLeft, FontStyle.Bold), false);
+            step.rectTransform.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(44, -64), new Vector2(-44, -36));
+            Text who = UiKit.Display(UiKit.Label(card.transform, "Who's flying?", 54, Theme.Text, TextAnchor.UpperLeft, FontStyle.Bold));
+            who.rectTransform.Band(new Vector2(0, 1), new Vector2(1, 1), new Vector2(44, -136), new Vector2(-44, -66));
+            RectTransform col = UiKit.Column(card.transform, 18, 0, TextAnchor.UpperCenter);
+            col.Band(Vector2.zero, Vector2.one, new Vector2(44, 40), new Vector2(-44, -160));
 #if UNITY_IOS
             UiKit.Button(col, "Sign in with Apple", () => _ = Game.Flow.SignInAsync(SignInMethod.Apple), Color.black, 34).Size(-1, 110);
 #else
-            UiKit.Button(col, "Continue with Google", () => _ = Game.Flow.SignInAsync(SignInMethod.Google), Color.white, 34).Size(-1, 110);
-            col.GetChild(col.childCount - 1).GetComponentInChildren<Text>().color = new Color(0.15f, 0.15f, 0.2f);
+            Button google = UiKit.Button(col, "Continue with Google", () => _ = Game.Flow.SignInAsync(SignInMethod.Google), Color.white, 30);
+            google.Size(-1, 92);
+            Text gl = google.ButtonLabel();
+            gl.color = new Color(0.11f, 0.14f, 0.2f);
+            Shadow gs = gl.GetComponent<Shadow>();
+            if (gs != null) UnityEngine.Object.Destroy(gs);
 #endif
             UiKit.Button(col, "Play as Guest", () =>
                 UI.Confirm("Play as Guest?", "Guest progress can be lost if you change phones or reinstall. You can link an account later in Settings ▸ Account.",
-                    "Play as Guest", () => _ = Game.Flow.SignInAsync(SignInMethod.Guest)), Theme.PanelLight, 34).Size(-1, 110);
-            Text note = UiKit.Label(col, Game.Backend.IsOnline ? "" : "Offline mode: progress is saved on this device.", 24, Theme.TextDim, TextAnchor.MiddleCenter);
-            note.Size(-1, 60);
+                    "Play as Guest", () => _ = Game.Flow.SignInAsync(SignInMethod.Guest)), Theme.Accent, 40).Size(-1, 104);
+            Text note = UiKit.Label(col, Game.Backend.IsOnline ? "By playing you accept the Terms and Privacy Policy." : "Offline mode: progress is saved on this device.", 20, Theme.TextDim, TextAnchor.MiddleCenter);
+            note.Size(-1, 50);
+        }
+
+        /// <summary>Fades an image from its colour on the left to clear on the right (left-side shade blending into the art).</summary>
+        private sealed class HorizontalFade : BaseMeshEffect
+        {
+            public override void ModifyMesh(VertexHelper vh)
+            {
+                if (!IsActive()) return;
+                var v = new UIVertex();
+                Rect r = ((RectTransform)transform).rect;
+                for (int i = 0; i < vh.currentVertCount; i++)
+                {
+                    vh.PopulateUIVertex(ref v, i);
+                    float t = Mathf.InverseLerp(r.xMin, r.xMax, v.position.x);
+                    Color32 c = v.color;
+                    c.a = (byte)(c.a * (1f - t));
+                    v.color = c;
+                    vh.SetUIVertex(v, i);
+                }
+            }
         }
 
         public override bool OnBack() => false;

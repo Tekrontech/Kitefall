@@ -93,17 +93,17 @@ namespace Kitefall.Match
             for (int i = 0; i < colours; i++)
             {
                 Color c = palette.Length > 0 ? palette[i] : new Color(0.86f, 0.8f, 0.7f);
-                Material fm = Materials.Lit(c, 0.05f, facadeTex, "cityfacade" + ColorUtility.ToHtmlStringRGB(c));
+                Material fm = Materials.Lit(c, 0.05f, facadeTex, "cityfacade" + ColorUtility.ToHtmlStringRGB(c), doubleSided: false);
                 facadeNear[i] = new Bucket { Mat = fm, Shadows = true };
                 facadeFar[i] = new Bucket { Mat = fm, Shadows = false };
-                trim[i] = new Bucket { Mat = Materials.Lit(c, 0.05f, trimTex, "citytrim" + ColorUtility.ToHtmlStringRGB(c)), Shadows = true };
+                trim[i] = new Bucket { Mat = Materials.Lit(c, 0.05f, trimTex, "citytrim" + ColorUtility.ToHtmlStringRGB(c), doubleSided: false), Shadows = true };
             }
-            var roofNear = new Bucket { Mat = Materials.Lit(Color.white, 0.05f, roofTex, "cityroof"), Shadows = true };
+            var roofNear = new Bucket { Mat = Materials.Lit(Color.white, 0.05f, roofTex, "cityroof", doubleSided: false), Shadows = true };
             var roofFar = new Bucket { Mat = roofNear.Mat, Shadows = false };
-            var tankBlue = new Bucket { Mat = Materials.Lit(new Color(0.16f, 0.36f, 0.72f), 0.35f, null, "citytankblue"), Shadows = true };
-            var tankDark = new Bucket { Mat = Materials.Lit(new Color(0.12f, 0.12f, 0.13f), 0.3f, null, "citytankdark"), Shadows = true };
+            var tankBlue = new Bucket { Mat = Materials.Lit(new Color(0.16f, 0.36f, 0.72f), 0.35f, null, "citytankblue", doubleSided: false), Shadows = true };
+            var tankDark = new Bucket { Mat = Materials.Lit(new Color(0.12f, 0.12f, 0.13f), 0.3f, null, "citytankdark", doubleSided: false), Shadows = true };
             Color haze = Color.Lerp(far, new Color(0.85f, 0.85f, 0.88f), 0.25f);
-            var silhouette = new Bucket { Mat = Materials.Lit(haze, 0f, facadeTex, "cityfar" + ColorUtility.ToHtmlStringRGB(haze)), Shadows = false };
+            var silhouette = new Bucket { Mat = Materials.Lit(haze, 0f, facadeTex, "cityfar" + ColorUtility.ToHtmlStringRGB(haze), doubleSided: false), Shadows = false };
 
             var rng = new System.Random(layout.Seed * 7919 + (int)layout.Type);
             float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);

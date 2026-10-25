@@ -138,8 +138,9 @@ namespace Kitefall.UI.Hud
             bool left = set.leftHanded;
             _handles.Clear();
 
-            RectTransform stickBase = Control("Joystick", new Vector2(0, 0), new Vector2(250, 230), 300 * js, Sprites.Circle, new Color(1, 1, 1, 0.16f), left);
-            Image knob = UiKit.Image(stickBase, new Color(1, 1, 1, 0.6f), Sprites.Circle, "Knob", true);
+            RectTransform stickBase = Control("Joystick", new Vector2(0, 0), new Vector2(250, 230), 300 * js, Sprites.Circle, new Color(0.04f, 0.06f, 0.1f, 0.38f), left);
+            UiKit.Image(stickBase, new Color(0.63f, 0.75f, 0.94f, 0.45f), Sprites.Ring, "Rim").rectTransform.Stretch(-2, -2, -2, -2);
+            Image knob = UiKit.Image(stickBase, Theme.Hex("#3A4A6B"), Sprites.Orb, "Knob", true);
             knob.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130 * js, 130 * js));
             knob.gameObject.SetActive(false); // set controlPath before OnEnable
             var stick = knob.gameObject.AddComponent<OnScreenStick>();
@@ -147,9 +148,9 @@ namespace Kitefall.UI.Hud
             stick.controlPath = KiteInputReader.SteerStickPath;
             knob.gameObject.SetActive(true);
 
-            Button(Control("PULL", new Vector2(1, 0), new Vector2(-220, 210), 230 * bs, Sprites.Circle, new Color(0.95f, 0.55f, 0.15f, 0.85f), left), "PULL", 44 * bs, KiteInputReader.PullButtonPath, "hud_kheench");
-            Button(Control("DIVE", new Vector2(1, 0), new Vector2(-470, 150), 150 * bs, Sprites.Circle, new Color(0.85f, 0.25f, 0.3f, 0.85f), left), "DIVE", 30 * bs, KiteInputReader.DiveButtonPath);
-            Button(Control("REEL", new Vector2(1, 0), new Vector2(-220, 440), 150 * bs, Sprites.Circle, new Color(0.25f, 0.55f, 0.95f, 0.85f), left), "REEL", 30 * bs, KiteInputReader.ReelButtonPath);
+            Button(Control("PULL", new Vector2(1, 0), new Vector2(-220, 210), 230 * bs, Sprites.Orb, new Color(1f, 0.66f, 0.1f, 0.96f), left), "PULL", 44 * bs, KiteInputReader.PullButtonPath, "hud_kheench");
+            Button(Control("DIVE", new Vector2(1, 0), new Vector2(-470, 150), 150 * bs, Sprites.Orb, new Color(0.13f, 0.72f, 0.92f, 0.94f), left), "DIVE", 30 * bs, KiteInputReader.DiveButtonPath);
+            Button(Control("REEL", new Vector2(1, 0), new Vector2(-220, 440), 150 * bs, Sprites.Orb, new Color(0.24f, 0.31f, 0.46f, 0.94f), left), "REEL", 30 * bs, KiteInputReader.ReelButtonPath);
         }
 
         private RectTransform Control(string id, Vector2 anchor, Vector2 pos, float size, Sprite sprite, Color color, bool mirror)
@@ -183,7 +184,10 @@ namespace Kitefall.UI.Hud
                 ic.rectTransform.Band(new Vector2(0.2f, 0.34f), new Vector2(0.8f, 0.86f), Vector2.zero, Vector2.zero);
                 fontSize *= 0.55f;
             }
-            Text t = UiKit.Label(rt, label, Mathf.RoundToInt(fontSize), Color.white, TextAnchor.MiddleCenter, FontStyle.Bold).Shadowed();
+            bool pull = label == "PULL";
+            Text t = UiKit.Label(rt, label, Mathf.RoundToInt(fontSize), pull ? Theme.TextOnAccent : Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UiKit.UseButtonFont(t, true);
+            if (pull) UiKit.SoftShadow(t); else t.Shadowed();
             if (art != null) t.rectTransform.Band(new Vector2(0f, 0.08f), new Vector2(1f, 0.36f), Vector2.zero, Vector2.zero);
             else t.rectTransform.Stretch();
             rt.gameObject.SetActive(false); // set controlPath before OnEnable
