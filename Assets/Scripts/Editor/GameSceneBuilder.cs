@@ -54,6 +54,7 @@ namespace Kitefall.EditorTools
             if (cam != null) so.FindProperty("mainCamera").objectReferenceValue = cam;
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(app);
+            ApplySceneFog();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[Kitefall] GameApp linked to " + DatabasePath + " and Main scene saved.");
@@ -85,6 +86,7 @@ namespace Kitefall.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
 
             EditorUtility.SetDirty(app);
+            ApplySceneFog();
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, MainScenePath);
             if (db == null) Debug.LogError("[Kitefall] GameDatabase could not be created – check earlier Console errors, then run Kitefall ▸ Fix Game Scene Links.");
@@ -96,6 +98,17 @@ namespace Kitefall.EditorTools
             ProjectSetup.ApplyMobilePlayerSettings();
             Selection.activeObject = db;
             Debug.Log("[Kitefall] Main scene built: " + MainScenePath + " – press Play to start the game.");
+        }
+
+        /// <summary>
+        /// Builds strip fog modes no scene uses (Graphics ▸ Fog Modes: Automatic). The game turns the haze on from code
+        /// (ArenaBuilder.SetupSky), so the Main scene itself must use the same mode, or the APK shows no fog at all.
+        /// </summary>
+        private static void ApplySceneFog()
+        {
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = 0.00195f;
         }
 
         /// <summary>Creates (or updates the lists of) the GameDatabase asset.</summary>

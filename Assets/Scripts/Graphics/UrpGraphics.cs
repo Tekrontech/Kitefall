@@ -27,6 +27,7 @@ namespace Kitefall.Graphics
         private static Vignette _vignette;
         private static DepthOfField _dof;
         private static UniversalRenderPipelineAsset _runtimeAsset;
+        private static RenderPipelineAsset _qualityOverride;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Register()
@@ -42,8 +43,20 @@ namespace Kitefall.Graphics
             if (!(GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset source)) return null;
             _runtimeAsset = Object.Instantiate(source);
             _runtimeAsset.name = source.name + " (runtime)";
+            _qualityOverride = QualitySettings.renderPipeline;
             QualitySettings.renderPipeline = _runtimeAsset;
+            // Quality settings changed in Play mode stay changed in the Editor: restore the project's own value on exit.
+            Application.quitting += RestoreProjectAsset;
             return _runtimeAsset;
+        }
+
+        private static void RestoreProjectAsset()
+        {
+            Application.quitting -= RestoreProjectAsset;
+            if (_runtimeAsset == null) return;
+            QualitySettings.renderPipeline = _qualityOverride;
+            Object.Destroy(_runtimeAsset);
+            _runtimeAsset = null;
         }
 
         private static void Apply(GraphicsQuality q)

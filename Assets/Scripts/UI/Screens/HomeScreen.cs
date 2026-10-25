@@ -201,6 +201,7 @@ namespace Kitefall.UI.Screens
             if (plus == null) return t;
             Button add = Glossy.Button(cell, "+", null, plus, Glossy.Style.Orange, 28);
             add.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(42, 42));
+            add.ButtonLabel().rectTransform.Stretch(); // Glossy.Button's 24 + 16 px text margins are wider than this 42 px button
             return t;
         }
 

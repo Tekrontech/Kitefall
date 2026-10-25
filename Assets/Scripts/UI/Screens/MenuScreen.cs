@@ -91,12 +91,20 @@ namespace Kitefall.UI.Screens
                 Texture2D src = Art.Texture("home_background");
                 if (src != null)
                 {
-                    var rt = new RenderTexture(192, 108, 0, RenderTextureFormat.ARGB32) { name = "MenuBackdrop", filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
                     var half = RenderTexture.GetTemporary(480, 270, 0, RenderTextureFormat.ARGB32);
+                    var small = RenderTexture.GetTemporary(192, 108, 0, RenderTextureFormat.ARGB32);
                     UnityEngine.Graphics.Blit(src, half);
-                    UnityEngine.Graphics.Blit(half, rt);
+                    UnityEngine.Graphics.Blit(half, small);
+                    // Copy into a normal texture: a RenderTexture's pixels are lost when Android pauses the app (black menus).
+                    var tex = new Texture2D(192, 108, TextureFormat.RGBA32, false) { name = "MenuBackdrop", filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                    RenderTexture prev = RenderTexture.active;
+                    RenderTexture.active = small;
+                    tex.ReadPixels(new Rect(0, 0, 192, 108), 0, 0, false);
+                    tex.Apply(false, true);
+                    RenderTexture.active = prev;
+                    RenderTexture.ReleaseTemporary(small);
                     RenderTexture.ReleaseTemporary(half);
-                    _backdrop = rt;
+                    _backdrop = tex;
                 }
                 else _backdrop = DuskGradient();
             }
@@ -220,6 +228,7 @@ namespace Kitefall.UI.Screens
             if (!plus) return;
             Button add = Glossy.Button(cell, "+", null, () => { if (!(Game.UI.Current is ShopScreen)) Game.UI.Push(new ShopScreen()); }, Glossy.Style.Orange, 26);
             add.GetComponent<RectTransform>().Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), Vector2.zero, new Vector2(36, 36));
+            add.ButtonLabel().rectTransform.Stretch(); // Glossy.Button's 24 + 16 px text margins are wider than this 36 px button
         }
 
         /// <summary>Runs a backend op, shows the result, refreshes the screen.</summary>

@@ -90,7 +90,9 @@ namespace Kitefall.UI
             if (t == null) return t;
             Font f = callToAction ? DisplayFont : CondFont;
             if (f == t.font) return t;
-            bool scaled = f != BoldFont && f != Font;
+            // Label() already enlarged big bold text for the display face – only scale when coming from the Inter faces.
+            bool alreadyCondensed = (_display != null && t.font == _display) || (_cond != null && t.font == _cond);
+            bool scaled = f != BoldFont && f != Font && !alreadyCondensed;
             t.font = f;
             t.fontStyle = FontStyle.Normal;
             if (scaled) t.fontSize = Mathf.RoundToInt(t.fontSize * CondScale);
